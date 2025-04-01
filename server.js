@@ -380,7 +380,21 @@ function cleanupInactiveVisitors() {
 }
 
 // Serve static files
-app.use(express.static("."));
+app.use(express.static(path.join(__dirname, '.')));
+
+// Add fallback for landing.html
+app.get('/landing.html', (req, res, next) => {
+    // Try to serve landing.html, but if it doesn't exist, serve index.html as a fallback
+    const landingPath = path.join(__dirname, 'landing.html');
+    fs.access(landingPath, fs.constants.F_OK, (err) => {
+        if (err) {
+            console.log('landing.html not found, serving index.html as fallback');
+            res.sendFile(path.join(__dirname, 'index.html'));
+        } else {
+            next(); // Continue to static file handling
+        }
+    });
+});
 
 // Endpoint to get active visitor info
 app.get('/api/visitors', (req, res) => {
