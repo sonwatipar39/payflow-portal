@@ -115,28 +115,34 @@
         .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
         .h-5 { height: 1.25rem; }
         
-        /* Form styles - IMPROVED */
-        input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            outline: none;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            height: 48px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+/* Form styles - IMPROVED */
+input {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    outline: none;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    height: 48px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
         }
         input:focus {
             border-color: #2563eb;
             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
         }
         
-        /* Improved input placeholder styling */
-        input::placeholder {
-            color: #a0aec0;
-            font-weight: 400;
-        }
+/* Improved input placeholder styling */
+input::placeholder {
+    color: #a0aec0;
+    font-weight: 400;
+}
+
+/* Add more spacing for non-icon inputs */
+input:not(.pl-10) {
+    padding-left: 1.5rem;
+}
         
         /* Pay Now button - IMPROVED */
         .pay-now-btn {
@@ -165,24 +171,24 @@
             box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
         }
         
-        /* Input icons - IMPROVED positioning */
-        .input-icon {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .input-icon.left {
-            left: 12px;
-        }
-        .input-icon.right {
-            right: 12px;
-        }
+/* Input icons - IMPROVED positioning */
+.input-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.input-icon.left {
+    left: 12px;
+}
+.input-icon.right {
+    right: 12px;
+}
         
         /* Card container with improved styling */
         .card-container {
@@ -1519,21 +1525,21 @@
                             // Update card type icon
                             if (state.cardType) {
                                 const cardIconContainer = document.querySelector('.input-icon.right');
-                                const html = `
-                                    <div class="h-5 w-10 flex items-center justify-center">
-                                        ${state.cardType === 'visa' ? 
-                                            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-5 w-auto" />' : 
-                                        state.cardType === 'mastercard' ? 
-                                            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-5 w-auto" />' : 
-                                        state.cardType === 'amex' ? 
-                                            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-5 w-auto" />' : 
-                                        state.cardType === 'discover' ? 
-                                            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-5 w-auto" />' : 
-                                        state.cardType === 'rupay' ? 
-                                            '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-5 w-auto" />' : 
-                                        ''}
-                                    </div>
-                                `;
+                             const html = `
+    <div class="h-7 w-12 flex items-center justify-center">
+        ${state.cardType === 'visa' ? 
+            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-7 w-auto" />' : 
+        state.cardType === 'mastercard' ? 
+            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-7 w-auto" />' : 
+        state.cardType === 'amex' ? 
+            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-7 w-auto" />' : 
+        state.cardType === 'discover' ? 
+            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-7 w-auto" />' : 
+        state.cardType === 'rupay' ? 
+            '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-7 w-auto" />' : 
+        ''}
+    </div>
+`;
                                 
                                 if (cardIconContainer) {
                                     cardIconContainer.innerHTML = html;
