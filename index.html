@@ -223,14 +223,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     try {
-        // Socket.io connection - updated to use window.location.origin
-        const socket = io(window.location.origin, {
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            timeout: 20000
-        });
+const socket = io(window.location.origin, {
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+    transports: ['websocket', 'polling']
+});
             // Add these debugging listeners
     socket.on('connect', () => {
         console.log('Connected to Socket.IO server with ID:', socket.id);
@@ -1437,6 +1437,8 @@ function initApp() {
         });
     }
 }
+        // Initialize the application when the document is ready
+initApp();
     </script>
 </body>
 </html>
