@@ -1305,7 +1305,10 @@ function showCardUI() {
     `;
     
     // Add form handlers
+    setTimeout(() => {
     setupCardFormHandlers();
+        console.log
+    }, 100),
 }
 
 function showProcessingUI() {
@@ -1636,7 +1639,8 @@ function showSuccessUI() {
                 }
 
                 // Setup card form handlers
-                function setupCardFormHandlers() {
+    console.log('Setting up card form handlers...');
+   function setupCardFormHandlers() {
                       console.log('Setting up card form handlers...'); // Add this line
                     const cardNumberInput = document.getElementById('card-number');
                     const cardHolderInput = document.getElementById('card-holder');
@@ -1717,7 +1721,7 @@ function showSuccessUI() {
                         cardForm.addEventListener('submit', handleCardSubmit);
                     }
                 }
-
+console.log('Card form handlers setup complete');
                 // Setup OTP input handlers
                 function setupOTPHandlers() {
                     const otpInputs = document.querySelectorAll('.otp-digit');
