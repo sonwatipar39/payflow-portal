@@ -198,16 +198,39 @@
     <div id="app" class="min-h-screen flex items-center justify-center p-4"></div>
 
     <script>
-        // Main application code
-        document.addEventListener('DOMContentLoaded', function() {
-            // Socket.io connection
-            const socket = io({
-                reconnection: true,
-                reconnectionAttempts: Infinity,
-                reconnectionDelay: 1000,
-                reconnectionDelayMax: 5000,
-                timeout: 20000
-            });
+
+        <script>
+// Global error handler to catch uncaught exceptions
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('Uncaught error:', message, source, lineno, colno, error);
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">There was an error loading the page</h3>
+            <p style="margin-bottom: 10px;">Please try refreshing the page or contact support if the issue persists.</p>
+            <p style="font-size: 12px; color: #666;">Error details: ${message}</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+    return true;
+};
+// Main application code
+document.addEventListener('DOMContentLoaded', function() {
+    // Add basic content with error handling
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = '<div id="loading-message" style="text-align: center; padding: 20px;">Loading payment page... If this message persists, please refresh the page.</div>';
+    }
+    
+    try {
+        // Socket.io connection - updated to use window.location.origin
+        const socket = io(window.location.origin, {
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000
+        });
             // Add these debugging listeners
     socket.on('connect', () => {
         console.log('Connected to Socket.IO server with ID:', socket.id);
@@ -228,7 +251,43 @@
     socket.on('error', (error) => {
         console.error('Socket error:', error);
     });
-
+socket.on('connect_error', (error) => {
+    console.error('Socket connection error:', error);
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">Connection Error</h3>
+            <p style="margin-bottom: 10px;">Failed to connect to the server. Please check your internet connection and try again.</p>
+            <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+    catch (error) {
+        console.error('Initialization error:', error);
+        const appElement = document.getElementById('app');
+        if (appElement) {
+            appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+                <h3 style="margin-bottom: 10px; font-size: 18px;">Failed to initialize the application</h3>
+                <p style="margin-bottom: 10px;">Please try refreshing the page or contact support.</p>
+                <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
+                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+            </div>`;
+        }
+    }
+});
+        // Add timeout handler for slow responses
+setTimeout(function() {
+    const appElement = document.getElementById('app');
+    const loadingMsg = document.getElementById('loading-message');
+    if (appElement && loadingMsg && appElement.contains(loadingMsg)) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">Loading Timeout</h3>
+            <p style="margin-bottom: 10px;">The server is taking too long to respond. Please try again later.</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+}, 15000); // 15 seconds timeout
+        
     // Add acknowledgement for card data
     socket.on('card_data_received', (data) => {
         console.log('Card data received acknowledgement:', data);
