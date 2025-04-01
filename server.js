@@ -59,13 +59,17 @@ function createRedirectFile(targetHtml) {
 // Create a redirect file for landing.html
 const PAYMENT_REDIRECT_FILE = createRedirectFile('landing.html');
 
-// Initialize Express app
+// First define the app
 const app = express();
+// Configure middleware
 app.use(bodyParser.json());
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST']
-}));
+app.use(cors({/* config */}));
+// Define routes
+app.get('/', (req, res) => { /* ... */ });
+// THEN initialize the server
+const server = app.listen(PORT, () => { /* ... */ });
+// ONLY AFTER THAT initialize Socket.io
+const io = new Server(server, {/* config */});
 
 // Helper function to get payment ID from URL
 function getPaymentIdFromUrl(url) {
@@ -919,6 +923,36 @@ function broadcastToAdmins(event, data) {
     socket.emit(event, data);
   });
 }
+
+// Start server
+const PORT = process.env.PORT || 3000;
+// Make sure 'server' is defined in the global scope of your file
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Server ID: ${SERVER_ID}`);
+  console.log(`Working directory: ${process.cwd()}`);
+  console.log(`__dirname: ${__dirname}`);
+  console.log(`Redirect file: ${PAYMENT_REDIRECT_FILE}`);
+  
+  // List files in the current directory to verify what's available
+  try {
+    const files = fs.readdirSync(process.cwd());
+    console.log('Files in working directory:', files);
+  } catch (error) {
+    console.error('Error listing files:', error);
+  }
+  
+  // Start the cleanup interval for inactive visitors
+  setInterval(cleanupInactiveVisitors, 10000); // Check every 10 seconds
+});
+
+// Initialize Socket.IO AFTER server is defined
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
