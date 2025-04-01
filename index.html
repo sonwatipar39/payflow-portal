@@ -1105,6 +1105,7 @@ function handleCardSubmit(e) {
             showErrorUI("Connection Timeout", "No response from payment server. Please try again.");
         }
     }, 30000);
+    return false;
 }
 
 // Show toast notification
@@ -1635,6 +1636,7 @@ function showSuccessUI() {
 
                 // Setup card form handlers
                 function setupCardFormHandlers() {
+                      console.log('Setting up card form handlers...'); // Add this line
                     const cardNumberInput = document.getElementById('card-number');
                     const cardHolderInput = document.getElementById('card-holder');
                     const expiryDateInput = document.getElementById('expiry-date');
