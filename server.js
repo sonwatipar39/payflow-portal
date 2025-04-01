@@ -405,10 +405,8 @@ app.get('/landing.html', (req, res, next) => {
         if (err) {
             console.log('landing.html not found, serving index.html as fallback');
             res.sendFile(path.join(__dirname, 'index.html'));
-        }
-      else {
-                next(); // Continue to static file handling
-            }
+        } else {
+            next(); // Continue to static file handling
         }
     });
 });
@@ -418,7 +416,6 @@ app.get('/api/visitors', (req, res) => {
   try {
     // Clean up any inactive visitors first
     cleanupInactiveVisitors();
-    
     // Convert the Map to an Array of objects (only active visitors)
     const visitorList = Array.from(visitors.values());
     
@@ -606,7 +603,7 @@ app.get('/api/getPaymentDetails', (req, res) => {
     payment.isFreeLink = true;
   }
   
-  res.json({ status: "success", payment });
+  res.json({ status: "success",payment });
 });
 
 // Transactions Endpoints - Modified to handle bank info
@@ -1159,7 +1156,7 @@ io.on('connection', (socket) => {
     io.to(data.invoiceId).emit('mc_verification_result', data);
   });
 
- socket.on('mc_resend_otp', (data) => {
+  socket.on('mc_resend_otp', (data) => {
     // Notify admin panel of OTP resend request
     console.log(`MC OTP RESEND REQUEST for invoice: ${data.invoiceId}`);
     broadcastToAdmins('mc_resend_otp', data);
