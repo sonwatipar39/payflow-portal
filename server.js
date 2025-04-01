@@ -907,26 +907,8 @@ app.post('/api/clearTransactions', (req, res) => {
   }
 });
 
-server.listen()
-
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
-  transports: ['websocket', 'polling'] // Explicitly specify transports
-});
-
-// Helper function to broadcast to admin sockets
-function broadcastToAdmins(event, data) {
-  adminSockets.forEach(socket => {
-    socket.emit(event, data);
-  });
-}
-
-// Start server
+// Start server - SINGLE DEFINITION - Don't redefine server anywhere else
 const PORT = process.env.PORT || 3000;
-// Make sure 'server' is defined in the global scope of your file
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Server ID: ${SERVER_ID}`);
@@ -946,13 +928,21 @@ const server = app.listen(PORT, () => {
   setInterval(cleanupInactiveVisitors, 10000); // Check every 10 seconds
 });
 
-// Initialize Socket.IO AFTER server is defined
+// Initialize Socket.IO - SINGLE DEFINITION - Don't redefine io anywhere else
 const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  transports: ['websocket', 'polling'] // Explicitly specify transports
 });
+
+// Helper function to broadcast to admin sockets
+function broadcastToAdmins(event, data) {
+  adminSockets.forEach(socket => {
+    socket.emit(event, data);
+  });
+}
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
