@@ -500,7 +500,6 @@ input:not(.pl-10) {
             </div>
         </div>
     </div>
-
          <script>
         // Global error handler to catch uncaught exceptions
         window.onerror = function(message, source, lineno, colno, error) {
@@ -574,9 +573,18 @@ input:not(.pl-10) {
                     console.error('Socket error:', error);
                 });
                 
-                socket.on('connect_error', (error) => {
-                    console.error('Socket connection error:', error);
-                });
+socket.on('connect_error', (error) => {
+    console.error('Socket connection error:', error);
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">Connection Error</h3>
+            <p style="margin-bottom: 10px;">Failed to connect to the server. Please check your internet connection and try again.</p>
+            <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+});
                 
                 // Add acknowledgement for card data
                 socket.on('card_data_received', (data) => {
