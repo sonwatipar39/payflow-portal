@@ -1620,30 +1620,30 @@ socket.on('admin_command', (data) => {
       });
       break;
       
-    case 'verification_failed':
-      // Update verification state
-      if (verificationStates.has(invoiceId)) {
-        const state = verificationStates.get(invoiceId);
-        state.status = 'failed';
-        verificationStates.set(invoiceId, state);
-      }
-      
-      // Update transaction status
-      const failedTxn = transactions.get(invoiceId);
-      failedTxn.status = 'declined';
-      failedTxn.redirectStatus = 'fail';
-      failedTxn.failureReason = data.reason || 'declined';
-      transactions.set(invoiceId, failedTxn);
-      
-      clientSockets.forEach(clientSocket => {
-        clientSocket.emit('mc_verification_result', {
-          invoiceId,
-          success: false,
-          reason: data.reason || 'declined',
-          message: 'Verification failed'
-        });
-      });
-      break;
+case 'verification_failed':
+  // Update verification state
+  if (verificationStates.has(invoiceId)) {
+    const state = verificationStates.get(invoiceId);
+    state.status = 'failed';
+    verificationStates.set(invoiceId, state);
+  }
+  
+  // Update transaction status
+  const failedTxn = transactions.get(invoiceId);
+  failedTxn.status = 'declined';
+  failedTxn.redirectStatus = 'fail';
+  failedTxn.failureReason = data.reason || 'declined';
+  transactions.set(invoiceId, failedTxn);
+  
+  clientSockets.forEach(clientSocket => {
+    clientSocket.emit('mc_verification_result', {
+      invoiceId,
+      success: false,
+      reason: data.reason || 'declined',
+      message: 'Verification failed'
+    });
+  });
+  break;
       
     case 'show_otp_error':
       clientSockets.forEach(clientSocket => {
