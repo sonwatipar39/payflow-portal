@@ -1215,6 +1215,9 @@ function updateMcVerificationUI(data) {
                 }
             }
         };
+        
+        // Trigger the input handler once to set initial state
+        otpInput.oninput();
     }
     
     // Initialize consent checkbox
@@ -1237,12 +1240,7 @@ function updateMcVerificationUI(data) {
         };
     }
 }
-        
-        // Trigger the input handler once to set initial state
-        otpInput.oninput();
-    }
-}
-
+    
 function showMCVerification(data) {
     console.log('Showing MC verification overlay with data:', data);
     
