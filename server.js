@@ -487,7 +487,8 @@ app.post('/api/generatePaymentLink', (req, res) => {
     res.json({ status: "success", paymentLink });
   } catch (error) {
     console.error('Payment Link Error:', error);
-    res.status(500).json({ status: "error", message: "Internal server error" });
+    res.status(500).json({ status: "error", message: "Internal server error" });\
+  }
   });
 
 // Free Payment Links Endpoint
