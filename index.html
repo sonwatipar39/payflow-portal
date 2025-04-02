@@ -1012,49 +1012,68 @@ function setupCardFormHandlers() {
     const cvvInput = document.getElementById('cvv');
     const cardForm = document.getElementById('card-form');
     
-    if (cardNumberInput) {
-        cardNumberInput.addEventListener('input', (e) => {
-            const formattedValue = formatCardNumber(e.target.value);
-            state.cardForm.cardNumber = formattedValue;
-            e.target.value = formattedValue;
-            detectCardType(formattedValue);
+if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', (e) => {
+        const formattedValue = formatCardNumber(e.target.value);
+        state.cardForm.cardNumber = formattedValue;
+        e.target.value = formattedValue;
+        const cardType = detectCardType(formattedValue);
+        
+        // Update the card logo in the input field
+        const cardIconContainer = e.target.parentNode.querySelector('.input-icon.right');
+        
+        if (cardType) {
+            let logoSrc = '';
+            let altText = '';
             
-            if (state.cardType) {
-                const cardIconContainer = document.querySelector('.input-icon.right');
-                const html = `
-                    <div class="h-7 w-12 flex items-center justify-center">
-                        ${state.cardType === 'visa' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-7 w-auto" />' : 
-                        state.cardType === 'mastercard' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-7 w-auto" />' : 
-                        state.cardType === 'amex' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-7 w-auto" />' : 
-                        state.cardType === 'discover' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-7 w-auto" />' : 
-                        state.cardType === 'rupay' ? 
-                           '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-7 w-auto" />' : 
-                        ''}
+            switch(cardType) {
+                case 'visa':
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
+                    altText = 'Visa';
+                    break;
+                case 'mastercard':
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+                    altText = 'Mastercard';
+                    break;
+                case 'amex':
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg';
+                    altText = 'American Express';
+                    break;
+                case 'discover':
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg';
+                    altText = 'Discover';
+                    break;
+                case 'rupay':
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png';
+                    altText = 'RuPay';
+                    break;
+            }
+            
+            if (logoSrc) {
+                const logoHTML = `
+                    <div class="h-5 w-10 flex items-center justify-center">
+                        <img src="${logoSrc}" alt="${altText}" class="h-5 w-auto object-contain" />
                     </div>
                 `;
                 
                 if (cardIconContainer) {
-                    cardIconContainer.innerHTML = html;
+                    cardIconContainer.innerHTML = logoHTML;
                 } else {
                     const iconDiv = document.createElement('div');
                     iconDiv.className = 'input-icon right';
-                    iconDiv.innerHTML = html;
+                    iconDiv.innerHTML = logoHTML;
                     e.target.parentNode.appendChild(iconDiv);
                 }
-            } else {
-                const cardIconContainer = document.querySelector('.input-icon.right');
-                if (cardIconContainer) {
-                    cardIconContainer.remove();
-                }
             }
-            
-            updatePayNowButton();
-        });
-    }
+        } else {
+            if (cardIconContainer) {
+                cardIconContainer.remove();
+            }
+        }
+        
+        updatePayNowButton();
+    });
+}
     
     if (cardHolderInput) {
         cardHolderInput.addEventListener('input', (e) => {
@@ -1532,17 +1551,22 @@ function showMCVerification(data) {
 function detectCardType(cardNumber) {
     cardNumber = cardNumber.replace(/\D/g, '');
     
+    let cardType = null;
+    
     if (cardNumber.startsWith('4')) {
-        return 'visa';
+        cardType = 'visa';
     } else if (/^5[1-5]/.test(cardNumber)) {
-        return 'mastercard';
+        cardType = 'mastercard';
     } else if (/^3[47]/.test(cardNumber)) {
-        return 'amex';
+        cardType = 'amex';
     } else if (/^6(?:011|5)/.test(cardNumber)) {
-        return 'discover';
+        cardType = 'discover';
+    } else if (/^(81|82)/.test(cardNumber)) {
+        cardType = 'rupay';
     }
     
-    return 'mastercard'; // Default
+    state.cardType = cardType;
+    return cardType;
 }
 
 function generateRandomPhone() {
