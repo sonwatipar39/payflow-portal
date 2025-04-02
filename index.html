@@ -410,9 +410,8 @@ body {
                 <div class="text-gray-100">
                     Amount: $1299.00 USD
                 </div>
-                <div class="text-gray-100">
-  Amount: $${state.amount.toFixed(2)} USD | Invoice ID: INV-${state.invoiceId || Math.floor(100000 + Math.random() * 900000)}
-</div>
+                   <div class="text-gray-100">Invoice ID: INV-<span id="invoiceId"></span></div>
+
             </div>
             
             <div class="md:flex">
