@@ -18,6 +18,26 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
     <style>
+        body {
+  background-image: url('https://your-textured-background-url.jpg');  /* You'll need to host this image */
+  background-color: #f5f7fa; /* Fallback color similar to your image */
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Alternatively, if you want to create the effect with CSS */
+body {
+  background-color: #f5f7fa;
+  background-image: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%);
+  background-position: 40px 0, 40px 0, 0 0, 0 0;
+  background-size: 80px 80px;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.05);
+}
         /* Base styles */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
