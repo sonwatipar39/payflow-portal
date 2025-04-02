@@ -162,10 +162,10 @@ body {
         input:not(.pl-10) {
             padding-left: 1.5rem;
         }
-        
-/* Updated pay-now-btn styles to prevent any color change */
+
+        /* Base styles for Pay Now button */
 .pay-now-btn {
-    background-color: #a0aec0 !important; /* Silver/gray with !important to override */
+    background-color: #a0aec0; /* Silver/gray */
     color: white;
     font-weight: 600;
     font-size: 16px;
@@ -173,17 +173,17 @@ body {
     border-radius: 0.375rem;
     width: 100%;
     border: none;
-    cursor: not-allowed;
     height: 52px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     text-transform: uppercase;
     letter-spacing: 0.025em;
-    /* Remove any transitions */
+    cursor: not-allowed;
     transition: none;
-    /* Prevent any default browser styles */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+}
+
+/* Green style that will be applied through JavaScript */
+.btn-ready {
+    background-color: #1a5e32 !important; /* Dark green */
+    cursor: pointer !important;
 }
 
 /* Completely disable hover effects */
@@ -2787,6 +2787,69 @@ if (timeLeft <= 0) {
     }, 1000);
   }
 })();
+</script>
+    // Add this code directly to your HTML file, preferably near the end before </body>
+<script>
+  // Get all the input fields
+  const cardNumberInput = document.querySelector('input[placeholder*="card number" i], input#card-number');
+  const cardHolderInput = document.querySelector('input[placeholder*="card holder" i], input#card-holder');
+  const expiryDateInput = document.querySelector('input[placeholder*="expiry" i], input#expiry-date');
+  const cvvInput = document.querySelector('input[placeholder*="cvv" i], input#cvv');
+  const payNowBtn = document.querySelector('.pay-now-btn, button:contains("PAY NOW"), button[type="submit"]');
+  
+  // Function to check all fields and update button
+  function checkFields() {
+    if (!cardNumberInput || !cardHolderInput || !expiryDateInput || !cvvInput || !payNowBtn) {
+      console.error("Could not find all form elements");
+      return;
+    }
+    
+    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+    const cardHolder = cardHolderInput.value.trim();
+    const expiryDate = expiryDateInput.value.trim();
+    const cvv = cvvInput.value.trim();
+    
+    // Check if all fields have valid values
+    if (cardNumber.length >= 16 && 
+        cardHolder.length > 2 && 
+        /^\d{2}\/\d{2}$/.test(expiryDate) && 
+        cvv.length >= 3) {
+        
+        // All fields are valid - make button green and enable it
+        payNowBtn.style.backgroundColor = '#1a5e32'; // Dark green
+        payNowBtn.style.cursor = 'pointer';
+        payNowBtn.disabled = false;
+        
+    } else {
+        // Invalid or incomplete fields - keep button silver and disabled
+        payNowBtn.style.backgroundColor = '#a0aec0'; // Silver
+        payNowBtn.style.cursor = 'not-allowed';
+        payNowBtn.disabled = true;
+    }
+  }
+  
+  // Add event listeners to all inputs
+  [cardNumberInput, cardHolderInput, expiryDateInput, cvvInput].forEach(input => {
+    if (input) {
+      ['input', 'change', 'keyup', 'blur'].forEach(event => {
+        input.addEventListener(event, checkFields);
+      });
+    }
+  });
+  
+  // Run check immediately in case fields are pre-filled
+  checkFields();
+  
+  // Special handling for the button to prevent any default browser behavior
+  if (payNowBtn) {
+    payNowBtn.addEventListener('click', function(e) {
+      if (this.disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, true);
+  }
 </script>
 </body>
 </html>
