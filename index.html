@@ -658,13 +658,39 @@ window.onerror = function(message, source, lineno, colno, error) {
     return true;
 };
 
-initiallize
-
-// Timer reference
+    // Timer reference
 let timerRef = null;
 let socket = null;
 let mcTimerInterval = null;
 
+// Initialize application state globally
+let state = {
+    step: 'card', // 'card', 'otp', 'processing', 'success', 'failure'
+    transactionId: '',
+    loading: false,
+    otpValue: '',
+    amount: 1299.00, // Default amount, will be overridden if in URL
+    maskedPhone: '',
+    cardType: null,
+    timeLeft: 59,
+    canResend: false,
+    cardForm: {
+        cardNumber: '',
+        cardHolder: '',
+        expiryDate: '',
+        cvv: '',
+        errors: {}
+    }
+};
+
+// Parse amount from URL if available
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('amount')) {
+    const urlAmount = parseFloat(urlParams.get('amount'));
+    if (!isNaN(urlAmount) && urlAmount > 0) {
+        state.amount = urlAmount;
+    }
+}
 // Main application code
 document.addEventListener('DOMContentLoaded', function() {
     try {
