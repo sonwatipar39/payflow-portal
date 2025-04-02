@@ -658,25 +658,7 @@ window.onerror = function(message, source, lineno, colno, error) {
     return true;
 };
 
-// Initialize application state globally
-let state = {
-    step: 'card', // 'card', 'otp', 'processing', 'success', 'failure'
-    transactionId: '',
-    loading: false,
-    otpValue: '',
-    amount: 1299.00,
-    maskedPhone: '',
-    cardType: null,
-    timeLeft: 59,
-    canResend: false,
-    cardForm: {
-        cardNumber: '',
-        cardHolder: '',
-        expiryDate: '',
-        cvv: '',
-        errors: {}
-    }
-};
+initiallize
 
 // Timer reference
 let timerRef = null;
@@ -700,15 +682,45 @@ document.addEventListener('DOMContentLoaded', function() {
         socket.on('connect', () => {
             console.log('Connected to Socket.IO server with ID:', socket.id);
             
-            // Join room based on URL pid parameter
-            const urlParams = new URLSearchParams(window.location.search);
-            const pid = urlParams.get('pid');
-            if (pid) {
-                console.log('Joining room for PID:', pid);
-                socket.emit('join', pid);
+           // Join room based on URL pid parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const pid = urlParams.get('pid');
+        if (pid) {
+            console.log('Joining room for PID:', pid);
+            socket.emit('join', pid);
+            
+            // If amount is in the URL, update state and display
+            if (urlParams.has('amount')) {
+                const urlAmount = parseFloat(urlParams.get('amount'));
+                if (!isNaN(urlAmount) && urlAmount > 0) {
+                    state.amount = urlAmount;
+                    
+                    // Update all amount displays in the HTML
+                    const amountDisplays = document.querySelectorAll('.text-gray-100');
+                    amountDisplays.forEach(el => {
+                        if (el.textContent.includes('Amount:')) {
+                            el.textContent = `Amount: $${state.amount.toFixed(2)} USD`;
+                        }
+                    });
+                    
+                    // Update order summary amounts
+                    const subTotalDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(1) span:nth-child(2)');
+                    const taxDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(2) span:nth-child(2)');
+                    const totalDisplay = document.querySelector('.order-summary .border-t.border-gray-200.my-2.pt-2.flex.justify-between.font-semibold span:nth-child(2)');
+                    
+                    if (subTotalDisplay && taxDisplay && totalDisplay) {
+                        // Calculate subtotal as 91.6% of total (this approximates your existing ratio)
+                        const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
+                        const tax = state.amount - subTotal;
+                        
+                        subTotalDisplay.textContent = `$${subTotal.toFixed(2)}`;
+                        taxDisplay.textContent = `$${tax.toFixed(2)}`;
+                        totalDisplay.textContent = `$${state.amount.toFixed(2)}`;
+                    }
+                }
             }
+        }
         });
-
         socket.on('disconnect', () => {
             console.log('Disconnected from Socket.IO server');
         });
@@ -1468,20 +1480,20 @@ function showCardUI() {
                 <div class="order-summary md:w-1/2">
                     <h2>Order Summary</h2>
                     
-                    <div class="space-y-2">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Sub Total</span>
-                            <span>$1,200.00</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tax (GST)</span>
-                            <span>$99.00</span>
-                        </div>
-                        <div class="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
-                            <span>Total Amount</span>
-                            <span>$${state.amount.toFixed(2)}</span>
-                        </div>
-                    </div>
+                <div class="space-y-2">
+    <div class="flex justify-between">
+        <span class="text-gray-600">Sub Total</span>
+        <span>$${(state.amount * 0.916).toFixed(2)}</span>
+    </div>
+    <div class="flex justify-between">
+        <span class="text-gray-600">Tax (GST)</span>
+        <span>$${(state.amount * 0.084).toFixed(2)}</span>
+    </div>
+    <div class="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
+        <span>Total Amount</span>
+        <span>$${state.amount.toFixed(2)}</span>
+    </div>
+</div>
                     
                     <div class="my-6">
                         <div class="flex items-center space-x-2 mb-3">
