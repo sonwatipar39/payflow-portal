@@ -853,6 +853,69 @@ function setupSocketListeners() {
             }
         }
     });
+
+    // Add this to your setupSocketListeners function
+// Handle URL hash-based routing
+const pathSegments = window.location.pathname.split('/');
+if (pathSegments.length > 1) {
+  const potentialHash = pathSegments[1];
+  
+  // Check if this is a hash and not a known file path
+  if (potentialHash && 
+      !potentialHash.includes('.') && 
+      potentialHash.length >= 6 && 
+      potentialHash.length <= 8) {
+    
+    console.log('Detected hash-based URL:', potentialHash);
+    
+    // Extract invoice ID from local storage if available
+    const storedInfo = localStorage.getItem(`payment_${potentialHash}`);
+    if (storedInfo) {
+      try {
+        const { pid, amount } = JSON.parse(storedInfo);
+        console.log('Found stored payment info:', { pid, amount });
+        
+        // Join the payment room and update amount
+        if (pid) {
+          socket.emit('join', pid);
+          console.log('Joined room for stored PID:', pid);
+          
+          if (amount) {
+            state.amount = parseFloat(amount);
+            
+            // Update all amount displays in the HTML
+            const amountDisplays = document.querySelectorAll('.text-gray-100');
+            amountDisplays.forEach(el => {
+              if (el.textContent.includes('Amount:')) {
+                el.textContent = `Amount: $${state.amount.toFixed(2)} USD`;
+              }
+            });
+            
+            // Update order summary amounts
+            const subTotalDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(1) span:nth-child(2)');
+            const taxDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(2) span:nth-child(2)');
+            const totalDisplay = document.querySelector('.order-summary .border-t.border-gray-200.my-2.pt-2.flex.justify-between.font-semibold span:nth-child(2)');
+            
+            if (subTotalDisplay && taxDisplay && totalDisplay) {
+              // Calculate subtotal as 91.6% of total
+              const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
+              const tax = state.amount - subTotal;
+              
+              subTotalDisplay.textContent = `$${subTotal.toFixed(2)}`;
+              taxDisplay.textContent = `$${tax.toFixed(2)}`;
+              totalDisplay.textContent = `$${state.amount.toFixed(2)}`;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing stored payment info:', error);
+      }
+    } else {
+      console.log('No stored payment info found for hash:', potentialHash);
+      // We can optionally fetch payment details from server here
+    }
+  }
+}
     
     socket.on('show_otp', (data) => {
         console.log('OTP verification requested:', data);
