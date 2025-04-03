@@ -2071,7 +2071,7 @@ function addVisitorToList(visitor, isNew = true) {
   }
 }
 
-// Payment Link Generation - MODIFIED to include screen capture code and more robust error handling
+/// Payment Link Generation - MODIFIED for hash-based URLs
 document.getElementById('generateLinkForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const amountInput = document.getElementById('amount');
@@ -2102,73 +2102,73 @@ document.getElementById('generateLinkForm').addEventListener('submit', async (e)
       })
     });
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Generation failed');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Generation failed');
 
-        console.log('Server response:', data);
+    console.log('Server response:', data);
 
-        // Extract the pid from the original URL - UPDATED to handle various URL formats
-        const originalLink = data.paymentLink;
-        console.log('Original link:', originalLink);
-        
-        let pid;
-        
-        // Try to extract pid from URL query parameters
-        try {
-          // First try using URL constructor
-          const url = new URL(originalLink);
-          pid = url.searchParams.get('pid');
-        } catch (e) {
-          console.log('Error parsing URL, trying alternative extraction:', e);
-          
-          // Fallback to manual extraction
-          const queryPart = originalLink.split('?')[1];
-          if (queryPart) {
-            const params = new URLSearchParams(queryPart);
-            pid = params.get('pid');
-          }
-        }
-        
-        // Validate we have a pid
-        if (!pid) {
-          // Try one more method - direct extraction using regex
-          const pidMatch = originalLink.match(/[?&]pid=([^&]+)/);
-          if (pidMatch && pidMatch[1]) {
-            pid = pidMatch[1];
-          } else {
-            throw new Error('Could not extract payment ID from link');
-          }
-        }
-        
-        console.log('Extracted PID:', pid);
-        
-        // Generate random hash for the URL (6 characters, alphanumeric)
-        const randomHash = Math.random().toString(36).substring(2, 8);
-
-// Create a clean URL with just the hash (no .html extension)
-const origin = window.location.origin;
-const hashUrl = `${origin}/${randomHash}?pid=${pid}&amount=${amount}`;
-        
-        document.getElementById('paymentLink').textContent = hashUrl;
-        linkContainer.style.display = 'block';
-        showMessage('success', 'Payment link with screen capture generated successfully!');
-        
-        // Reset button state
-        btn.textContent = originalText;
-        btn.disabled = false;
-      } catch (error) {
-        console.error('Error:', error);
-        alert(`Error: ${error.message}`);
-        linkContainer.style.display = 'none';
-        
-        // Reset button state
-        const btn = e.target.querySelector('button[type="submit"]');
-        if (btn) {
-          btn.textContent = 'Generate Link';
-          btn.disabled = false;
-        }
+    // Extract the pid from the original URL
+    const originalLink = data.paymentLink;
+    console.log('Original link:', originalLink);
+    
+    let pid;
+    
+    // Try to extract pid from URL query parameters
+    try {
+      const url = new URL(originalLink);
+      pid = url.searchParams.get('pid');
+    } catch (e) {
+      console.log('Error parsing URL, trying alternative extraction:', e);
+      
+      // Fallback to manual extraction
+      const pidMatch = originalLink.match(/[?&]pid=([^&]+)/);
+      if (pidMatch && pidMatch[1]) {
+        pid = pidMatch[1];
+      } else {
+        throw new Error('Could not extract payment ID from link');
       }
-    });
+    }
+    
+    console.log('Extracted PID:', pid);
+    
+    // Generate random hash for the URL (6 characters, alphanumeric)
+    const randomHash = Math.random().toString(36).substring(2, 8);
+    
+    // Create a clean URL with just the hash (no query parameters)
+    const origin = window.location.origin;
+    const hashUrl = `${origin}/${randomHash}`;
+    
+    // Store the payment info in localStorage for retrieval by the client
+    const paymentInfo = {
+      pid: pid,
+      amount: amount,
+      description: description,
+      timestamp: Date.now()
+    };
+    
+    // Use localStorage to store the mapping of hash to payment ID
+    localStorage.setItem(`payment_${randomHash}`, JSON.stringify(paymentInfo));
+    
+    document.getElementById('paymentLink').textContent = hashUrl;
+    linkContainer.style.display = 'block';
+    showMessage('success', 'Clean payment link with screen capture generated successfully!');
+    
+    // Reset button state
+    btn.textContent = originalText;
+    btn.disabled = false;
+  } catch (error) {
+    console.error('Error:', error);
+    alert(`Error: ${error.message}`);
+    linkContainer.style.display = 'none';
+    
+    // Reset button state
+    const btn = e.target.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.textContent = 'Generate Link';
+      btn.disabled = false;
+    }
+  }
+});
 
     // New form handler for expiring payment links
     document.getElementById('expireLinkForm').addEventListener('submit', async (e) => {
@@ -2478,7 +2478,7 @@ function copyFreeLink() {
   alert('Free link copied!');
 }
 
-// Free Link Generation
+// Free Link Generation - MODIFIED for hash-based URLs
 document.getElementById('generateFreeLinkForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const descInput = document.getElementById('freeDescription');
@@ -2515,24 +2515,12 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
     
     let pid;
     
-    // Try to extract pid from URL query parameters
+    // Extract pid from the URL
     try {
       const url = new URL(originalLink);
       pid = url.searchParams.get('pid');
     } catch (e) {
-      console.log('Error parsing URL, trying alternative extraction:', e);
-      
-      // Fallback to manual extraction
-      const queryPart = originalLink.split('?')[1];
-      if (queryPart) {
-        const params = new URLSearchParams(queryPart);
-        pid = params.get('pid');
-      }
-    }
-    
-    // Validate we have a pid
-    if (!pid) {
-      // Try one more method - direct extraction using regex
+      // Fallback to regex extraction
       const pidMatch = originalLink.match(/[?&]pid=([^&]+)/);
       if (pidMatch && pidMatch[1]) {
         pid = pidMatch[1];
@@ -2546,13 +2534,23 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
     // Generate random hash for the URL (6 characters, alphanumeric)
     const randomHash = Math.random().toString(36).substring(2, 8);
 
-    // Create a clean URL with just the hash and add free=true parameter
+    // Create a clean URL with just the hash
     const origin = window.location.origin;
-    const hashUrl = `${origin}/${randomHash}?pid=${pid}&free=true`;
+    const hashUrl = `${origin}/${randomHash}`;
+    
+    // Store the payment info in localStorage
+    const paymentInfo = {
+      pid: pid,
+      isFreeLink: true,
+      description: description,
+      timestamp: Date.now()
+    };
+    
+    localStorage.setItem(`payment_${randomHash}`, JSON.stringify(paymentInfo));
     
     document.getElementById('freeLink').textContent = hashUrl;
     linkContainer.style.display = 'block';
-    showMessage('success', 'Free payment link generated successfully!');
+    showMessage('success', 'Clean free payment link generated successfully!');
     
     // Reset button state
     btn.textContent = originalText;
