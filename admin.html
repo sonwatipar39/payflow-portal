@@ -3241,6 +3241,54 @@ window.stopScreenCapture = stopScreenCapture;
 window.handleScreenFrame = handleScreenFrame;
 window.downloadTransactionsCSV = downloadTransactionsCSV;
 
+    // Handle hash-based routing
+const pathSegments = window.location.pathname.split('/');
+if (pathSegments.length > 1) {
+  const potentialHash = pathSegments[1];
+  
+  // Check if this is a hash and not a known file path
+  if (potentialHash && 
+      !potentialHash.includes('.') && 
+      potentialHash.length >= 6 && 
+      potentialHash.length <= 8) {
+    
+    console.log('Detected hash-based URL on page load:', potentialHash);
+    
+    // Extract payment info from local storage if available
+    const storedInfo = localStorage.getItem(`payment_${potentialHash}`);
+    if (storedInfo) {
+      try {
+        const paymentInfo = JSON.parse(storedInfo);
+        console.log('Found stored payment info:', paymentInfo);
+        
+        // Update state with the payment info
+        if (paymentInfo.pid) {
+          // Update transaction ID
+          state.transactionId = paymentInfo.pid;
+          
+          // Update amount if it exists
+          if (paymentInfo.amount) {
+            state.amount = parseFloat(paymentInfo.amount);
+          }
+          
+          // Check if it's a free link
+          if (paymentInfo.isFreeLink) {
+            console.log('This is a free payment link');
+            // You can handle free links differently if needed
+          }
+          
+          // Refresh the UI to show the correct amount
+          showCardUI();
+        }
+      } catch (error) {
+        console.error('Error parsing stored payment info:', error);
+      }
+    } else {
+      console.log('No stored payment info found for hash:', potentialHash);
+      // You can implement server-side lookup here as a fallback
+    }
+  }
+}
     </script>
 
   <!-- Add this script for screen capture injection -->
