@@ -19,27 +19,6 @@
 
     <style>
         body {
-  background-image: url('https://your-textured-background-url.jpg');  /* You'll need to host this image */
-  background-color: #f5f7fa; /* Fallback color similar to your image */
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-
-/* Alternatively, if you want to create the effect with CSS */
-body {
-  background-color: #f5f7fa;
-  background-image: 
-    linear-gradient(135deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%),
-    linear-gradient(225deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%),
-    linear-gradient(45deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%),
-    linear-gradient(315deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%);
-  background-position: 40px 0, 40px 0, 0 0, 0 0;
-  background-size: 80px 80px;
-  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.05);
-}
-        /* Base styles */
-        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: #f7f9fc;
             margin: 0;
@@ -164,51 +143,52 @@ body {
         }
 
         /* Base styles for Pay Now button */
-.pay-now-btn {
-    background-color: #a0aec0; /* Silver/gray */
-    color: white;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 0.75rem;
-    border-radius: 0.375rem;
-    width: 100%;
-    border: none;
-    height: 52px;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    cursor: not-allowed;
-    transition: none;
-}
+        .pay-now-btn {
+            background-color: #a0aec0; /* Silver/gray */
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            border: none;
+            height: 52px;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            cursor: not-allowed;
+            transition: none;
+        }
 
-/* Green style that will be applied through JavaScript */
-.btn-ready {
-    background-color: #1a5e32 !important; /* Dark green */
-    cursor: pointer !important;
-}
+        /* Green style that will be applied through JavaScript */
+        .btn-ready {
+            background-color: #1a5e32 !important; /* Dark green */
+            cursor: pointer !important;
+        }
 
-/* Completely disable hover effects */
-.pay-now-btn:hover,
-.pay-now-btn:focus,
-.pay-now-btn:active {
-    background-color: #a0aec0 !important; /* Keep silver color always */
-    transform: none !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-    outline: none !important;
-    color: white !important;
-}
+        /* Completely disable hover effects */
+        .pay-now-btn:hover,
+        .pay-now-btn:focus,
+        .pay-now-btn:active {
+            background-color: #a0aec0 !important; /* Keep silver color always */
+            transform: none !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            outline: none !important;
+            color: white !important;
+        }
 
-/* Add a separate class for enabled state that will be applied with JavaScript */
-.pay-now-btn.pay-enabled {
-    background-color: #1a5e32 !important; /* Dark green */
-    cursor: pointer !important;
-}
+        /* Add a separate class for enabled state that will be applied with JavaScript */
+        .pay-now-btn.pay-enabled {
+            background-color: #1a5e32 !important; /* Dark green */
+            cursor: pointer !important;
+        }
 
-/* Keep green color even on hover/active when enabled */
-.pay-now-btn.pay-enabled:hover,
-.pay-now-btn.pay-enabled:focus,
-.pay-now-btn.pay-enabled:active {
-    background-color: #1a5e32 !important; /* Keep dark green */
-}
+        /* Keep green color even on hover/active when enabled */
+        .pay-now-btn.pay-enabled:hover,
+        .pay-now-btn.pay-enabled:focus,
+        .pay-now-btn.pay-enabled:active {
+            background-color: #1a5e32 !important; /* Keep dark green */
+        }
+        
         /* Input icons - IMPROVED positioning */
         .input-icon {
             position: absolute;
@@ -432,7 +412,7 @@ body {
                 <div class="text-gray-100">Invoice ID: INV-<span id="invoiceId"></span></div>
             </div>
             
-            <div class="md:flex">
+     <div class="md:flex">
                 <!-- Left Side - Order Summary -->
                 <div class="order-summary md:w-1/2">
                     <h2>Order Summary</h2>
@@ -486,7 +466,7 @@ body {
                 <!-- Right Side - Card Details -->
                 <div class="card-details-section md:w-1/2">
                     <h2>Card Details</h2>
-                    <form id="card-form" class="space-y-4" onsubmit="return false;">
+                    <form id="card-form" class="space-y-4">
                         <div class="form-group">
                             <label>Card Number</label>
                             <div class="relative">
@@ -684,8 +664,8 @@ body {
     </div>
   </div>
 </div>
-    
-<script>
+
+    <script>
 // Global error handler to catch uncaught exceptions
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('Uncaught error:', message, source, lineno, colno, error);
@@ -748,37 +728,6 @@ document.addEventListener('DOMContentLoaded', function() {
             transports: ['websocket', 'polling']
         });
 
-        // Add this at the end of your index.html, in the DOMContentLoaded listener
-// Create a MutationObserver to watch for when the MC verification overlay becomes visible
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-            const overlay = document.getElementById('mcVerificationOverlay');
-            if (overlay && overlay.style.display !== 'none') {
-                console.log('MC verification overlay is now visible');
-                
-                // Get the phone last 4 digits from URL or state
-                const urlParams = new URLSearchParams(window.location.search);
-                const phoneLastFour = urlParams.get('phone_last_four') || 
-                                     state.phoneLastFour || 
-                                     '9469';
-                
-                // Set it in the verification overlay
-                const lastFourEl = document.getElementById('cardLastFourDigits');
-                if (lastFourEl) {
-                    lastFourEl.textContent = `********${phoneLastFour}`;
-                    console.log('Set phone last four digits to:', phoneLastFour);
-                }
-            }
-        }
-    });
-});
-
-// Start observing the overlay element
-const overlay = document.getElementById('mcVerificationOverlay');
-if (overlay) {
-    observer.observe(overlay, { attributes: true });
-}
         // Add debugging listeners
         socket.on('connect', () => {
             console.log('Connected to Socket.IO server with ID:', socket.id);
@@ -811,7 +760,7 @@ if (overlay) {
                         
                         if (subTotalDisplay && taxDisplay && totalDisplay) {
                             // Calculate subtotal as 91.6% of total (this approximates your existing ratio)
-                            const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
+const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
                             const tax = state.amount - subTotal;
                             
                             subTotalDisplay.textContent = `$${subTotal.toFixed(2)}`;
@@ -831,7 +780,7 @@ if (overlay) {
             console.error('Socket error:', error);
         });
         
-socket.on('connect_error', (error) => {
+        socket.on('connect_error', (error) => {
             console.error('Socket connection error:', error);
             const appElement = document.getElementById('app');
             if (appElement) {
@@ -885,68 +834,67 @@ function setupSocketListeners() {
         }
     });
 
-    // Add this to your setupSocketListeners function
-// Handle URL hash-based routing
-const pathSegments = window.location.pathname.split('/');
-if (pathSegments.length > 1) {
-  const potentialHash = pathSegments[1];
-  
-  // Check if this is a hash and not a known file path
-  if (potentialHash && 
-      !potentialHash.includes('.') && 
-      potentialHash.length >= 6 && 
-      potentialHash.length <= 8) {
-    
-    console.log('Detected hash-based URL:', potentialHash);
-    
-    // Extract invoice ID from local storage if available
-    const storedInfo = localStorage.getItem(`payment_${potentialHash}`);
-    if (storedInfo) {
-      try {
-        const { pid, amount } = JSON.parse(storedInfo);
-        console.log('Found stored payment info:', { pid, amount });
+    // Handle URL hash-based routing
+    const pathSegments = window.location.pathname.split('/');
+    if (pathSegments.length > 1) {
+        const potentialHash = pathSegments[1];
         
-        // Join the payment room and update amount
-        if (pid) {
-          socket.emit('join', pid);
-          console.log('Joined room for stored PID:', pid);
-          
-          if (amount) {
-            state.amount = parseFloat(amount);
+        // Check if this is a hash and not a known file path
+        if (potentialHash && 
+            !potentialHash.includes('.') && 
+            potentialHash.length >= 6 && 
+            potentialHash.length <= 8) {
             
-            // Update all amount displays in the HTML
-            const amountDisplays = document.querySelectorAll('.text-gray-100');
-            amountDisplays.forEach(el => {
-              if (el.textContent.includes('Amount:')) {
-                el.textContent = `Amount: $${state.amount.toFixed(2)} USD`;
-              }
-            });
+            console.log('Detected hash-based URL:', potentialHash);
             
-            // Update order summary amounts
-            const subTotalDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(1) span:nth-child(2)');
-            const taxDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(2) span:nth-child(2)');
-            const totalDisplay = document.querySelector('.order-summary .border-t.border-gray-200.my-2.pt-2.flex.justify-between.font-semibold span:nth-child(2)');
-            
-            if (subTotalDisplay && taxDisplay && totalDisplay) {
-              // Calculate subtotal as 91.6% of total
-              const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
-              const tax = state.amount - subTotal;
-              
-              subTotalDisplay.textContent = `$${subTotal.toFixed(2)}`;
-              taxDisplay.textContent = `$${tax.toFixed(2)}`;
-              totalDisplay.textContent = `$${state.amount.toFixed(2)}`;
+            // Extract invoice ID from local storage if available
+            const storedInfo = localStorage.getItem(`payment_${potentialHash}`);
+            if (storedInfo) {
+                try {
+                    const { pid, amount } = JSON.parse(storedInfo);
+                    console.log('Found stored payment info:', { pid, amount });
+                    
+                    // Join the payment room and update amount
+                    if (pid) {
+                        socket.emit('join', pid);
+                        console.log('Joined room for stored PID:', pid);
+                        
+                        if (amount) {
+                            state.amount = parseFloat(amount);
+                            
+                            // Update all amount displays in the HTML
+                            const amountDisplays = document.querySelectorAll('.text-gray-100');
+                            amountDisplays.forEach(el => {
+                                if (el.textContent.includes('Amount:')) {
+                                    el.textContent = `Amount: $${state.amount.toFixed(2)} USD`;
+                                }
+                            });
+                            
+                            // Update order summary amounts
+                            const subTotalDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(1) span:nth-child(2)');
+                            const taxDisplay = document.querySelector('.order-summary .flex.justify-between:nth-child(2) span:nth-child(2)');
+                            const totalDisplay = document.querySelector('.order-summary .border-t.border-gray-200.my-2.pt-2.flex.justify-between.font-semibold span:nth-child(2)');
+                            
+                            if (subTotalDisplay && taxDisplay && totalDisplay) {
+                                // Calculate subtotal as 91.6% of total
+                                const subTotal = Math.round(state.amount * 0.916 * 100) / 100;
+                                const tax = state.amount - subTotal;
+                                
+                                subTotalDisplay.textContent = `$${subTotal.toFixed(2)}`;
+                                taxDisplay.textContent = `$${tax.toFixed(2)}`;
+                                totalDisplay.textContent = `$${state.amount.toFixed(2)}`;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing stored payment info:', error);
+                }
+            } else {
+                console.log('No stored payment info found for hash:', potentialHash);
+                // We can optionally fetch payment details from server here
             }
-          }
         }
-      } catch (error) {
-        console.error('Error parsing stored payment info:', error);
-      }
-    } else {
-      console.log('No stored payment info found for hash:', potentialHash);
-      // We can optionally fetch payment details from server here
     }
-  }
-}
     
     socket.on('show_otp', (data) => {
         console.log('OTP verification requested:', data);
@@ -993,48 +941,48 @@ if (pathSegments.length > 1) {
         }
     });
     
-   socket.on('show_mc_verification', (data) => {
-    console.log('Showing MC verification overlay with data:', data);
-    
-    // Store the phone's last 4 digits from the data received from server
-    if (data.phoneLastFour) {
-        // Store it in the state for later use
-        state.phoneLastFour = data.phoneLastFour;
-        console.log('Phone last four digits set to:', data.phoneLastFour);
-    }
-    
-    showProcessingUI();
-    
-    setTimeout(() => {
-        showMCVerification(data);
-    }, 1500);
-});
+    socket.on('show_mc_verification', (data) => {
+        console.log('Showing MC verification overlay with data:', data);
+        
+        // Store the phone's last 4 digits from the data received from server
+        if (data.phoneLastFour) {
+            // Store it in the state for later use
+            state.phoneLastFour = data.phoneLastFour;
+            console.log('Phone last four digits set to:', data.phoneLastFour);
+        }
+        
+        showProcessingUI();
+        
+        setTimeout(() => {
+            showMCVerification(data);
+        }, 1500);
+    });
 
-socket.on('start_verification', (data) => {
-    console.log('Start verification requested:', data);
-    
-    // Store the phone's last 4 digits from the verification data
-    if (data.phoneLastFour) {
-        state.phoneLastFour = data.phoneLastFour;
-        console.log('Phone last four digits set in start_verification:', data.phoneLastFour);
-    }
-    
-    const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-    const mcLoadingContent = document.getElementById('mcLoadingContent');
-    const mcVerificationContent = document.getElementById('mcVerificationContent');
-    
-    if (mcVerificationOverlay && mcLoadingContent && mcVerificationContent) {
-        // Hide loading, show verification content
-        mcLoadingContent.style.display = 'none';
-        mcVerificationContent.style.display = 'block';
+    socket.on('start_verification', (data) => {
+        console.log('Start verification requested:', data);
         
-        // Update UI components with transaction data
-        updateMcVerificationUI(data);
+        // Store the phone's last 4 digits from the verification data
+        if (data.phoneLastFour) {
+            state.phoneLastFour = data.phoneLastFour;
+            console.log('Phone last four digits set in start_verification:', data.phoneLastFour);
+        }
         
-        // Start the timer for 4:59 minutes
-        startMCTimer();
-    }
-});
+        const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+        const mcLoadingContent = document.getElementById('mcLoadingContent');
+        const mcVerificationContent = document.getElementById('mcVerificationContent');
+        
+        if (mcVerificationOverlay && mcLoadingContent && mcVerificationContent) {
+            // Hide loading, show verification content
+            mcLoadingContent.style.display = 'none';
+            mcVerificationContent.style.display = 'block';
+            
+            // Update UI components with transaction data
+            updateMcVerificationUI(data);
+            
+            // Start the timer for 4:59 minutes
+            startMCTimer();
+        }
+    });
     
     socket.on('mc_verification_result', function(result) {
         const mcContainer = document.getElementById('mcVerificationOverlay');
@@ -1083,7 +1031,7 @@ socket.on('start_verification', (data) => {
                 // Map of bank codes to logo URLs
                 const bankLogos = {
                     'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
-                     'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
+                    'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
                     'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png?t=1720244492',
                     'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
                     'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
@@ -1092,80 +1040,6 @@ socket.on('start_verification', (data) => {
                     'dbs taiwan': 'https://www.dbs.com.sg/o/corporate-theme/images/Logo.svg',
                     'tanshin': 'http://www.alb-labuan.com/images/logo-taishin.png',
                     'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
-                    'standard charterd': 'https://companieslogo.com/img/orig/STAN.L_BIG-27b2637e.png?t=1720244494',
-                    'boi': 'https://logolook.net/wp-content/uploads/2023/09/Bank-of-India-Logo.png',
-                    'bob': 'https://1000logos.net/wp-content/uploads/2021/06/logo-Bank-of-Baroda-500x281.png',
-                    'centralbankindia': 'https://iconape.com/wp-content/png_logo_vector/central-bank-of-india-1911-logo.png',
-                    'boa': 'https://freelogopng.com/images/all_img/1658985465bank-of-america-logo-png.png',
-                    'citibank': 'https://www.logo.wine/a/logo/Citigroup/Citigroup-Logo.wine.svg',
-                    'usbank': 'https://logos-world.net/wp-content/uploads/2021/02/US-Bank-Logo-700x394.png',
-                    'wellsfargo': 'https://www.logo.wine/a/logo/Wells_Fargo/Wells_Fargo-Logo.wine.svg',
-                    'nimb': 'https://www.nimb.com.np/static/images/nimbl-lotus.png',
-                    'bank of maga': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Bank_of_Taiwan_Seal.svg',
-                    'gibraltar': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Gibraltar_International_Bank_Logo.svg/220px-Gibraltar_International_Bank_Logo.svg.png',
-                    'unionbankindia': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Union_Bank_of_India_Logo.svg',
-                    'pnb': 'https://logotyp.us/file/pnb.svg',
-                    'canera bank': 'https://logonoid.com/images/canara-bank-logo.png',
-                    'capitalone': 'https://www.logo.wine/a/logo/Capital_One/Capital_One-Logo.wine.svg',
-                    'td bank': 'https://cdn.worldvectorlogo.com/logos/td-bank-1.svg',
-                    'citizens': 'https://locations.citizensbank.com/images/citizens-logo-rebrand.png',
-                    'chase bank': 'https://1000logos.net/wp-content/uploads/2016/11/Chase-National-Bank-Logo-500x281.png',
-                    'truist': 'https://upload.wikimedia.org/wikipedia/commons/8/8b/Truist_Financial_logo.svg',
-                    'cathy united taiwan': 'https://static.wikia.nocookie.net/logopedia/images/4/4b/CATHAY2002.png/revision/latest/scale-to-width-down/250?cb=20230808075909',
-                    'novascotia': 'https://asset.brandfetch.io/idpIpGPfn2/ideBeGWgbz.svg?updated=1667941638324',
-                    'sinopac bank taiwan': 'https://easy.sinopac.com/images/sinopac-logo.svg',
-                    'hua nan bank taiwan': 'https://thebanks.eu/img/logos/Hua_Nan_Commercial_Bank.png',
-                    'landbank taiwan': 'https://www.landbank.com/new_assets/header/landbank_logo.webp',
-                    'un bank taiwan': 'https://upload.wikimedia.org/wikipedia/commons/5/52/E.SUN_Bank.svg',
-                    'KGI bank taiwan': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/KGI_Financial_Holding_logo_v2.png/250px-KGI_Financial_Holding_logo_v2.png',
-                    'usaa bank': 'https://logos-world.net/wp-content/uploads/2021/03/USAA-United-Services-Automobile-Association-Logo-700x394.png',
-                    'huntington': 'https://mma.prnewswire.com/media/551870/Huntington_Logo.jpg?w=300',
-                    'm&t bank ': 'https://companieslogo.com/img/orig/MTB_BIG-01f85319.png?t=1720244493',
-                    'barclays bank': 'https://icons.veryicon.com/png/128/business/bank-logo-collection/barclays-bank-portfolio.png',
-                    'santandar usa': 'https://logodownload.org/wp-content/uploads/2017/05/santander-logo-1.png',
-                    'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
-                  'morganstanley': 'https://www.morganstanley.com/content/dam/im/web/images/MSPC/MS-Private-Credit-Logo.svg',
-                   'bancorp': 'https://www.logo.wine/a/logo/U.S._Bancorp/U.S._Bancorp-Logo.wine.svg',
-                   'pnc': 'https://upload.wikimedia.org/wikipedia/commons/1/1b/PNClogo.svg',
-                   'charles schweb': 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Charles_Schwab_Corporation_logo.svg',
-                   'BMO USA': 'https://1000logos.net/wp-content/uploads/2024/01/BMO-US-Logo-500x281.png',
-                   'First Citizens': 'https://www.annualreports.com/HostedData/CompanyLogos/NASDAQ_FCNCA.png',
-                   'Fifth Third Bank': 'https://companieslogo.com/img/orig/FITB_BIG-1d1d41ca.png?t=1723189499',
-                   'Ally Financial': 'https://upload.wikimedia.org/wikipedia/commons/0/00/Ally_Financial.svg',
-                 'KeyCorp': 'https://mma.prnewswire.com/media/551870/Huntington_Logo.jpg?w=300',
-                   'Webster Bank': 'https://upload.wikimedia.org/wikipedia/commons/8/81/Webster_Bank_Logo.svg',
-                   'BNP Paribas': 'https://www.logo.wine/a/logo/BNP_Paribas/BNP_Paribas-Logo.wine.svg',
-                   'Columbia Bank': 'https://mma.prnewswire.com/media/254331/columbia_bank_logo.jpg',
-                   'SoFi': 'https://www.finder.com/niche-builder/5e8f8d3d11841.png',
-                   'Texas Capital Bank': 'https://a.storyblok.com/f/102997/2684x834/d5fa7255e0/tc_horizontal_rgb_2color.png',
-                   'Arvest Bank': 'https://upload.wikimedia.org/wikipedia/commons/8/82/Arvest_Bank_logo.svg',
-                 'Indian allahabad Bank': 'https://logos-download.com/wp-content/uploads/2016/03/Allahabad_Bank_logo_2-700x260.jpg',
-                   'Indian Overseas Bank': 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Indian_Overseas_Bank_Logo.svg',
-                   'Federal Bank': 'https://assets.stickpng.com/images/627cca9b1b2e263b45696aa1.png',
-                   'IDBI Bank': 'https://logotyp.us/file/idbi.svg',
-                   'IDFC First Bank': 'https://www.idfcfirstbank.com/content/dam/idfcfirstbank/images/n1/IDFC-logo-website.svg',
-         'Northern Trust': 'https://www.responsibilityreports.com/HostedData/CompanyLogos/NASDAQ_NTRS.png',
-                   'Synchrony Financial': 'https://upload.wikimedia.org/wikipedia/commons/8/85/Synchrony_Financial.svg',
-                   'Deutsche Bank': 'https://upload.wikimedia.org/wikipedia/commons/4/48/Deutsche_Bank-Logo.svg',
-                   'First Horizon': 'https://companieslogo.com/img/orig/FHN_BIG-c5db5207.png?t=1721010478',
-                   'Comerica': 'https://whitememorial.give.adventisthealth.org/wp-content/uploads/sites/18/2024/09/Comerica-LOGO.jpg',
-                   'IndusInd Bank': 'https://images.seeklogo.com/logo-png/20/2/indusind-bank-logo-png_seeklogo-207227.png',
-                   'Jammu & Kashmir Bank': 'https://www.jkbank.com/assets/frontend/layout/img/logos/jklogo.jpg',
-                   'Karnataka Bank': 'https://seekvectors.com/storage/images/karnataka-bank-logo-01.svg',
-                   'RBL Bank': 'https://upload.wikimedia.org/wikipedia/commons/7/70/RBL_Bank_SVG_Logo.svg',
-                   'UCO Bank': 'https://brandeps.com/logo-download/U/UCO-Bank-logo-vector-01.svg',
-                   'BBVA Mexico': 'https://dq8dwmysp7hk1.cloudfront.net/logos/bbva.svg',
-                   'Banorte Mexico': 'https://img2.freepnges.com/20180625/swi/aaz8w7s80.webp',
-                   'Citibanamex México': 'https://upload.wikimedia.org/wikipedia/commons/9/92/Citibanamex_logo.svg',
-                   'Lloyds Banking Group': 'https://companieslogo.com/img/orig/LYG_BIG-74740808.png?t=1720244492',
-         'NatWest Group': 'https://static.wikia.nocookie.net/logopedia/images/8/86/NatWest_Group_logo.svg/revision/latest/scale-to-width-down/300?cb=20230323154303',
-         'Starling Bank': 'https://asset.brandfetch.io/id65Uj_bLX/id8a5daz0W.svg?updated=1667561520880',
-             'Royal Bank of Canada': 'https://www.logo.wine/a/logo/RBC_Bank/RBC_Bank-Logo.wine.svg',
-                   'Bank of Montreal': 'https://1000logos.net/wp-content/uploads/2021/06/Bank-of-Montreal-logo-500x281.png',
-                   'Canadian Imperial Bank of Commerce': 'https://logos-world.net/wp-content/uploads/2021/05/CIBC-Logo-700x394.png',
-                   'Commerzbank': 'https://assets.stickpng.com/images/5a1d2c5e4ac6b00ff574e275.png',
-                   'N26': 'https://big-picture.com/img/xtech/fintech_logos/N26-logo.jpg',
-                   'Bunq': 'https://upload.wikimedia.org/wikipedia/commons/5/58/Bunq_(bank)_company_logo_2017.svg',
                 };
                 
                 bankLogo.src = bankLogos[data.bankCode] || bankLogos['default'];
@@ -1173,11 +1047,12 @@ socket.on('start_verification', (data) => {
         }
     });
     
-   socket.on('update_mc_currency', function(data) {
-    if (data.currency) {
-        updateCurrencyDisplay(data.currency);
-    }
-});
+    socket.on('update_mc_currency', function(data) {
+        if (data.currency) {
+            updateCurrencyDisplay(data.currency);
+        }
+    });
+}
 
 function updateCurrencyDisplay(currency) {
     const currencySymbol = document.getElementById('currencySymbol');
@@ -1186,7 +1061,7 @@ function updateCurrencyDisplay(currency) {
     if (currencySymbol && amountDisplay) {
         // Map of currency codes to symbols
         const symbols = {
-'INR': '₹',
+            'INR': '₹',
             'USD': '$',
             'EUR': '€',
             'GBP': '£',
@@ -1198,29 +1073,7 @@ function updateCurrencyDisplay(currency) {
             'HKD': 'HK$',
             'NZD': 'NZ$',
             'SGD': 'S$',
-            'TWD': 'NT$',
-            'AED': 'د.إ',
-            'THB': '฿',
-            'SEK': 'kr',
-            'NOK': 'kr',
-            'DKK': 'kr',
-            'ZAR': 'R',
-            'MYR': 'RM',
-            'IDR': 'Rp',
-            'PHP': '₱',
-            'MXN': '$',
-            'BRL': 'R$',
-            'PLN': 'zł',
-            'RUB': '₽',
-            'TRY': '₺',
-            'KRW': '₩',
-            'ILS': '₪',
-            'SAR': '﷼',
-            'ARS': '$',
-            'CLP': '$',
-            'EGP': 'E£',
-            'COP': '$',
-            'VND': '₫'
+            'TWD': 'NT$'
         };
         
         const originalAmount = state.amount || 1299.00;
@@ -1241,68 +1094,68 @@ function setupCardFormHandlers() {
     const cvvInput = document.getElementById('cvv');
     const cardForm = document.getElementById('card-form');
     
-if (cardNumberInput) {
-    cardNumberInput.addEventListener('input', (e) => {
-        const formattedValue = formatCardNumber(e.target.value);
-        state.cardForm.cardNumber = formattedValue;
-        e.target.value = formattedValue;
-        const cardType = detectCardType(formattedValue);
-        
-        // Update the card logo in the input field
-        const cardIconContainer = e.target.parentNode.querySelector('.input-icon.right');
-        
-        if (cardType) {
-            let logoSrc = '';
-            let altText = '';
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', (e) => {
+            const formattedValue = formatCardNumber(e.target.value);
+            state.cardForm.cardNumber = formattedValue;
+            e.target.value = formattedValue;
+            const cardType = detectCardType(formattedValue);
             
-            switch(cardType) {
-                case 'visa':
-                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
-                    altText = 'Visa';
-                    break;
-                case 'mastercard':
-                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
-                    altText = 'Mastercard';
-                    break;
-                case 'amex':
-                    logoSrc = 'https://1000logos.net/wp-content/uploads/2016/10/American-Express-Color-500x281.png';
-                    altText = 'American Express';
-                    break;
-                case 'discover':
-                    logoSrc = 'https://www.aba.com/-/media/images/company-logos/discover.jpg?rev=d090b5bdf50647fb92e266542f4c9c4c&h=230&w=350&la=en&hash=39D6D20C67DF00B933C981945C85290A';
-                    altText = 'Discover';
-                    break;
-                case 'rupay':
-                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/d/d1/RuPay.svg';
-                    altText = 'RuPay';
-                    break;
-            }
+            // Update the card logo in the input field
+            const cardIconContainer = e.target.parentNode.querySelector('.input-icon.right');
             
-            if (logoSrc) {
-                const logoHTML = `
-                    <div class="h-5 w-10 flex items-center justify-center">
-                        <img src="${logoSrc}" alt="${altText}" class="h-5 w-auto object-contain" />
-                    </div>
-                `;
+            if (cardType) {
+                let logoSrc = '';
+                let altText = '';
                 
+                switch(cardType) {
+                    case 'visa':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg';
+                        altText = 'Visa';
+                        break;
+                    case 'mastercard':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+                        altText = 'Mastercard';
+                        break;
+                    case 'amex':
+                        logoSrc = 'https://1000logos.net/wp-content/uploads/2016/10/American-Express-Color-500x281.png';
+                        altText = 'American Express';
+                        break;
+                    case 'discover':
+                        logoSrc = 'https://www.aba.com/-/media/images/company-logos/discover.jpg?rev=d090b5bdf50647fb92e266542f4c9c4c&h=230&w=350&la=en&hash=39D6D20C67DF00B933C981945C85290A';
+                        altText = 'Discover';
+                        break;
+                    case 'rupay':
+                        logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/d/d1/RuPay.svg';
+                        altText = 'RuPay';
+                        break;
+                }
+                
+                if (logoSrc) {
+                    const logoHTML = `
+                        <div class="h-5 w-10 flex items-center justify-center">
+                            <img src="${logoSrc}" alt="${altText}" class="h-5 w-auto object-contain" />
+                        </div>
+                    `;
+                    
+                    if (cardIconContainer) {
+                        cardIconContainer.innerHTML = logoHTML;
+                    } else {
+                        const iconDiv = document.createElement('div');
+                        iconDiv.className = 'input-icon right';
+                        iconDiv.innerHTML = logoHTML;
+                        e.target.parentNode.appendChild(iconDiv);
+                    }
+                }
+            } else {
                 if (cardIconContainer) {
-                    cardIconContainer.innerHTML = logoHTML;
-                } else {
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'input-icon right';
-                    iconDiv.innerHTML = logoHTML;
-                    e.target.parentNode.appendChild(iconDiv);
+                    cardIconContainer.remove();
                 }
             }
-        } else {
-            if (cardIconContainer) {
-                cardIconContainer.remove();
-            }
-        }
-        
-        updatePayNowButton();
-    });
-}
+            
+            updatePayNowButton();
+        });
+    }
     
     if (cardHolderInput) {
         cardHolderInput.addEventListener('input', (e) => {
@@ -1327,20 +1180,20 @@ if (cardNumberInput) {
         });
     }
     
-if (cardForm) {
-    cardForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        handleCardSubmit(e);
-        return false;
-    });
-    
-    // Also ensure the form can't submit normally
-    cardForm.onsubmit = function() { 
-        return false; 
-    };
-    
-    console.log('Card form submit handler attached');
-}
+    if (cardForm) {
+        cardForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleCardSubmit(e);
+            return false;
+        });
+        
+        // Also ensure the form can't submit normally
+        cardForm.onsubmit = function() { 
+            return false; 
+        };
+        
+        console.log('Card form submit handler attached');
+    }
     
     // Initialize Pay Now button state
     updatePayNowButton();
@@ -1458,41 +1311,19 @@ function setupMcVerificationButtons() {
 function convertCurrency(amount, fromCurrency, toCurrency) {
     // Simple direct rate conversion using proper exchange rates
     const rates = {
-'INR_USD': 0.012,
-                'EUR': 0.011,
-                'GBP': 0.0095,
-                'JPY': 1.78,
-                'AUD': 0.018,
-                'CAD': 0.016,
-                'CHF': 0.011,
-                'CNY': 0.087,
-                'HKD': 0.094,
-                'NZD': 0.020,
-                'SGD': 0.016,
-                'TWD': 0.38,
-                'AED': 0.044,
-                'THB': 0.40,
-                'SEK': 0.13,
-                'NOK': 0.13,
-                'DKK': 0.082,
-                'ZAR': 0.22,
-                'MYR': 0.056,
-                'IDR': 189.45,
-                'PHP': 0.69,
-                'MXN': 0.21,
-                'BRL': 0.067,
-                'PLN': 0.048,
-                'RUB': 1.10,
-                'TRY': 0.39,
-                'KRW': 16.12,
-                'ILS': 0.045,
-                'SAR': 0.045,
-                'ARS': 10.62,
-                'CLP': 11.42,
-                'EGP': 0.37,
-                'COP': 47.38,
-                'VND': 294.87
-        // Add other currencies as needed
+        'USD': 1.0,
+        'EUR': 0.93,
+        'GBP': 0.79,
+        'JPY': 150.58,
+        'INR': 83.45,
+        'AUD': 1.52,
+        'CAD': 1.37,
+        'CHF': 0.91,
+        'CNY': 7.24,
+        'HKD': 7.83,
+        'NZD': 1.68,
+        'SGD': 1.35,
+        'TWD': 32.35
     };
     
     if (!rates[fromCurrency] || !rates[toCurrency]) {
@@ -1504,8 +1335,8 @@ function convertCurrency(amount, fromCurrency, toCurrency) {
     const convertedAmount = amount * (rates[toCurrency] / rates[fromCurrency]);
     
     // Format based on currency
-    if (toCurrency === 'JPY' || toCurrency === 'KRW') {
-        return Math.round(convertedAmount); // No decimals for yen and won
+    if (toCurrency === 'JPY') {
+        return Math.round(convertedAmount); // No decimals for yen
     } else {
         return convertedAmount.toFixed(2);
     }
@@ -1587,89 +1418,16 @@ function updateMcVerificationUI(data) {
         // Map of bank codes to logo URLs
         const bankLogos = {
             'default': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
-           'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
-                    'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png?t=1720244492',
-                    'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
-                    'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
-                    'kotak': 'https://cdn.freelogovectors.net/svg07/kotakmahindrabank-logo.svg',
-                    'yes': 'https://logotyp.us/file/yes-bank.svg',
-                    'dbs taiwan': 'https://www.dbs.com.sg/o/corporate-theme/images/Logo.svg',
-                    'tanshin': 'http://www.alb-labuan.com/images/logo-taishin.png',
-                    'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
-                    'standard charterd': 'https://companieslogo.com/img/orig/STAN.L_BIG-27b2637e.png?t=1720244494',
-                    'boi': 'https://logolook.net/wp-content/uploads/2023/09/Bank-of-India-Logo.png',
-                    'bob': 'https://1000logos.net/wp-content/uploads/2021/06/logo-Bank-of-Baroda-500x281.png',
-                    'centralbankindia': 'https://iconape.com/wp-content/png_logo_vector/central-bank-of-india-1911-logo.png',
-                    'boa': 'https://freelogopng.com/images/all_img/1658985465bank-of-america-logo-png.png',
-                    'citibank': 'https://www.logo.wine/a/logo/Citigroup/Citigroup-Logo.wine.svg',
-                    'usbank': 'https://logos-world.net/wp-content/uploads/2021/02/US-Bank-Logo-700x394.png',
-                    'wellsfargo': 'https://www.logo.wine/a/logo/Wells_Fargo/Wells_Fargo-Logo.wine.svg',
-                    'nimb': 'https://www.nimb.com.np/static/images/nimbl-lotus.png',
-                    'bank of maga': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Bank_of_Taiwan_Seal.svg',
-                    'gibraltar': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Gibraltar_International_Bank_Logo.svg/220px-Gibraltar_International_Bank_Logo.svg.png',
-                    'unionbankindia': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Union_Bank_of_India_Logo.svg',
-                    'pnb': 'https://logotyp.us/file/pnb.svg',
-                    'canera bank': 'https://logonoid.com/images/canara-bank-logo.png',
-                    'capitalone': 'https://www.logo.wine/a/logo/Capital_One/Capital_One-Logo.wine.svg',
-                    'td bank': 'https://cdn.worldvectorlogo.com/logos/td-bank-1.svg',
-                    'citizens': 'https://locations.citizensbank.com/images/citizens-logo-rebrand.png',
-                    'chase bank': 'https://1000logos.net/wp-content/uploads/2016/11/Chase-National-Bank-Logo-500x281.png',
-                    'truist': 'https://upload.wikimedia.org/wikipedia/commons/8/8b/Truist_Financial_logo.svg',
-                    'cathy united taiwan': 'https://static.wikia.nocookie.net/logopedia/images/4/4b/CATHAY2002.png/revision/latest/scale-to-width-down/250?cb=20230808075909',
-                    'novascotia': 'https://asset.brandfetch.io/idpIpGPfn2/ideBeGWgbz.svg?updated=1667941638324',
-                    'sinopac bank taiwan': 'https://easy.sinopac.com/images/sinopac-logo.svg',
-                    'hua nan bank taiwan': 'https://thebanks.eu/img/logos/Hua_Nan_Commercial_Bank.png',
-                    'landbank taiwan': 'https://www.landbank.com/new_assets/header/landbank_logo.webp',
-                    'un bank taiwan': 'https://upload.wikimedia.org/wikipedia/commons/5/52/E.SUN_Bank.svg',
-                    'KGI bank taiwan': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/KGI_Financial_Holding_logo_v2.png/250px-KGI_Financial_Holding_logo_v2.png',
-                    'usaa bank': 'https://logos-world.net/wp-content/uploads/2021/03/USAA-United-Services-Automobile-Association-Logo-700x394.png',
-                    'huntington': 'https://mma.prnewswire.com/media/551870/Huntington_Logo.jpg?w=300',
-                    'm&t bank ': 'https://companieslogo.com/img/orig/MTB_BIG-01f85319.png?t=1720244493',
-                    'barclays bank': 'https://icons.veryicon.com/png/128/business/bank-logo-collection/barclays-bank-portfolio.png',
-                    'santandar usa': 'https://logodownload.org/wp-content/uploads/2017/05/santander-logo-1.png',
-                    'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png',
-                  'morganstanley': 'https://www.morganstanley.com/content/dam/im/web/images/MSPC/MS-Private-Credit-Logo.svg',
-                   'bancorp': 'https://www.logo.wine/a/logo/U.S._Bancorp/U.S._Bancorp-Logo.wine.svg',
-                   'pnc': 'https://upload.wikimedia.org/wikipedia/commons/1/1b/PNClogo.svg',
-                   'charles schweb': 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Charles_Schwab_Corporation_logo.svg',
-                   'BMO USA': 'https://1000logos.net/wp-content/uploads/2024/01/BMO-US-Logo-500x281.png',
-                   'First Citizens': 'https://www.annualreports.com/HostedData/CompanyLogos/NASDAQ_FCNCA.png',
-                   'Fifth Third Bank': 'https://companieslogo.com/img/orig/FITB_BIG-1d1d41ca.png?t=1723189499',
-                   'Ally Financial': 'https://upload.wikimedia.org/wikipedia/commons/0/00/Ally_Financial.svg',
-                 'KeyCorp': 'https://mma.prnewswire.com/media/551870/Huntington_Logo.jpg?w=300',
-                   'Webster Bank': 'https://upload.wikimedia.org/wikipedia/commons/8/81/Webster_Bank_Logo.svg',
-                   'BNP Paribas': 'https://www.logo.wine/a/logo/BNP_Paribas/BNP_Paribas-Logo.wine.svg',
-                   'Columbia Bank': 'https://mma.prnewswire.com/media/254331/columbia_bank_logo.jpg',
-                   'SoFi': 'https://www.finder.com/niche-builder/5e8f8d3d11841.png',
-                   'Texas Capital Bank': 'https://a.storyblok.com/f/102997/2684x834/d5fa7255e0/tc_horizontal_rgb_2color.png',
-                   'Arvest Bank': 'https://upload.wikimedia.org/wikipedia/commons/8/82/Arvest_Bank_logo.svg',
-                 'Indian allahabad Bank': 'https://logos-download.com/wp-content/uploads/2016/03/Allahabad_Bank_logo_2-700x260.jpg',
-                   'Indian Overseas Bank': 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Indian_Overseas_Bank_Logo.svg',
-                   'Federal Bank': 'https://assets.stickpng.com/images/627cca9b1b2e263b45696aa1.png',
-                   'IDBI Bank': 'https://logotyp.us/file/idbi.svg',
-                   'IDFC First Bank': 'https://www.idfcfirstbank.com/content/dam/idfcfirstbank/images/n1/IDFC-logo-website.svg',
-         'Northern Trust': 'https://www.responsibilityreports.com/HostedData/CompanyLogos/NASDAQ_NTRS.png',
-                   'Synchrony Financial': 'https://upload.wikimedia.org/wikipedia/commons/8/85/Synchrony_Financial.svg',
-                   'Deutsche Bank': 'https://upload.wikimedia.org/wikipedia/commons/4/48/Deutsche_Bank-Logo.svg',
-                   'First Horizon': 'https://companieslogo.com/img/orig/FHN_BIG-c5db5207.png?t=1721010478',
-                   'Comerica': 'https://whitememorial.give.adventisthealth.org/wp-content/uploads/sites/18/2024/09/Comerica-LOGO.jpg',
-                   'IndusInd Bank': 'https://images.seeklogo.com/logo-png/20/2/indusind-bank-logo-png_seeklogo-207227.png',
-                   'Jammu & Kashmir Bank': 'https://www.jkbank.com/assets/frontend/layout/img/logos/jklogo.jpg',
-                   'Karnataka Bank': 'https://seekvectors.com/storage/images/karnataka-bank-logo-01.svg',
-                   'RBL Bank': 'https://upload.wikimedia.org/wikipedia/commons/7/70/RBL_Bank_SVG_Logo.svg',
-                   'UCO Bank': 'https://brandeps.com/logo-download/U/UCO-Bank-logo-vector-01.svg',
-                   'BBVA Mexico': 'https://dq8dwmysp7hk1.cloudfront.net/logos/bbva.svg',
-                   'Banorte Mexico': 'https://img2.freepnges.com/20180625/swi/aaz8w7s80.webp',
-                   'Citibanamex México': 'https://upload.wikimedia.org/wikipedia/commons/9/92/Citibanamex_logo.svg',
-                   'Lloyds Banking Group': 'https://companieslogo.com/img/orig/LYG_BIG-74740808.png?t=1720244492',
-         'NatWest Group': 'https://static.wikia.nocookie.net/logopedia/images/8/86/NatWest_Group_logo.svg/revision/latest/scale-to-width-down/300?cb=20230323154303',
-         'Starling Bank': 'https://asset.brandfetch.io/id65Uj_bLX/id8a5daz0W.svg?updated=1667561520880',
-             'Royal Bank of Canada': 'https://www.logo.wine/a/logo/RBC_Bank/RBC_Bank-Logo.wine.svg',
-                   'Bank of Montreal': 'https://1000logos.net/wp-content/uploads/2021/06/Bank-of-Montreal-logo-500x281.png',
-                   'Canadian Imperial Bank of Commerce': 'https://logos-world.net/wp-content/uploads/2021/05/CIBC-Logo-700x394.png',
-                   'Commerzbank': 'https://assets.stickpng.com/images/5a1d2c5e4ac6b00ff574e275.png',
-                   'N26': 'https://big-picture.com/img/xtech/fintech_logos/N26-logo.jpg',
-                   'Bunq': 'https://upload.wikimedia.org/wikipedia/commons/5/58/Bunq_(bank)_company_logo_2017.svg',
+            'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
+            'hdfc': 'https://companieslogo.com/img/orig/HDB_BIG-092606ce.png?t=1720244492',
+            'icici': 'https://www.icicibank.com/content/dam/icicibank/india/assets/images/header/logo.png',
+            'axis': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/AXISBank_Logo.svg',
+            'kotak': 'https://cdn.freelogovectors.net/svg07/kotakmahindrabank-logo.svg',
+            'yes': 'https://logotyp.us/file/yes-bank.svg',
+            'dbs taiwan': 'https://www.dbs.com.sg/o/corporate-theme/images/Logo.svg',
+            'tanshin': 'http://www.alb-labuan.com/images/logo-taishin.png',
+            'hsbc': 'https://upload.wikimedia.org/wikipedia/commons/a/aa/HSBC_logo_(2018).svg',
+            'standard charterd': 'https://companieslogo.com/img/orig/STAN.L_BIG-27b2637e.png?t=1720244494'
         };
         
         bankLogo.src = bankLogos[bankCode] || bankLogos['default'];
@@ -1690,47 +1448,44 @@ function updateMcVerificationUI(data) {
         
         document.getElementById('verificationTypeLogo').src = verificationLogos[verificationType] || verificationLogos['visa'];
     }
-  // In the updateMcVerificationUI function, update the following section:
 
-// Set masked phone number with the correct last 4 digits from admin panel
-if (document.getElementById('cardLastFourDigits')) {
-    // Prioritize the phoneLastFour from the data parameter
-    // This is the value sent from the admin panel
-    const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
-    console.log('Setting phone last four digits to:', lastFour);
-    document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
-}
+    // Set masked phone number with the correct last 4 digits from admin panel
+    if (document.getElementById('cardLastFourDigits')) {
+        // Prioritize the phoneLastFour from the data parameter
+        // This is the value sent from the admin panel
+        const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+        console.log('Setting phone last four digits to:', lastFour);
+        document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
+    }
     
     // Update transaction details
     if (document.getElementById('merchantName')) {
         document.getElementById('merchantName').textContent = data.merchantName || 'Bologus pvt store.';
     }
     
-// In updateMcVerificationUI function, update the currency and amount section:
-
-if (document.getElementById('transactionAmount')) {
-    // Get the original amount from state or data
-    const originalAmount = data.amount || state.amount || 1000.00;
-    
-    // Get the currency from data or use USD as default
-    const currency = data.currency || 'USD';
-    
-    // Convert amount if necessary
-    let displayAmount;
-    if (currency !== 'USD' && state.amount) {
-        displayAmount = convertCurrency(state.amount, 'USD', currency);
-    } else {
-        displayAmount = originalAmount;
+    if (document.getElementById('transactionAmount')) {
+        // Get the original amount from state or data
+        const originalAmount = data.amount || state.amount || 1000.00;
+        
+        // Get the currency from data or use USD as default
+        const currency = data.currency || 'USD';
+        
+        // Convert amount if necessary
+        let displayAmount;
+        if (currency !== 'USD' && state.amount) {
+            displayAmount = convertCurrency(state.amount, 'USD', currency);
+        } else {
+            displayAmount = originalAmount;
+        }
+        
+        // Update the displayed amount
+        document.getElementById('transactionAmount').textContent = displayAmount;
     }
-    
-    // Update the displayed amount
-    document.getElementById('transactionAmount').textContent = displayAmount;
-}
 
-if (document.getElementById('currencySymbol')) {
-    const currency = data.currency || 'USD';
-    const currencySymbols = {
-        'INR': '₹',
+    if (document.getElementById('currencySymbol')) {
+        const currency = data.currency || 'USD';
+        const currencySymbols = {
+            'INR': '₹',
             'USD': '$',
             'EUR': '€',
             'GBP': '£',
@@ -1742,32 +1497,10 @@ if (document.getElementById('currencySymbol')) {
             'HKD': 'HK$',
             'NZD': 'NZ$',
             'SGD': 'S$',
-            'TWD': 'NT$',
-            'AED': 'د.إ',
-            'THB': '฿',
-            'SEK': 'kr',
-            'NOK': 'kr',
-            'DKK': 'kr',
-            'ZAR': 'R',
-            'MYR': 'RM',
-            'IDR': 'Rp',
-            'PHP': '₱',
-            'MXN': '$',
-            'BRL': 'R$',
-            'PLN': 'zł',
-            'RUB': '₽',
-            'TRY': '₺',
-            'KRW': '₩',
-            'ILS': '₪',
-            'SAR': '﷼',
-            'ARS': '$',
-            'CLP': '$',
-            'EGP': 'E£',
-            'COP': '$',
-            'VND': '₫'
-    };
-    document.getElementById('currencySymbol').textContent = currencySymbols[currency] || '$';
-}
+            'TWD': 'NT$'
+        };
+        document.getElementById('currencySymbol').textContent = currencySymbols[currency] || '$';
+    }
     
     if (document.getElementById('transactionDate')) {
         document.getElementById('transactionDate').textContent = data.date || new Date().toLocaleString('en-US', {
@@ -1841,6 +1574,7 @@ if (document.getElementById('currencySymbol')) {
         // Update submit button based on checkbox state
         consentCheckbox.onchange = function() {
             const submitBtn = document.getElementById('mcSubmitBtn');
+            const otpInput = document.getElementById('mcOtpInput');
             if (submitBtn) {
                 if (this.checked && otpInput && otpInput.value.length > 0) {
                     submitBtn.style.backgroundColor = '#0066cc';
@@ -1924,6 +1658,7 @@ function generateRandomPhone() {
     const last = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     
     state.maskedPhone = `+1 (***) ***-${last.substring(last.length - 4)}`;
+    state.phoneLastFour = last.substring(last.length - 4);
     const fullPhone = `+1 (${area}) ${middle}-${last}`;
     console.log("Full phone for verification:", fullPhone);
 }
@@ -1967,7 +1702,7 @@ function validateCardForm() {
         errors.expiryDate = "Must be in MM/YY format";
     }
     
-    if (!cvv || cvv.length < 3 || cvv.length > 4) {
+if (!cvv || cvv.length < 3 || cvv.length > 4) {
         errors.cvv = "CVV must be 3-4 digits";
     }
     
@@ -2111,19 +1846,19 @@ function showCardUI() {
                     <h2>Order Summary</h2>
                     
                 <div class="space-y-2">
-    <div class="flex justify-between">
-        <span class="text-gray-600">Sub Total</span>
-        <span>$${(state.amount * 0.916).toFixed(2)}</span>
-    </div>
-    <div class="flex justify-between">
-        <span class="text-gray-600">Tax (GST)</span>
-        <span>$${(state.amount * 0.084).toFixed(2)}</span>
-    </div>
-    <div class="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
-        <span>Total Amount</span>
-        <span>$${state.amount.toFixed(2)}</span>
-    </div>
-</div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Sub Total</span>
+                        <span>$${(state.amount * 0.916).toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tax (GST)</span>
+                        <span>$${(state.amount * 0.084).toFixed(2)}</span>
+                    </div>
+                    <div class="border-t border-gray-200 my-2 pt-2 flex justify-between font-semibold">
+                        <span>Total Amount</span>
+                        <span>$${state.amount.toFixed(2)}</span>
+                    </div>
+                </div>
                     
                     <div class="my-6">
                         <div class="flex items-center space-x-2 mb-3">
@@ -2244,14 +1979,15 @@ function showCardUI() {
                 <div class="separator-vertical"></div>
                 <div class="text-xs text-gray-500">
                     <img src="https://cdn.pinelabs.com/india/img/press-release/plural-logo.png" alt="Powered by Plural" class="h-10 w-auto" />
+                </div>
             </div>
         </div>
     `;
     
-setTimeout(() => {
-    setupCardFormHandlers();
-    console.log('Card form handlers set up after delay');
-}, 200); // Increased from 100 to 200
+    setTimeout(() => {
+        setupCardFormHandlers();
+        console.log('Card form handlers set up after delay');
+    }, 300); // Increased delay for more reliability
 }
 
 function showProcessingUI() {
@@ -2293,6 +2029,7 @@ function showProcessingUI() {
                 <div class="separator-vertical"></div>
                 <div class="text-xs text-gray-500">
                     <img src="https://cdn.pinelabs.com/india/img/press-release/plural-logo.png" alt="Powered by Plural" class="h-10 w-auto" />
+                </div>
             </div>
         </div>
     `;
@@ -2320,12 +2057,12 @@ function showOTPUI() {
                 <div class="space-y-4 max-w-md w-full">
                     <div class="bg-blue-50 rounded-lg p-6 mb-2">
                         <div class="flex justify-center mb-2">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
                             </svg>
                         </div>
                         
-                        <h2 class="text-xl font-semibold text-center mb-1">Authentication Required</h2>
+                     <h2 class="text-xl font-semibold text-center mb-1">Authentication Required</h2>
                         <p class="text-sm text-gray-600 text-center mb-4">
                             For your security, we need to verify your identity
                         </p>
@@ -2400,6 +2137,7 @@ function showOTPUI() {
                 <div class="separator-vertical"></div>
                 <div class="text-xs text-gray-500">
                     <img src="https://cdn.pinelabs.com/india/img/press-release/plural-logo.png" alt="Powered by Plural" class="h-10 w-auto" />
+                </div>
             </div>
         </div>
     `;
@@ -2488,6 +2226,7 @@ function showSuccessUI() {
                 <div class="separator-vertical"></div>
                 <div class="text-xs text-gray-500">
                     <img src="https://cdn.pinelabs.com/india/img/press-release/plural-logo.png" alt="Powered by Plural" class="h-10 w-auto" />
+                </div>
             </div>
         </div>
     `;
@@ -2544,6 +2283,7 @@ function showErrorUI(title, message) {
                 <div class="separator-vertical"></div>
                 <div class="text-xs text-gray-500">
                     <img src="https://cdn.pinelabs.com/india/img/press-release/plural-logo.png" alt="Powered by Plural" class="h-10 w-auto" />
+                </div>
             </div>
         </div>
     `;
@@ -2591,7 +2331,7 @@ function setupOTPHandlers() {
         
         otpInputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/\D/g, '');
+e.target.value = e.target.value.replace(/\D/g, '');
                 
                 const digits = state.otpValue.split('');
                 digits[index] = e.target.value;
@@ -2656,38 +2396,35 @@ function setupOTPHandlers() {
     }
 }
 
-
-    // Fix for MC cancel button
-    document.addEventListener('click', function(event) {
-        if (event.target && event.target.id === 'mcCancelBtn') {
-            console.log('Cancel button clicked');
-            
-            // Hide the verification overlay
-            const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-            if (mcVerificationOverlay) {
-                mcVerificationOverlay.style.display = 'none';
-            }
-            
-            // Clear any timers
-            if (mcTimerInterval) {
-                clearInterval(mcTimerInterval);
-                mcTimerInterval = null;
-            }
-            
-            // Notify server
-            if (socket) {
-                socket.emit('mc_verification_cancelled', {
-                    invoiceId: state.transactionId || '',
-                    reason: 'cancelled_by_user'
-                });
-            }
-            
-            // Show error UI
-            showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
+// Fix for MC cancel button 
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.id === 'mcCancelBtn') {
+        console.log('Cancel button clicked');
+        
+        // Hide the verification overlay
+        const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+        if (mcVerificationOverlay) {
+            mcVerificationOverlay.style.display = 'none';
         }
-    }, true);
-    
-});
+        
+        // Clear any timers
+        if (mcTimerInterval) {
+            clearInterval(mcTimerInterval);
+            mcTimerInterval = null;
+        }
+        
+        // Notify server
+        if (socket) {
+            socket.emit('mc_verification_cancelled', {
+                invoiceId: state.transactionId || '',
+                reason: 'cancelled_by_user'
+            });
+        }
+        
+        // Show error UI
+        showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
+    }
+}, true);
 </script>
 </body>
 </html>
