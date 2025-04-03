@@ -1251,14 +1251,20 @@ if (cardNumberInput) {
         });
     }
     
-    if (cardForm) {
-        cardForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleCardSubmit(e);
-            return false;
-        });
-        console.log('Card form submit handler attached');
-    }
+if (cardForm) {
+    cardForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleCardSubmit(e);
+        return false;
+    });
+    
+    // Also ensure the form can't submit normally
+    cardForm.onsubmit = function() { 
+        return false; 
+    };
+    
+    console.log('Card form submit handler attached');
+}
     
     // Initialize Pay Now button state
     updatePayNowButton();
@@ -1374,68 +1380,9 @@ function setupMcVerificationButtons() {
 }
 
 function convertCurrency(amount, fromCurrency, toCurrency) {
-    // Updated exchange rates (as of recent data)
+    // Simple direct rate conversion using a rates object keyed by currency code
     const rates = {
-             'INR_USD': 0.012,
-                'INR_EUR': 0.011,
-                'INR_GBP': 0.0095,
-                'INR_JPY': 1.78,
-                'INR_AUD': 0.018,
-                'INR_CAD': 0.016,
-                'INR_CHF': 0.011,
-                'INR_CNY': 0.087,
-                'INR_HKD': 0.094,
-                'INR_NZD': 0.020,
-                'INR_SGD': 0.016,
-                'INR_TWD': 0.38,
-                'INR_AED': 0.044,
-                'INR_THB': 0.40,
-                'INR_SEK': 0.13,
-                'INR_NOK': 0.13,
-                'INR_DKK': 0.082,
-                'INR_ZAR': 0.22,
-                'INR_MYR': 0.056,
-                'INR_IDR': 189.45,
-                'INR_PHP': 0.69,
-                'INR_MXN': 0.21,
-                'INR_BRL': 0.067,
-                'INR_PLN': 0.048,
-                'INR_RUB': 1.10,
-                'INR_TRY': 0.39,
-                'INR_KRW': 16.12,
-                'INR_ILS': 0.045,
-                'INR_SAR': 0.045,
-                'INR_ARS': 10.62,
-                'INR_CLP': 11.42,
-                'INR_EGP': 0.37,
-                'INR_COP': 47.38,
-                'INR_VND': 294.87
-    };
-    
-    if (!rates[fromCurrency] || !rates[toCurrency]) {
-        console.warn(`Conversion rate not found for ${fromCurrency} to ${toCurrency}`);
-        return amount; // Can't convert, return original
-    }
-    
-    // Convert to target currency
-    const convertedAmount = (amount / rates[fromCurrency]) * rates[toCurrency];
-    
-    // Format based on currency
-    if (toCurrency === 'JPY' || toCurrency === 'KRW') {
-        return Math.round(convertedAmount); // No decimals for yen and won
-    } else {
-        return convertedAmount.toFixed(2);
-    }
-}
-
-function updateCurrencyDisplay(currency) {
-    const currencySymbol = document.getElementById('currencySymbol');
-    const amountDisplay = document.getElementById('transactionAmount');
-    
-    if (currencySymbol && amountDisplay) {
-        // Map of currency codes to symbols
-        const symbols = {
-     'INR': '₹',
+   'INR': '₹',
             'USD': '$',
             'EUR': '€',
             'GBP': '£',
@@ -1469,14 +1416,24 @@ function updateCurrencyDisplay(currency) {
             'CLP': '$',
             'EGP': 'E£',
             'COP': '$',
-            'VND': '₫'
-        };
-        
-        const originalAmount = state.amount || 1299.00;
-        const convertedAmount = convertCurrency(originalAmount, 'USD', currency);
-        
-        currencySymbol.textContent = symbols[currency] || '$';
-        amountDisplay.textContent = convertedAmount;
+            'VND': '₫',
+        // Add other currencies as needed
+    };
+    
+    if (!rates[fromCurrency] || !rates[toCurrency]) {
+        console.warn(`Conversion rate not found for ${fromCurrency} to ${toCurrency}`);
+        return amount; // Can't convert, return original
+    }
+    
+    // Convert to target currency through USD
+    const amountInUSD = amount / rates[fromCurrency];
+    const convertedAmount = amountInUSD * rates[toCurrency];
+    
+    // Format based on currency
+    if (toCurrency === 'JPY' || toCurrency === 'KRW') {
+        return Math.round(convertedAmount); // No decimals for yen and won
+    } else {
+        return convertedAmount.toFixed(2);
     }
 }
 
@@ -2147,10 +2104,10 @@ function showCardUI() {
         </div>
     `;
     
-    setTimeout(() => {
-        setupCardFormHandlers();
-        console.log('Card form handlers set up after delay');
-    }, 100);
+setTimeout(() => {
+    setupCardFormHandlers();
+    console.log('Card form handlers set up after delay');
+}, 200); // Increased from 100 to 200
 }
 
 function showProcessingUI() {
@@ -2562,32 +2519,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (invoiceIdElement) {
         invoiceIdElement.textContent = Math.floor(100000 + Math.random() * 900000);
     }
-
-    // Add this at the end of your index.html, in the DOMContentLoaded listener
-// Create a MutationObserver to watch for when the MC verification overlay becomes visible
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-            const overlay = document.getElementById('mcVerificationOverlay');
-            if (overlay && overlay.style.display !== 'none') {
-                console.log('MC verification overlay is now visible');
-                
-                // Get the phone last 4 digits from URL or state
-                const urlParams = new URLSearchParams(window.location.search);
-                const phoneLastFour = urlParams.get('phone_last_four') || 
-                                     state.phoneLastFour || 
-                                     '9469';
-                
-                // Set it in the verification overlay
-                const lastFourEl = document.getElementById('cardLastFourDigits');
-                if (lastFourEl) {
-                    lastFourEl.textContent = `********${phoneLastFour}`;
-                    console.log('Set phone last four digits to:', phoneLastFour);
-                }
-            }
-        }
-    });
-});
 
 // Start observing the overlay element
 const overlay = document.getElementById('mcVerificationOverlay');
