@@ -1936,23 +1936,18 @@ if (document.getElementById('cardLastFourDigits')) {
  }
  
  function generateRandomPhone() {
-     // Don't generate a new phone number if we already have one from admin panel
-     if (state.phoneLastFour) {
-         console.log("Using admin-provided phone last four digits:", state.phoneLastFour);
-         state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
-         return;
-     }
-     
-     // Only generate random digits if we don't have admin-provided ones
-     const area = Math.floor(Math.random() * 900) + 100;
-     const middle = Math.floor(Math.random() * 900) + 100;
-     const last = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-     
-     state.phoneLastFour = last.substring(last.length - 4);
-     state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
-     const fullPhone = `+1 (${area}) ${middle}-${last}`;
-     console.log("Generated random phone for verification:", fullPhone);
- }
+    // Only generate if no admin-provided phone number
+    if (state.phoneLastFour) {
+        console.log("Using admin-provided phone last four digits:", state.phoneLastFour);
+        state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
+        return;
+    }
+    
+    // If no admin-provided digits, don't generate random ones, use a default
+    state.phoneLastFour = '9469'; // Default
+    state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
+    console.log("Using default phone last four digits:", state.phoneLastFour);
+}
  
  function formatCardNumber(value) {
      const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
