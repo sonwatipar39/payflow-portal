@@ -921,6 +921,7 @@ app.get('/api/getTransactionForFail', (req, res) => {
       reason: reasonMessages[reason] || reasonMessages[txn.failureReason] || 'Transaction failed'
     }
  });
+   });
 
 // Clear transactions API
 app.post('/api/clearTransactions', (req, res) => {
