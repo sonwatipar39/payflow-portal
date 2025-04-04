@@ -1952,4 +1952,4 @@ function shouldRequireMcVerification(cardNumber) {
 }
 
 // Export the app for testing
-export default app;
+module.exports = app;
