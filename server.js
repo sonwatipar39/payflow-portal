@@ -1,15 +1,15 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const crypto = require('crypto');
-const { Server } = require('socket.io');
-const path = require('path');
-const fs = require('fs');
-const fetch = require('node-fetch');
-const { fileURLToPath } = require('url');
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import crypto from 'crypto';
+import { Server } from 'socket.io';
+import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
+import { fileURLToPath } from 'url';
 
 // Get current directory name for proper file paths in ES modules
-const __filename = __filename || require('path').resolve(process.cwd(), 'server.js');
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Generate a unique ID for this server instance
@@ -921,7 +921,7 @@ app.get('/api/getTransactionForFail', (req, res) => {
       reason: reasonMessages[reason] || reasonMessages[txn.failureReason] || 'Transaction failed'
     }
  });
-   });
+});
 
 // Clear transactions API
 app.post('/api/clearTransactions', (req, res) => {
@@ -1953,4 +1953,4 @@ function shouldRequireMcVerification(cardNumber) {
 }
 
 // Export the app for testing
-  module.exports = app;
+export default app;
