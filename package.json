@@ -21,6 +21,3 @@
   },
   "description": "Secure payment gateway integration"
 }
-"engines": {
-  "node": ">=16"
-}
