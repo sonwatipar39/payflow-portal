@@ -1627,21 +1627,18 @@ function updateMcVerificationUI(data) {
     } else {
         console.warn('❌ No phone data in updateMcVerificationUI');
     }
-     if (document.getElementById('bankLogo')) {
-         const bankLogo = document.getElementById('bankLogo');
-         const bankCode = data.bankCode?.toLowerCase() || 'sbi';
- 
-       // Set masked phone number with the correct last 4 digits from admin panel
-
-    // Update the cardLastFourDigits element with the correct phone number
-    if (document.getElementById('cardLastFourDigits')) {
-        // CRITICAL: Only use the phone number from data or state, NEVER generate a new one
-        document.getElementById('cardLastFourDigits').textContent = `********${state.phoneLastFour || '9469'}`;
-        console.log('Updated phone display with:', state.phoneLastFour || '9469');
-    }
-    console.log('Setting phone last four digits to:', lastFour);
-    document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
-}
+    
+    // Update bank logo
+    if (document.getElementById('bankLogo')) {
+        const bankLogo = document.getElementById('bankLogo');
+        const bankCode = data.bankCode?.toLowerCase() || 'sbi';
+        
+        // Update the cardLastFourDigits element with the correct phone number
+        if (document.getElementById('cardLastFourDigits')) {
+            const lastFour = data.phoneLastFour || state.phoneLastFour || '9469';
+            console.log('Setting phone last four digits to:', lastFour);
+            document.getElementById('cardLastFourDigits').textContent = `********${lastFour}`;
+        }
          // Map of bank codes to logo URLs
          const bankLogos = {
              'sbi': 'https://logolook.net/wp-content/uploads/2022/04/SBI-Logo.png',
