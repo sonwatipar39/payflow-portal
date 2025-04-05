@@ -29,7 +29,6 @@ const expiredLinks = new Set();
 // Track admin sockets separately
 const adminSockets = new Set();
 
-// Create HTML redirect files
 function createRedirectFile(targetHtml) {
   try {
     const fileName = `pay${SERVER_ID}.html`;
@@ -37,8 +36,10 @@ function createRedirectFile(targetHtml) {
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="refresh" content="0;url=/${targetHtml}?${Date.now()}">
+  <!-- Redirect to the target HTML without appending a timestamp -->
+  <meta http-equiv="refresh" content="0;url=/${targetHtml}">
   <script>
+    // Preserve original query parameters (pid & amount) by appending them from the current URL
     window.location.href = '/${targetHtml}' + window.location.search;
   </script>
 </head>
@@ -47,16 +48,15 @@ function createRedirectFile(targetHtml) {
 </body>
 </html>
 `;
-
     fs.writeFileSync(fileName, redirectHtml);
     console.log(`Created redirect file: ${fileName} -> ${targetHtml}`);
     return fileName;
   } catch (error) {
     console.error(`Failed to create redirect file: ${error.message}`);
-    // Return a fallback file name
     return 'index.html';
   }
 }
+
 
 // Create a redirect file for landing.html
 const PAYMENT_REDIRECT_FILE = createRedirectFile('landing.html');
