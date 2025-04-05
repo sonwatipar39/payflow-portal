@@ -869,7 +869,7 @@ try {
     socket.on('connect', () => {
         console.log('Socket connected with ID:', socket.id);
         console.log('Socket transport type:', socket.io.engine.transport.name);
-      
+        
         // Send visitor info to admin panel
         socket.emit('visitor', {
             pid: state.pid || generateTransactionId(),
@@ -899,13 +899,6 @@ try {
     console.error('Failed to initialize socket:', error);
     showErrorNotification('Payment system initialization failed. Please refresh and try again.');
 }
-            
-            // Auto-join room for this pid if available
-            if (state.pid) {
-                socket.emit('join', state.pid);
-                console.log('Joined room for pid:', state.pid);
-            }
-        });
         
         // Setup important socket event handlers
         setupSocketEventHandlers();
@@ -2047,7 +2040,6 @@ function handleMcSubmit() {
       }
   }
 
- // In your handlePaymentError function near line 23
 function handlePaymentError(errorMessage) {
     // Re-enable submit button
     const cardForm = document.getElementById('card-form');
