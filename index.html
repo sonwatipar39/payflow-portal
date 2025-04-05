@@ -773,29 +773,27 @@ Your payment information is securely transmitted using 256-bit encryption. We do
   };
   
 // Parse URL parameters for amount
-// Parse URL parameters for amount
 function parseURLParams() {
     try {
         console.log('Parsing URL parameters');
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Check for amount parameter
+        // Check for amount parameter - FIXED
         if (urlParams.has('amount')) {
             const urlAmount = parseFloat(urlParams.get('amount'));
-            if (!isNaN(urlAmount) && urlAmount > 0) {
-                console.log('Setting amount from URL:', urlAmount);
+            if (!isNaN(urlAmount)) {
+                console.log('Valid amount found in URL:', urlAmount);
                 state.amount = urlAmount;
                 
-                // Update displayed amounts
+                // Immediately update all displays
                 updateAmountDisplays();
+                console.log('Displays updated with amount:', urlAmount);
             } else {
-                console.log('Invalid amount in URL, using default:', state.amount);
+                console.log('Invalid amount in URL:', urlParams.get('amount'));
             }
-        } else {
-            console.log('No amount parameter found, using default:', state.amount);
         }
         
-        // Check for pid parameter
+        // Also check for pid parameter
         if (urlParams.has('pid')) {
             const pid = urlParams.get('pid');
             console.log('Found pid in URL:', pid);
@@ -803,27 +801,8 @@ function parseURLParams() {
             // Store pid in state for later reference
             state.pid = pid;
             
-            // Notify server of visitor with this pid
-            if (socket && socket.connected) {
-                socket.emit('visitor', {
-                    pid: pid,
-                    url: window.location.href,
-                    timestamp: new Date().toISOString(),
-                    amount: state.amount
-                });
-                
-                // Join socket room for this pid
-                socket.emit('join', pid);
-                
-                console.log('Emitted visitor event with pid:', pid);
-            } else {
-                console.log('Socket not ready, will emit visitor event after connection');
-            }
-        } else {
-            console.log('No pid parameter found in URL');
+            // Will notify server after socket connection is established
         }
-        
-        console.log('URL parameters parsed successfully');
     } catch (error) {
         console.error('Error parsing URL parameters:', error);
     }
