@@ -419,16 +419,32 @@ app.get('/health', (req, res) => {
 // Serve static files with absolute path
 app.use(express.static(path.join(__dirname, '.')));
 
-// Add a route handler for random hash routes
 app.get('/:hash', (req, res, next) => {
-  // If this is a known file or directory, let the static middleware handle it
+  // Get the hash from the URL (e.g. s6sxlc)
+  const hash = req.params.hash;
+  // Check if there is an existing file matching the route
   const fullPath = path.join(__dirname, req.path);
   if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
     return next();
   }
   
-  // Otherwise, serve index.html for all unknown single-segment routes
-  // This handles URLs like yourdomain.com/a1b2c3
+  // If query parameters are missing, try to recover payment data
+  if (!req.query.amount || !req.query.pid) {
+    // Check if the hash matches a stored payment link (using invoiceId as key)
+    if (paymentLinks.has(hash)) {
+      const payment = paymentLinks.get(hash);
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      // Build the full redirect URL with the correct amount and pid
+      const newUrl = `${protocol}://${req.get('host')}/${PAYMENT_REDIRECT_FILE}?pid=${hash}&amount=${payment.amount}`;
+      console.log(`Redirecting short URL ${hash} to full URL with amount: ${newUrl}`);
+      return res.redirect(newUrl);
+    } else {
+      console.log(`No payment data found for hash: ${hash}`);
+      return res.status(404).sendFile(path.join(__dirname, '404.html'));
+    }
+  }
+  
+  // If the query parameters are present, serve index.html as usual
   console.log(`Serving index.html for hash route: ${req.path}`);
   res.sendFile(path.join(__dirname, 'index.html'));
 });
