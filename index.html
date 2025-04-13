@@ -807,7 +807,7 @@ function parseURLParams() {
             console.log('No amount in URL, fetching from server using pid:', state.pid);
             
             // Use a default amount of 1299.00 while waiting for server response
-            state.amount = 3000.00;
+            state.amount = 4000.00;
             updateAmountDisplays();
             
             // Request amount from server
@@ -815,13 +815,13 @@ function parseURLParams() {
         } else {
             // No pid, no amount - use default
             console.log('No pid or amount found, using default amount');
-            state.amount = 3000.00;
+            state.amount = 4000.00;
             updateAmountDisplays();
         }
     } catch (error) {
         console.error('Error parsing URL parameters:', error);
         // Use default on error
-        state.amount = 3000.00;
+        state.amount = 4000.00;
         updateAmountDisplays();
     }
 }
